@@ -1,0 +1,11 @@
+# Calm Range Scenario
+name: 'Calm Range Day'
+archetype: calm_range
+replay_speed: 5.0
+duration_minutes: 390
+seed: 12345
+events: []
+microstructure:
+  u_shaped_volume: true
+  lunch_lull: true
+  late_session_widening: true

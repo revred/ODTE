@@ -86,7 +86,29 @@ public class Program
             Console.WriteLine("=== 0DTE Options Backtest Engine ===");
             Console.WriteLine($"Starting at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             
-            // === 1. CONFIGURATION LOADING ===
+            // === 1. COMMAND LINE PARSING ===
+            // Check for scenario replay mode
+            var scenarioIndex = Array.IndexOf(args, "--scenario");
+            if (scenarioIndex >= 0 && scenarioIndex + 1 < args.Length)
+            {
+                var scenarioPath = args[scenarioIndex + 1];
+                var replaySpeed = 1.0;
+                
+                var replayIndex = Array.IndexOf(args, "--replay");
+                if (replayIndex >= 0 && replayIndex + 1 < args.Length)
+                {
+                    var replayArg = args[replayIndex + 1];
+                    if (replayArg.EndsWith("x") && double.TryParse(replayArg[..^1], out var speed))
+                    {
+                        replaySpeed = speed;
+                    }
+                }
+                
+                await RunScenarioAsync(scenarioPath, replaySpeed);
+                return;
+            }
+
+            // === 2. CONFIGURATION LOADING ===
             string cfgPath = args.FirstOrDefault(a => a.EndsWith(".yaml")) ?? "appsettings.yaml";
             Console.WriteLine($"Loading configuration from: {cfgPath}");
             var cfg = LoadConfig(cfgPath);
@@ -212,6 +234,50 @@ public class Program
         catch (Exception ex) when (!(ex is FileNotFoundException))
         {
             throw new InvalidOperationException($"Failed to load configuration from {path}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Run a synthetic market scenario for testing and validation
+    /// </summary>
+    static async Task RunScenarioAsync(string scenarioPath, double replaySpeed)
+    {
+        Console.WriteLine($"=== SCENARIO REPLAY MODE ===");
+        Console.WriteLine($"Scenario: {scenarioPath}");
+        Console.WriteLine($"Replay Speed: {replaySpeed}x");
+        
+        try
+        {
+            // This is a placeholder for HYSIM integration
+            // In the full implementation, this would:
+            // 1. Load scenario configuration from YAML
+            // 2. Create synthetic market stream
+            // 3. Apply microstructure effects
+            // 4. Stream ticks and log to file
+            
+            Console.WriteLine("Scenario replay functionality will be implemented with HYSIM integration.");
+            Console.WriteLine("Current implementation focuses on IBKR integration and core backtesting.");
+            
+            // Simulate a short scenario run
+            var startTime = DateTime.Now;
+            Console.WriteLine($"Starting scenario at {startTime:HH:mm:ss}");
+            
+            for (int i = 0; i < 10; i++)
+            {
+                await Task.Delay((int)(1000 / replaySpeed)); // Simulate 1-second intervals
+                Console.WriteLine($"  Tick {i + 1}: SPY=${400 + i * 0.1:F2} (simulated)");
+            }
+            
+            var endTime = DateTime.Now;
+            var duration = endTime - startTime;
+            Console.WriteLine($"Scenario completed in {duration.TotalSeconds:F1} seconds");
+            Console.WriteLine($"Effective speed: {10.0 / duration.TotalSeconds:F1}x real-time");
+            
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR: Scenario execution failed - {ex.Message}");
+            throw;
         }
     }
 }

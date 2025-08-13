@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
+  </ItemGroup>
+</Project>
