@@ -1,0 +1,137 @@
+# .NET build outputs
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Visual Studio/VSCode files
+.vs/
+.vscode/
+*.code-workspace
+
+# Rider files
+.idea/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet packages
+*.nupkg
+packages/
+!packages/build/
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Reports and output files
+Reports/
+*.csv
+*.txt
+!example_config.json
+!README.md
+!*.md
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~.nib
+Thumbs.db
+.DS_Store
+
+# Configuration files with sensitive data
+appsettings.Production.json
+appsettings.Development.json
+config.json
+secrets.json
+
+# IDE files
+*.ide
+*.ide-wal
+*.ide-shm
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover
+*.dotCover
+
+# NCrunch
+*.ncrunch*
+.*crunch*.local.xml
+
+# Web workbench (sass)
+.sass-cache/
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.Publish.xml
+*.pubxml
+
+# Windows Azure Build Output
+csx
+*.build.csdef
+
+# Microsoft Fakes
+FakesAssemblies/
+
+# Node.js (if any web components added later)
+node_modules/
+
+# Python cache (if any Python scripts added)
+__pycache__/
+*.pyc
+
+# Local data files (but not source code)
+/data/
+*.db
+*.sqlite
+
+# But include source Data/ directories
+!ODTE.Backtest/Data/
+!ODTE.Backtest.Tests/Data/

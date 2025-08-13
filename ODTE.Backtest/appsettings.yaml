@@ -1,0 +1,60 @@
+underlying: XSP             
+start: 2024-02-01
+end: 2025-07-31
+mode: prototype             
+rth_only: true
+timezone: Europe/London
+
+cadence_seconds: 900        
+no_new_risk_minutes_to_close: 40  
+
+short_delta:
+  condor_min: 0.07          
+  condor_max: 0.15
+  single_min: 0.10          
+  single_max: 0.20
+width_points:
+  min: 1
+  max: 2
+credit_per_width_min:
+  condor: 0.18              
+  single: 0.20
+
+stops:
+  credit_multiple: 2.2      
+  delta_breach: 0.33        
+
+risk:
+  daily_loss_stop: 500      
+  per_trade_max_loss_cap: 200
+  max_concurrent_per_side: 2
+
+slippage:
+  entry_half_spread_ticks: 0.5
+  exit_half_spread_ticks: 0.5
+  late_session_extra_ticks: 0.5
+  tick_value: 0.05         
+  spread_pct_cap: 0.25     
+
+fees:
+  commission_per_contract: 0.65
+  exchange_fees_per_contract: 0.25
+
+signals:
+  or_minutes: 15            
+  vwap_window_minutes: 30   
+  atr_period_bars: 20       
+  calm_iv_condition: short_leq_30d  
+  event_block_minutes_before: 60
+  event_block_minutes_after: 15
+
+throttle:
+  rv_high_cadence_seconds: 1800  
+  rv_low_cadence_seconds: 600    
+
+paths:
+  bars_csv: ./Samples/bars_spx_min.csv
+  vix_csv: ./Samples/vix_daily.csv
+  vix9d_csv: ./Samples/vix9d_daily.csv
+  calendar_csv: ./Samples/calendar.csv
+  reports_dir: ./Reports
