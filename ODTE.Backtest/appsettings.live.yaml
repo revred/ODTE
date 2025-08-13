@@ -1,0 +1,70 @@
+# Live trading configuration for IBKR integration
+underlying: SPX             # Use SPX for IBKR (more liquid than XSP)
+start: 2025-01-01
+end: 2025-12-31
+mode: live_ib               # Enable live IBKR trading mode
+rth_only: true
+timezone: America/New_York  # Use NY timezone for US markets
+
+cadence_seconds: 300        # Check every 5 minutes for live trading
+no_new_risk_minutes_to_close: 30  # Stop new trades 30 min before close
+
+short_delta:
+  condor_min: 0.10          # More conservative for live trading
+  condor_max: 0.20
+  single_min: 0.15          
+  single_max: 0.25
+
+width_points:
+  min: 1
+  max: 3                    # Wider spreads for SPX
+
+credit_per_width_min:
+  condor: 0.25              # Higher credit requirements for live
+  single: 0.30
+
+stops:
+  credit_multiple: 2.0      # Tighter stops for live trading
+  delta_breach: 0.30        
+
+risk:
+  daily_loss_stop: 200      # Conservative daily loss limit
+  per_trade_max_loss_cap: 50
+  max_concurrent_per_side: 1 # Very conservative for live
+
+slippage:
+  entry_half_spread_ticks: 1.0  # Account for wider spreads in live market
+  exit_half_spread_ticks: 1.0
+  late_session_extra_ticks: 1.0
+  tick_value: 0.05         
+  spread_pct_cap: 0.30     
+
+fees:
+  commission_per_contract: 0.65  # IBKR fees
+  exchange_fees_per_contract: 0.25
+
+signals:
+  or_minutes: 15            
+  vwap_window_minutes: 30   
+  atr_period_bars: 20       
+  calm_iv_condition: short_leq_30d  
+  event_block_minutes_before: 60
+  event_block_minutes_after: 15
+
+throttle:
+  rv_high_cadence_seconds: 300   # More frequent for live
+  rv_low_cadence_seconds: 300    
+
+# IBKR-specific settings
+ibkr:
+  host: 127.0.0.1          # TWS/Gateway host
+  port: 7497               # Paper trading port (use 7496 for live)
+  client_id: 42            # Unique client identifier
+  paper_trading: true      # Safety flag for paper trading
+
+paths:
+  bars_csv: ./Samples/bars_spx_min.csv
+  vix_csv: ./Samples/vix_daily.csv
+  vix9d_csv: ./Samples/vix9d_daily.csv
+  calendar_csv: ./Samples/calendar.csv
+  reports_dir: ./Reports

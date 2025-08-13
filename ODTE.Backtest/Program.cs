@@ -94,6 +94,20 @@ public class Program
             Console.WriteLine($"Backtest period: {cfg.Start:yyyy-MM-dd} to {cfg.End:yyyy-MM-dd}");
             Console.WriteLine($"Underlying: {cfg.Underlying}, Mode: {cfg.Mode}");
 
+            // Check for live IBKR mode
+            var mode = cfg.Mode?.ToLowerInvariant() ?? "prototype";
+            if (mode == "live_ib")
+            {
+#if IBKR
+                var ib = new ODTE.Backtest.Brokers.IBKR.TwsBroker();
+                ib.Connect("127.0.0.1", 7497, 42);
+                Console.WriteLine("Connected to IBKR (paper)");
+                return;
+#else
+                throw new NotSupportedException("IBKR integration not available. Build with IBKR symbol defined and IBApi referenced.");
+#endif
+            }
+
             // Ensure output directory exists
             Directory.CreateDirectory(cfg.Paths.ReportsDir);
 
