@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]() 
 [![.NET Version](https://img.shields.io/badge/.NET-9.0-blue.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)]()
 [![Tests](https://img.shields.io/badge/tests-100%25%20passing-brightgreen.svg)]()
 
 > **⚠️ EDUCATIONAL USE ONLY**: This system is designed for educational and research purposes. Options trading involves substantial risk of loss. Always start with paper trading and never risk more than you can afford to lose.
@@ -251,7 +251,9 @@ Please use the [GitHub Issues](https://github.com/revred/ODTE/issues) page to re
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is proprietary software owned by revred. See the [LICENSE](LICENSE) file for complete terms and restrictions.
+
+**Commercial Software**: This is not open source. Viewing for educational purposes only.
 
 ## 🙏 Acknowledgments
 
