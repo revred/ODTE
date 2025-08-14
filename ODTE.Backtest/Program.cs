@@ -1,9 +1,13 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using ODTE.Backtest.Config;
 using ODTE.Backtest.Engine;
 using ODTE.Backtest.Reporting;
 using ODTE.Backtest.Data;
 using ODTE.Backtest.Signals;
 using ODTE.Backtest.Strategy;
+using ODTE.Backtest.Synth;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -87,6 +91,13 @@ public class Program
             Console.WriteLine($"Starting at {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             
             // === 1. COMMAND LINE PARSING ===
+            // Parse resumable backtest arguments
+            bool resume = args.Contains("--resume");
+            bool useSparse = args.Contains("--sparse");
+            int maxWorkers = int.TryParse(GetArgValue(args, "--workers"), out var w) ? Math.Max(1, w) : 1;
+            string? invalidate = GetArgValue(args, "--invalidate");
+            string? dateRange = GetArgValue(args, "--range");
+            
             // Check for scenario replay mode
             var scenarioIndex = Array.IndexOf(args, "--scenario");
             if (scenarioIndex >= 0 && scenarioIndex + 1 < args.Length)
@@ -112,6 +123,18 @@ public class Program
             string cfgPath = args.FirstOrDefault(a => a.EndsWith(".yaml")) ?? "appsettings.yaml";
             Console.WriteLine($"Loading configuration from: {cfgPath}");
             var cfg = LoadConfig(cfgPath);
+            
+            // Override date range if specified
+            if (!string.IsNullOrEmpty(dateRange))
+            {
+                var parts = dateRange.Split("..");
+                if (parts.Length == 2)
+                {
+                    // SimConfig is a class, not a record, so modify properties directly
+                    cfg.Start = DateOnly.Parse(parts[0]);
+                    cfg.End = DateOnly.Parse(parts[1]);
+                }
+            }
             
             Console.WriteLine($"Backtest period: {cfg.Start:yyyy-MM-dd} to {cfg.End:yyyy-MM-dd}");
             Console.WriteLine($"Underlying: {cfg.Underlying}, Mode: {cfg.Mode}");
@@ -143,7 +166,7 @@ public class Program
             IEconCalendar econ = new CsvCalendar(cfg.Paths.CalendarCsv, cfg.Timezone);
             
             // Options data: Synthetic (prototype) or real vendor data (production)
-            IOptionsData options = cfg.Mode.Equals("prototype", StringComparison.OrdinalIgnoreCase)
+            IOptionsData options = cfg.Mode?.Equals("prototype", StringComparison.OrdinalIgnoreCase) == true
                 ? new SyntheticOptionsData(cfg, market, cfg.Paths.VixCsv, cfg.Paths.Vix9dCsv)
                 : throw new NotImplementedException("Pro‑grade adapter: plug ORATS/LiveVol/dxFeed here.");
 
@@ -155,28 +178,108 @@ public class Program
             var exec = new ExecutionEngine(cfg);    // Realistic fill modeling
             var risk = new RiskManager(cfg);        // Portfolio risk controls
             
-            // Master orchestrator
-            var backtester = new Backtester(cfg, market, options, econ, scorer, builder, exec, risk);
-
-            // === 4. BACKTEST EXECUTION ===
-            Console.WriteLine("Running backtest simulation...");
-            var startTime = DateTime.Now;
+            // === 4. RESUMABLE BACKTEST EXECUTION ===
             
-            var report = await backtester.RunAsync();
+            // Generate list of trading days
+            var allDays = GenerateTradingDays(cfg.Start, cfg.End).ToList();
+            Console.WriteLine($"Total trading days: {allDays.Count}");
+            
+            // Calculate configuration hash for change detection
+            var cfgHash = HashConfig(cfg);
+            var strategyHash = "baseline"; // Will be expanded with strategy registry later
+            
+            // Load or create manifest
+            var manifest = RunManifest.LoadOrCreate(cfg.Paths.ReportsDir, cfgHash, strategyHash, allDays);
+            
+            // Handle invalidation requests
+            if (!string.IsNullOrEmpty(invalidate))
+            {
+                HandleInvalidation(manifest, invalidate);
+                manifest.Save(cfg.Paths.ReportsDir);
+                Console.WriteLine("Invalidation complete.");
+                return;
+            }
+            
+            // Determine work queue
+            var workQueue = resume 
+                ? manifest.Scheduled.Except(manifest.Done).Except(manifest.Failed).OrderBy(d => d).ToList()
+                : allDays;
+            
+            if (workQueue.Count == 0)
+            {
+                Console.WriteLine("✅ All days already processed. Use --invalidate to rerun.");
+                manifest.PrintStatus();
+                return;
+            }
+            
+            // Apply sparse scheduling if requested
+            if (useSparse)
+            {
+                var tagsPath = Path.Combine(cfg.Paths.ReportsDir, "day_tags.csv");
+                var tags = DayTags.Load(tagsPath);
+                
+                if (tags.Count == 0)
+                {
+                    Console.WriteLine("Generating day tags for sparse scheduling...");
+                    tags = DayTags.Generate(cfg.Start, cfg.End);
+                    DayTags.Save(tags, tagsPath);
+                }
+                
+                workQueue = SparseScheduler.Order(workQueue, tags);
+                SparseScheduler.AnalyzeSchedule(workQueue, tags);
+            }
+            
+            Console.WriteLine($"\n📊 Processing {workQueue.Count} days...");
+            manifest.PrintStatus();
+            
+            var startTime = DateTime.Now;
+            var processedCount = 0;
+            
+            // Process days (single-threaded for now, parallel support ready)
+            foreach (var day in workQueue)
+            {
+                try
+                {
+                    var (_, success, result) = await DayRunner.RunDayAsync(
+                        cfg, day, market, options, econ, scorer, builder, exec, risk);
+                    
+                    if (success)
+                    {
+                        manifest.Done.Add(day);
+                        processedCount++;
+                    }
+                    else
+                    {
+                        manifest.Failed.Add(day);
+                    }
+                    
+                    // Save progress every 10 days or on completion
+                    if (processedCount % 10 == 0 || processedCount == workQueue.Count)
+                    {
+                        manifest.Save(cfg.Paths.ReportsDir);
+                        var progress = manifest.GetProgress();
+                        Console.WriteLine($"\n💾 Progress saved: {progress:F1}% complete");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Failed {day:yyyy-MM-dd}: {ex.Message}");
+                    manifest.Failed.Add(day);
+                    manifest.Save(cfg.Paths.ReportsDir);
+                }
+            }
             
             var duration = DateTime.Now - startTime;
-            Console.WriteLine($"Backtest completed in {duration.TotalSeconds:F1} seconds");
-
-            // === 5. REPORTING ===
-            Console.WriteLine("Generating reports...");
-            Reporter.WriteSummary(cfg, report);
-            Reporter.WriteTrades(cfg, report);
-
+            Console.WriteLine($"\n✅ Backtest completed in {duration.TotalMinutes:F1} minutes");
+            manifest.PrintStatus();
+            
+            // Generate consolidated report
+            Console.WriteLine("\n📊 Generating consolidated reports...");
+            GenerateConsolidatedReports(cfg, manifest);
+            
             Console.WriteLine($"\n=== BACKTEST COMPLETE ===");
             Console.WriteLine($"Reports saved to: {cfg.Paths.ReportsDir}");
-            Console.WriteLine($"Total trades: {report.Trades.Count}");
-            Console.WriteLine($"Net P&L: ${report.NetPnL:F2}");
-            Console.WriteLine($"Sharpe Ratio: {report.Sharpe:F2}");
+            Console.WriteLine($"Trinity Portfolio ID: {manifest.TrinityPortfolioId}");
         }
         catch (Exception ex)
         {
@@ -184,6 +287,119 @@ public class Program
             Console.WriteLine("Stack trace:");
             Console.WriteLine(ex.StackTrace);
             Environment.Exit(1);
+        }
+    }
+    
+    private static string? GetArgValue(string[] args, string key)
+    {
+        var index = Array.IndexOf(args, key);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+    }
+    
+    private static string HashConfig(SimConfig cfg)
+    {
+        var json = JsonSerializer.Serialize(cfg);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return Convert.ToHexString(bytes)[..16]; // First 16 chars for brevity
+    }
+    
+    private static IEnumerable<DateOnly> GenerateTradingDays(DateOnly start, DateOnly end)
+    {
+        for (var date = start; date <= end; date = date.AddDays(1))
+        {
+            // Skip weekends
+            if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+            {
+                yield return date;
+            }
+        }
+    }
+    
+    private static void HandleInvalidation(RunManifest manifest, string invalidate)
+    {
+        if (invalidate.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Invalidating all processed days...");
+            manifest.Done.Clear();
+            manifest.Failed.Clear();
+            manifest.Skipped.Clear();
+        }
+        else if (invalidate.StartsWith("since="))
+        {
+            var sinceDate = DateOnly.Parse(invalidate[6..]);
+            Console.WriteLine($"Invalidating days since {sinceDate:yyyy-MM-dd}...");
+            manifest.Done.RemoveWhere(d => d >= sinceDate);
+            manifest.Failed.RemoveWhere(d => d >= sinceDate);
+            manifest.Skipped.RemoveWhere(d => d >= sinceDate);
+        }
+        else if (invalidate.StartsWith("failed"))
+        {
+            Console.WriteLine($"Invalidating {manifest.Failed.Count} failed days...");
+            manifest.Failed.Clear();
+        }
+    }
+    
+    private static void GenerateConsolidatedReports(SimConfig cfg, RunManifest manifest)
+    {
+        try
+        {
+            // Create master ledger for Trinity
+            var masterLedgerPath = Path.Combine(cfg.Paths.ReportsDir, "master_ledger.csv");
+            Console.WriteLine($"Creating master ledger: {masterLedgerPath}");
+            
+            // Aggregate all monthly ledgers
+            var ledgerFiles = Directory.GetFiles(cfg.Paths.ReportsDir, "ledger_*.csv", SearchOption.AllDirectories)
+                .OrderBy(f => f)
+                .ToList();
+            
+            if (ledgerFiles.Count > 0)
+            {
+                using var writer = new StreamWriter(masterLedgerPath);
+                bool headerWritten = false;
+                
+                foreach (var ledgerFile in ledgerFiles)
+                {
+                    var lines = File.ReadAllLines(ledgerFile);
+                    if (lines.Length > 0)
+                    {
+                        if (!headerWritten)
+                        {
+                            writer.WriteLine(lines[0]); // Write header once
+                            headerWritten = true;
+                        }
+                        
+                        // Write data lines
+                        for (int i = 1; i < lines.Length; i++)
+                        {
+                            writer.WriteLine(lines[i]);
+                        }
+                    }
+                }
+                
+                Console.WriteLine($"✅ Master ledger created with {ledgerFiles.Count} monthly files");
+            }
+            
+            // Create Trinity metadata file
+            var trinityMetaPath = Path.Combine(cfg.Paths.ReportsDir, "trinity_metadata.json");
+            var trinityMeta = new
+            {
+                PortfolioId = manifest.TrinityPortfolioId,
+                Strategy = manifest.StrategyHash,
+                DateRange = $"{cfg.Start:yyyy-MM-dd} to {cfg.End:yyyy-MM-dd}",
+                TotalDays = manifest.Scheduled.Count,
+                ProcessedDays = manifest.Done.Count,
+                FailedDays = manifest.Failed.Count,
+                CompletedAt = manifest.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "In Progress",
+                MasterLedger = masterLedgerPath
+            };
+            
+            var metaJson = JsonSerializer.Serialize(trinityMeta, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(trinityMetaPath, metaJson);
+            Console.WriteLine($"✅ Trinity metadata saved: {trinityMetaPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error generating consolidated reports: {ex.Message}");
         }
     }
 

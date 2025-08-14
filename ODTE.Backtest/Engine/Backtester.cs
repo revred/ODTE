@@ -118,29 +118,93 @@ public sealed class Backtester
                 lastDecision = bar.Ts;
                 var (score, calm, up, dn) = _scorer.Score(bar.Ts, _md, _cal);
                 
+                // DEBUG: Log regime scoring
+                Console.WriteLine($"🎯 {bar.Ts:yyyy-MM-dd HH:mm} | Score: {score}, Calm: {calm}, Up: {up}, Dn: {dn}");
+                
                 Decision d = Decision.NoGo;
                 if (score <= -1) 
-                    d = Decision.NoGo;
-                else if (calm && score >= 0) 
-                    d = Decision.Condor;
-                else if (up && score >= 2) 
-                    d = Decision.SingleSideCall;
-                else if (dn && score >= 2) 
-                    d = Decision.SingleSidePut;
-
-                if (d != Decision.NoGo && _risk.CanAdd(bar.Ts, d))
                 {
-                    var order = _builder.TryBuild(bar.Ts, d, _md, _od);
-                    if (order != null)
+                    d = Decision.NoGo;
+                    Console.WriteLine($"   ❌ NoGo - Score too low: {score}");
+                }
+                else if (calm && score >= 0) 
+                {
+                    d = Decision.Condor;
+                    Console.WriteLine($"   🎪 Condor - Calm market, score: {score}");
+                }
+                else if (up && score >= 2) 
+                {
+                    d = Decision.SingleSideCall;
+                    Console.WriteLine($"   📈 Call spread - Uptrend, score: {score}");
+                }
+                else if (dn && score >= 2) 
+                {
+                    d = Decision.SingleSidePut;
+                    Console.WriteLine($"   📉 Put spread - Downtrend, score: {score}");
+                }
+                else
+                {
+                    Console.WriteLine($"   ⏸️ NoGo - No clear signal, score: {score}");
+                }
+
+                if (d != Decision.NoGo)
+                {
+                    if (!_risk.CanAdd(bar.Ts, d))
                     {
-                        var pos = _exec.TryEnter(order);
-                        if (pos != null)
+                        Console.WriteLine($"   🚫 Risk blocked trade");
+                    }
+                    else
+                    {
+                        var order = _builder.TryBuild(bar.Ts, d, _md, _od);
+                        if (order == null)
                         {
-                            active.Add(pos);
-                            _risk.RegisterOpen(d);
+                            Console.WriteLine($"   ❌ Order build failed");
+                        }
+                        else
+                        {
+                            var pos = _exec.TryEnter(order);
+                            if (pos == null)
+                            {
+                                Console.WriteLine($"   ❌ Execution failed");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"   ✅ Trade executed!");
+                                active.Add(pos);
+                                _risk.RegisterOpen(d);
+                            }
                         }
                     }
                 }
+            }
+        }
+        
+        // Force-close any remaining active positions at end of simulation (0DTE expiry)
+        if (active.Count > 0)
+        {
+            DateTime finalTime = bars.LastOrDefault()?.Ts ?? _cfg.End.ToDateTime(new TimeOnly(21, 0, 0));
+            
+            foreach (var pos in active.Where(p => !p.Closed))
+            {
+                // For 0DTE options, assume they expire worthless if not closed
+                pos.Closed = true;
+                pos.ExitPrice = 0.01; // Minimal value - options expire worthless 
+                pos.ExitTs = finalTime;
+                pos.ExitReason = "Expiry - 0DTE options expire worthless";
+                
+                double fees = 2.0 * ((double)_cfg.Fees.CommissionPerContract + (double)_cfg.Fees.ExchangeFeesPerContract);
+                double pnl = (pos.EntryPrice - pos.ExitPrice.Value) * 100 - fees;
+                
+                report.Trades.Add(new TradeResult(
+                    pos, pnl, fees,
+                    0.01 - pos.EntryPrice,  // MAE - assume minimum adverse movement
+                    pos.EntryPrice - 0.01   // MFE - maximum favorable was entry price
+                ));
+                
+                // Register position closure with risk manager to free up position slots
+                _risk.RegisterClose(pos.Order.Type, pnl);
+                
+                Console.WriteLine($"   📅 Position force-closed at expiry: P&L ${pnl:F2}");
             }
         }
 

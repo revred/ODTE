@@ -59,12 +59,12 @@ public sealed class SyntheticOptionsData : IOptionsData
 
     /// <summary>
     /// Generate synthetic option quotes for 0DTE expiry.
-    /// Creates a coarse strike grid around current spot price with realistic skew and spreads.
+    /// Creates a fine strike grid around current spot price with realistic deltas for strategy requirements.
     /// 
     /// STRIKE GRID GENERATION:
-    /// - Covers ±1% to ±10% from ATM in 1% increments
-    /// - Provides 20 total strikes (10 puts + 10 calls)
-    /// - Realistic for liquid SPX/XSP option chains
+    /// - Fine 1-point increments from ATM-15 to ATM+15 (30 total strikes)
+    /// - Ensures delta ranges match strategy requirements (0.07-0.20)
+    /// - Provides proper strike spacing for 1-2 point width spreads
     /// 
     /// VOLATILITY SKEW MODELING:
     /// - Put skew: Higher IV for OTM puts (fear premium)
@@ -76,46 +76,55 @@ public sealed class SyntheticOptionsData : IOptionsData
     /// - Extra width in final hour before expiration
     /// - Respects minimum tick size ($0.05)
     /// 
-    /// LIMITATIONS:
-    /// - No support levels or technical strike clustering
-    /// - Linear skew vs real convex smile
-    /// - No liquidity holes at extreme strikes
+    /// STRATEGY OPTIMIZATION:
+    /// - Designed for XSP 1-point spreads
+    /// - Delta ranges support both single spreads (0.10-0.20) and condors (0.07-0.15)
+    /// - Provides sufficient strike density for spread construction
     /// </summary>
     public IEnumerable<OptionQuote> GetQuotesAt(DateTime ts)
     {
         var S = _md.GetSpot(ts);
         if (S <= 0) yield break;
         
+        // Adjust for XSP vs SPX pricing - convert to XSP if needed
+        if (S > 1000) S = S / 10.0; // Convert SPX to XSP if data is SPX-level
+        
         var exp = TodayExpiry(ts);
         double T = Math.Max((exp.ToDateTime(new TimeOnly(21,0)) - ts).TotalDays/365.0, 0.0005);
         var (ivS, ivL) = GetIvProxies(ts);
         double baseIv = Math.Max(0.05, Math.Min(0.80, ivS/100.0)); // Convert % to decimal, clamp
 
-        // Generate strikes at 1%, 2%, ..., 10% from ATM
-        foreach (var pct in Enumerable.Range(1, 10))
+        // Generate fine strike grid: 1-point increments around ATM
+        double atmStrike = Math.Round(S);
+        
+        for (int offset = -15; offset <= 15; offset++)
         {
-            double kPut = S*(1- pct/100.0);   // OTM puts below spot
-            double kCall = S*(1+ pct/100.0);  // OTM calls above spot
+            double K = atmStrike + offset;
+            if (K <= 0) continue;
             
-            // Apply volatility skew (equity index characteristic)
-            double skewPut = baseIv * (1 + 0.10*pct/10.0);  // Puts: +10% IV at 10% OTM
-            double skewCall = baseIv * (1 - 0.05*pct/10.0); // Calls: -5% IV at 10% OTM
-
-            // Calculate theoretical values using Black-Scholes
-            var dPut = OptionMath.Delta(S, kPut, 0.00, 0.00, skewPut, T, Right.Put);
-            var pPut = OptionMath.Price(S, kPut, 0.00, 0.00, skewPut, T, Right.Put);
-            var dCall = OptionMath.Delta(S, kCall, 0.00, 0.00, skewCall, T, Right.Call);
-            var pCall = OptionMath.Price(S, kCall, 0.00, 0.00, skewCall, T, Right.Call);
-
-            // Generate quotes for both puts and calls at this moneyness level
-            foreach (var (right, K, d, mid, iv) in new[]
-            { 
-                (Right.Put, kPut, dPut, pPut, skewPut), 
-                (Right.Call, kCall, dCall, pCall, skewCall) 
-            })
+            // Calculate moneyness for skew adjustment
+            double moneyness = Math.Abs(K - S) / S;
+            
+            // Generate both put and call for each strike
+            foreach (var right in new[] { Right.Put, Right.Call })
             {
-                var (bid, ask) = QuoteFromMid(mid, baseIv, ts);
-                yield return new OptionQuote(ts, exp, K, right, bid, ask, (bid+ask)/2.0, d, iv);
+                // Apply volatility skew based on moneyness and option type
+                double skewAdjust = right == Right.Put 
+                    ? 1 + (moneyness * 2.0)  // Puts: higher IV for OTM (K < S)
+                    : 1 + (moneyness * 1.0); // Calls: moderate IV increase for OTM (K > S)
+                    
+                double iv = baseIv * skewAdjust;
+                iv = Math.Max(0.05, Math.Min(1.0, iv)); // Clamp IV to reasonable range
+                
+                // Calculate theoretical values using Black-Scholes
+                var delta = OptionMath.Delta(S, K, 0.00, 0.00, iv, T, right);
+                var price = OptionMath.Price(S, K, 0.00, 0.00, iv, T, right);
+                
+                // Ensure minimum option value for liquidity
+                price = Math.Max(0.05, price);
+                
+                var (bid, ask) = QuoteFromMid(price, baseIv, ts);
+                yield return new OptionQuote(ts, exp, K, right, bid, ask, (bid+ask)/2.0, delta, iv);
             }
         }
     }
@@ -137,16 +146,34 @@ public sealed class SyntheticOptionsData : IOptionsData
 
     private (double bid, double ask) QuoteFromMid(double mid, double baseIv, DateTime ts)
     {
-        double pct = 0.10 + 0.5 * baseIv; 
+        double tick = 0.05;
+        
+        // For 0DTE options, use tighter spreads and realistic pricing
+        // Higher value options get tighter percentage spreads
+        double spreadPct;
+        if (mid >= 1.0) 
+            spreadPct = 0.05;  // 5% spread for ITM/ATM options
+        else if (mid >= 0.25) 
+            spreadPct = 0.10;  // 10% spread for near-money options  
+        else 
+            spreadPct = 0.20;  // 20% spread for far OTM options
+            
+        // Widen spreads in final hour
         var minsToClose = (TodayExpiry(ts).ToDateTime(new TimeOnly(21,0)) - ts).TotalMinutes;
+        if (minsToClose < 40) spreadPct *= 1.5;
         
-        if (minsToClose < 40) pct += 0.10;
-        pct = Math.Min(pct, 0.40);
+        double half = mid * spreadPct / 2.0;
         
-        double half = mid * pct / 2.0;
-        double tick = 0.05; 
-        double bid = Math.Max(0.05, Math.Floor((mid - half)/tick)*tick);
-        double ask = Math.Ceiling((mid + half)/tick)*tick;
+        // Calculate bid/ask with proper minimum values
+        double rawBid = mid - half;
+        double rawAsk = mid + half;
+        
+        // For very low value options, allow bids to go to zero but maintain minimum ask
+        double bid = rawBid <= 0.05 ? 0.05 : Math.Floor(rawBid / tick) * tick;
+        double ask = Math.Max(bid + tick, Math.Ceiling(rawAsk / tick) * tick);
+        
+        // Ensure ask is always at least one tick above bid
+        if (ask <= bid) ask = bid + tick;
         
         return (bid, ask);
     }

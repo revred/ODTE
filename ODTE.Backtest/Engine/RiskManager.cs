@@ -106,6 +106,8 @@ public sealed class RiskManager
         // === RISK GATE 3: POSITION LIMITS ===
         if (d == Decision.SingleSidePut && _activePerSidePut >= _cfg.Risk.MaxConcurrentPerSide) return false;
         if (d == Decision.SingleSideCall && _activePerSideCall >= _cfg.Risk.MaxConcurrentPerSide) return false;
+        // Condors use both put and call sides, check if either side would exceed limits
+        if (d == Decision.Condor && (_activePerSidePut >= _cfg.Risk.MaxConcurrentPerSide || _activePerSideCall >= _cfg.Risk.MaxConcurrentPerSide)) return false;
         
         // All gates passed - position approved
         return true;
@@ -120,7 +122,12 @@ public sealed class RiskManager
     {
         if (d == Decision.SingleSidePut) _activePerSidePut++;
         if (d == Decision.SingleSideCall) _activePerSideCall++;
-        // Note: Condors currently counted as put positions in simplified implementation
+        if (d == Decision.Condor) 
+        {
+            // Condors use both put and call sides
+            _activePerSidePut++;
+            _activePerSideCall++;
+        }
     }
 
     /// <summary>
@@ -146,5 +153,11 @@ public sealed class RiskManager
         // Decrement position counters (with bounds checking)
         if (d == Decision.SingleSidePut && _activePerSidePut > 0) _activePerSidePut--;
         if (d == Decision.SingleSideCall && _activePerSideCall > 0) _activePerSideCall--;
+        if (d == Decision.Condor) 
+        {
+            // Condors use both put and call sides
+            if (_activePerSidePut > 0) _activePerSidePut--;
+            if (_activePerSideCall > 0) _activePerSideCall--;
+        }
     }
 }

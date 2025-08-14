@@ -20,7 +20,15 @@
       "WebFetch(domain:github.com)",
       "Bash(touch:*)",
       "Bash(mv:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(dir:*)",
+      "Bash(timeout:*)",
+      "Bash(pkill:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(powershell:*)",
+      "Bash(move:*)",
+      "Bash(copy:*)"
     ],
     "deny": [],
     "ask": []

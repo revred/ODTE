@@ -1,0 +1,71 @@
+# 0DTE Options Trading Backtest Configuration
+# 30-day test run: August 2024
+
+# === BACKTEST PERIOD ===
+start: 2024-08-01
+end: 2024-08-31
+underlying: SPY
+mode: prototype  # Use synthetic options data
+
+# === MARKET HOURS ===
+rth_only: true
+timezone: America/New_York
+cadence_seconds: 300  # 5-minute decision intervals
+no_new_risk_minutes_to_close: 30
+
+# === DELTA TARGETS ===
+short_delta:
+  condor_min: 0.10
+  condor_max: 0.20
+  single_min: 0.15
+  single_max: 0.25
+
+# === SPREAD WIDTH ===
+width_points:
+  min: 1
+  max: 3
+
+# === CREDIT REQUIREMENTS ===
+credit_per_width_min:
+  condor: 0.25
+  single: 0.30
+
+# === STOP LOSSES ===
+stops:
+  credit_multiple: 2.0
+  delta_breach: 0.30
+
+# === RISK MANAGEMENT ===
+risk:
+  daily_loss_stop: 200
+  per_trade_max_loss_cap: 50
+  max_concurrent_per_side: 1
+
+# === EXECUTION SLIPPAGE ===
+slippage:
+  entry_half_spread_ticks: 1.0
+  exit_half_spread_ticks: 1.0
+  late_session_extra_ticks: 1.0
+  tick_value: 0.05
+  spread_pct_cap: 0.30
+
+# === TRANSACTION COSTS ===
+fees:
+  commission_per_contract: 0.65
+  exchange_fees_per_contract: 0.25
+
+# === SIGNAL PARAMETERS ===
+signals:
+  or_minutes: 15          # Opening range period
+  vwap_window_minutes: 30  # VWAP calculation window
+  atr_period_bars: 20      # ATR period for volatility
+  event_block_minutes_before: 60
+  event_block_minutes_after: 15
+
+# === FILE PATHS ===
+paths:
+  bars_csv: data/underlying/SPY_2024.csv
+  vix_csv: data/vix/VIX_2024.csv
+  vix9d_csv: data/vix/VIX9D_2024.csv
+  calendar_csv: data/calendar/events_2024.csv
+  reports_dir: Reports

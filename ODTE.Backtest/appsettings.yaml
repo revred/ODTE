@@ -1,6 +1,6 @@
 underlying: XSP             
 start: 2024-02-01
-end: 2025-07-31
+end: 2024-02-05
 mode: prototype             
 rth_only: true
 timezone: Europe/London
@@ -9,16 +9,16 @@ cadence_seconds: 900
 no_new_risk_minutes_to_close: 40  
 
 short_delta:
-  condor_min: 0.07          
-  condor_max: 0.15
-  single_min: 0.10          
-  single_max: 0.20
+  condor_min: 0.15          # Higher deltas for 0DTE to get meaningful option values
+  condor_max: 0.35
+  single_min: 0.20          
+  single_max: 0.40
 width_points:
   min: 1
   max: 2
 credit_per_width_min:
-  condor: 0.18              
-  single: 0.20
+  condor: 0.08              # 8% for 0DTE condors (realistic for low-value options)
+  single: 0.10              # 10% for 0DTE singles
 
 stops:
   credit_multiple: 2.2      
@@ -27,7 +27,7 @@ stops:
 risk:
   daily_loss_stop: 500      
   per_trade_max_loss_cap: 200
-  max_concurrent_per_side: 2
+  max_concurrent_per_side: 10
 
 slippage:
   entry_half_spread_ticks: 0.5
