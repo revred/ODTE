@@ -182,7 +182,7 @@ Profit Factor: 1.8-2.5
 - [x] Performance analytics
 
 ### Phase 3: Intelligence Layer 🚧
-- [x] ODTE.Start Blazor PWA interface
+- [x] Options.Start Blazor PWA interface
 - [ ] Real-time strategy monitoring
 - [ ] ML pattern recognition
 - [ ] Regime detection system
@@ -302,10 +302,15 @@ cd ODTE.Optimization && dotnet run "ODTE_IronCondor" 100
 cd ODTE.Syntricks && dotnet run --scenario "black_swan"
 
 # Launch trading dashboard
-cd ODTE.Start && dotnet run
+cd Options.Start && dotnet run
+
+# Historical data validation and testing
+cd ODTE.Historical.Tests && dotnet run benchmark
+cd ODTE.Historical.Tests && dotnet run validate
 
 # Run comprehensive tests
 cd ODTE.Trading.Tests && dotnet test
+cd ODTE.Historical.Tests && dotnet test
 ```
 
 ### Focus Areas

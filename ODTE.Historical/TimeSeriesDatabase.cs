@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
+
 using System.Data;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 
 namespace ODTE.Historical;
@@ -286,10 +282,11 @@ public class TimeSeriesDatabase : IDisposable
         var data = await GetRangeAsync(startTime, endTime, symbol, sampleInterval);
         var result = new ExportResult 
         { 
-            StartTime = DateTime.UtcNow,
-            RecordCount = data.Count,
-            OutputPath = outputPath
+            OutputPath = outputPath,
+            RecordsExported = data.Count
         };
+        
+        var exportStartTime = DateTime.UtcNow;
         
         try
         {
@@ -317,8 +314,7 @@ public class TimeSeriesDatabase : IDisposable
             result.ErrorMessage = ex.Message;
         }
         
-        result.EndTime = DateTime.UtcNow;
-        result.Duration = result.EndTime - result.StartTime;
+        result.ExportDuration = DateTime.UtcNow - exportStartTime;
         
         return result;
     }
@@ -462,6 +458,7 @@ public class TimeSeriesDatabase : IDisposable
     
     private async Task ExportToParquetAsync(List<MarketDataBar> data, string outputPath)
     {
+        await Task.Delay(0); // Simulate async delay for testing purposes
         // This would require Parquet.Net library
         // For now, throw not implemented
         throw new NotImplementedException("Parquet export requires Parquet.Net library");
@@ -524,19 +521,6 @@ public class ImportProgress
     public double ProgressPercentage => TotalFiles > 0 ? (double)FilesProcessed / TotalFiles * 100 : 0;
 }
 
-public class ExportResult
-{
-    public bool Success { get; set; }
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
-    public TimeSpan Duration { get; set; }
-    public string? ErrorMessage { get; set; }
-    
-    public string OutputPath { get; set; } = string.Empty;
-    public int RecordCount { get; set; }
-    public long FileSizeBytes { get; set; }
-    public double FileSizeMB => FileSizeBytes / (1024.0 * 1024.0);
-}
 
 public class DatabaseStats
 {

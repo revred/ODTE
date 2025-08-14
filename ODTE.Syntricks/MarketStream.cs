@@ -76,7 +76,7 @@ public class HistoricalMarketStream : IMarketStream
         _cancellationTokenSource?.Cancel();
     }
 
-    public async IAsyncEnumerable<SpotTick> GetAsyncEnumerator([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerator<SpotTick> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         if (!_isActive)
             yield break;
@@ -142,7 +142,7 @@ public class BootstrapMarketStream : IMarketStream
         _isActive = false;
     }
 
-    public async IAsyncEnumerable<SpotTick> GetAsyncEnumerator([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerator<SpotTick> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         if (!_isActive)
             yield break;

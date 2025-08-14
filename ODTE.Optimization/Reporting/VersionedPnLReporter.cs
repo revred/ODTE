@@ -15,7 +15,7 @@ namespace ODTE.Optimization.Reporting
         private readonly string _reportsBasePath;
         private readonly Dictionary<string, StrategyReport> _strategyReports;
         
-        public VersionedPnLReporter(string reportsBasePath = @"C:\code\ODTE\Reports\Optimization")
+        public VersionedPnLReporter(string reportsBasePath = @"C:\code\ODTE\ODTE.Optimization\Reports")
         {
             _reportsBasePath = reportsBasePath;
             _strategyReports = new Dictionary<string, StrategyReport>();

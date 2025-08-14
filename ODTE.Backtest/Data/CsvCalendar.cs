@@ -26,6 +26,16 @@ public sealed class CsvCalendar : IEconCalendar
                 .OrderBy(e => e.Ts)
                 .FirstOrDefault();
 
+    public List<EconEvent> GetEvents(DateOnly startDate, DateOnly endDate)
+    {
+        var start = startDate.ToDateTime(TimeOnly.MinValue);
+        var end = endDate.ToDateTime(TimeOnly.MaxValue);
+        
+        return _evts.Where(e => e.Ts >= start && e.Ts <= end)
+                    .OrderBy(e => e.Ts)
+                    .ToList();
+    }
+
     private sealed class Row 
     { 
         public string ts { get; set; } = ""; 

@@ -50,7 +50,7 @@ namespace ODTE.Optimization
                 {
                     Console.WriteLine("\nOptimization completed successfully!");
                     Console.WriteLine($"Best strategy saved as: {result.BestStrategy?.Version}");
-                    Console.WriteLine("\nReports available at: C:\\code\\ODTE\\Reports\\Optimization");
+                    Console.WriteLine("\nReports available at: C:\\code\\ODTE\\ODTE.Optimization\\Reports");
                 }
                 else
                 {

@@ -339,12 +339,12 @@ namespace ODTE.Optimization
                 Console.WriteLine($"Converged at:         Iteration {result.ConvergedAtIteration}");
             }
             
-            Console.WriteLine($"\nReports saved to: C:\\code\\ODTE\\Reports\\Optimization");
+            Console.WriteLine($"\nReports saved to: C:\\code\\ODTE\\ODTE.Optimization\\Reports");
         }
         
         private async Task SaveOptimizationResultsAsync(OptimizationRunResult result, StrategyVersion bestStrategy)
         {
-            var resultsPath = Path.Combine(@"C:\code\ODTE\Reports\Optimization", 
+            var resultsPath = Path.Combine(@"C:\code\ODTE\ODTE.Optimization\Reports", 
                 $"optimization_result_{DateTime.Now:yyyyMMdd_HHmmss}.json");
             
             var json = System.Text.Json.JsonSerializer.Serialize(new

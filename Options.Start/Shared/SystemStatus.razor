@@ -1,0 +1,83 @@
+@using Options.Start.Services
+@inject IOptimizationService OptimizationService
+@inject ITradingService TradingService
+@inject IRiskService RiskService
+
+<div class="system-status">
+    <div class="status-item">
+        <span class="status-indicator @GetStatusClass(_systemStatus)"></span>
+        <span class="status-text">System: @_systemStatus</span>
+    </div>
+    
+    <div class="status-item">
+        <span class="status-indicator @GetStatusClass(_tradingStatus)"></span>
+        <span class="status-text">Trading: @_tradingStatus</span>
+    </div>
+    
+    <div class="status-item">
+        <span class="status-indicator @GetStatusClass(_riskStatus)"></span>
+        <span class="status-text">Risk: @_riskStatus</span>
+    </div>
+    
+    <div class="status-item">
+        <span class="status-text">@DateTime.Now.ToString("HH:mm:ss")</span>
+    </div>
+</div>
+
+@code {
+    private string _systemStatus = "Online";
+    private string _tradingStatus = "Stopped";
+    private string _riskStatus = "Normal";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshStatus();
+        
+        // Start a timer to refresh status every 5 seconds
+        var timer = new System.Timers.Timer(5000);
+        timer.Elapsed += async (_, _) => 
+        {
+            await RefreshStatus();
+            await InvokeAsync(StateHasChanged);
+        };
+        timer.Start();
+    }
+
+    private async Task RefreshStatus()
+    {
+        try
+        {
+            // In a real implementation, these would check actual system status
+            _systemStatus = "Online";
+            
+            // Check if trading engine is running (placeholder)
+            _tradingStatus = await TradingService.IsRunningAsync() ? "Running" : "Stopped";
+            
+            // Check risk status (placeholder)
+            var riskLevel = await RiskService.GetCurrentRiskLevelAsync();
+            _riskStatus = riskLevel switch
+            {
+                0 => "Normal ($500)",
+                1 => "Elevated ($300)", 
+                2 => "High ($200)",
+                3 => "Critical ($100)",
+                _ => "Unknown"
+            };
+        }
+        catch
+        {
+            _systemStatus = "Error";
+            _tradingStatus = "Unknown";
+            _riskStatus = "Unknown";
+        }
+    }
+
+    private string GetStatusClass(string status) => status.ToLower() switch
+    {
+        "online" or "running" or "normal ($500)" => "status-running",
+        "stopped" or "paused" => "status-stopped", 
+        "elevated ($300)" or "high ($200)" => "status-warning",
+        "critical ($100)" or "error" or "unknown" => "status-stopped",
+        _ => "status-neutral"
+    };
+}

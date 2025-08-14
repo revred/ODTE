@@ -256,3 +256,4 @@ public sealed class PathsCfg
     public string CalendarCsv { get; set; } = "./Samples/calendar.csv"; 
     public string ReportsDir { get; set; } = "./Reports"; 
 }
+

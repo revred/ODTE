@@ -135,6 +135,75 @@ public static class OptionMath
     }
 
     /// <summary>
+    /// BlackScholes pricing method (alias for Price for backward compatibility)
+    /// </summary>
+    public static double BlackScholes(double S, double K, double T, double sigma, double r, Right right, double q = 0)
+        => Price(S, K, r, q, sigma, T, right);
+
+    /// <summary>
+    /// Calculate implied volatility from option price using Newton-Raphson method.
+    /// 
+    /// ALGORITHM:
+    /// Uses iterative Newton-Raphson method to solve for σ where:
+    /// f(σ) = BlackScholes(S,K,T,σ,r,right) - market_price = 0
+    /// 
+    /// CONVERGENCE:
+    /// - Initial guess: 0.25 (25% volatility)
+    /// - Tolerance: 0.0001 (1 basis point)
+    /// - Max iterations: 100
+    /// 
+    /// EDGE CASES:
+    /// - Price below intrinsic: Return 0.01 (1% vol)
+    /// - Fails to converge: Return 0.25 (25% vol default)
+    /// - Negative time: Return 0
+    /// </summary>
+    public static double ImpliedVolatility(double marketPrice, double S, double K, double T, double r, Right right, double q = 0)
+    {
+        if (T <= 0) return 0;
+        
+        // Check if price is below intrinsic value
+        double intrinsic = Math.Max(0, right == Right.Call ? S - K : K - S);
+        if (marketPrice <= intrinsic) return 0.01;
+        
+        double volatility = 0.25; // Initial guess: 25%
+        double tolerance = 0.0001;
+        int maxIterations = 100;
+        
+        for (int i = 0; i < maxIterations; i++)
+        {
+            double price = Price(S, K, r, q, volatility, T, right);
+            double diff = price - marketPrice;
+            
+            if (Math.Abs(diff) < tolerance)
+                return volatility;
+            
+            // Calculate Vega (sensitivity to volatility) for Newton-Raphson
+            double vega = Vega(S, K, r, q, volatility, T);
+            if (Math.Abs(vega) < 1e-10) break; // Avoid division by zero
+            
+            volatility = volatility - diff / vega;
+            
+            // Keep volatility in reasonable bounds
+            volatility = Math.Max(0.01, Math.Min(5.0, volatility));
+        }
+        
+        // If failed to converge, return default
+        return 0.25;
+    }
+
+    /// <summary>
+    /// Calculate Vega - sensitivity to volatility changes.
+    /// Used internally for implied volatility calculation.
+    /// </summary>
+    private static double Vega(double S, double K, double r, double q, double sigma, double T)
+    {
+        if (T <= 0 || sigma <= 0) return 0;
+        
+        double d1 = D1(S, K, r, q, sigma, T);
+        return S * Math.Exp(-q * T) * nd(d1) * Math.Sqrt(T);
+    }
+
+    /// <summary>
     /// Numerical approximation of the error function erf(x).
     /// WHY: .NET doesn't include erf(), but we need it for normal distribution.
     /// 

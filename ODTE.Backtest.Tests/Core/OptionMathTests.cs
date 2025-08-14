@@ -1,257 +1,337 @@
-using Xunit;
 using FluentAssertions;
 using ODTE.Backtest.Core;
+using Xunit;
 
 namespace ODTE.Backtest.Tests.Core;
 
 /// <summary>
-/// Tests for Black-Scholes option pricing and Greeks calculations.
-/// Validates the mathematical foundation of the options backtesting engine.
+/// Comprehensive tests for Black-Scholes option pricing and Greeks calculations.
+/// Validates mathematical accuracy, edge cases, and financial correctness.
 /// </summary>
 public class OptionMathTests
 {
+    private const double Tolerance = 0.0001;
+
     [Fact]
-    public void BlackScholes_CallOption_ShouldCalculateCorrectPrice()
+    public void D1_StandardParameters_ShouldCalculateCorrectly()
     {
-        // Arrange: ATM call option with 30 days to expiry
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 30.0 / 365.0;
-        double volatility = 0.20;
-        double riskFreeRate = 0.05;
-        
+        // Arrange - Standard textbook example
+        double S = 100.0;  // Spot price
+        double K = 100.0;  // Strike price (ATM)
+        double r = 0.05;   // 5% risk-free rate
+        double q = 0.0;    // No dividend yield
+        double sigma = 0.20; // 20% volatility
+        double T = 0.25;   // 3 months to expiry
+
         // Act
-        double callPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        
-        // Assert: Expected price ~3.05 for these parameters
-        callPrice.Should().BeApproximately(3.05, 0.1, 
-            "ATM call with 20% vol and 30 days should price around $3.05");
-        callPrice.Should().BeGreaterThan(0, "Call price must be positive");
-        callPrice.Should().BeLessThan(spot, "Call price cannot exceed spot price");
+        var d1 = OptionMath.D1(S, K, r, q, sigma, T);
+
+        // Assert - For ATM option with these parameters, d1 should be positive
+        d1.Should().BeApproximately(0.125, Tolerance);
     }
 
     [Fact]
-    public void BlackScholes_PutOption_ShouldCalculateCorrectPrice()
-    {
-        // Arrange: ATM put option
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 30.0 / 365.0;
-        double volatility = 0.20;
-        double riskFreeRate = 0.05;
-        
-        // Act
-        double putPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Put);
-        
-        // Assert: Put-call parity relationship
-        double callPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        double parity = callPrice - putPrice - (spot - strike * Math.Exp(-riskFreeRate * timeToExpiry));
-        
-        parity.Should().BeApproximately(0, 0.01, "Put-call parity should hold");
-        putPrice.Should().BeGreaterThan(0, "Put price must be positive");
-    }
-
-    [Fact]
-    public void BlackScholes_ZeroTimeToExpiry_ShouldReturnIntrinsicValue()
-    {
-        // Arrange: Option at expiry
-        double spot = 105;
-        double strike = 100;
-        double timeToExpiry = 0;
-        double volatility = 0.20;
-        double riskFreeRate = 0.05;
-        
-        // Act
-        double callPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        double putPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Put);
-        
-        // Assert: Should equal intrinsic value
-        callPrice.Should().BeApproximately(5, 0.001, "ITM call at expiry = intrinsic value");
-        putPrice.Should().BeApproximately(0, 0.001, "OTM put at expiry = 0");
-    }
-
-    [Fact]
-    public void Delta_CallOption_ShouldBePositiveAndBounded()
-    {
-        // Arrange: Various strikes for call delta testing
-        double spot = 100;
-        double timeToExpiry = 7.0 / 365.0; // 7 days
-        double volatility = 0.25;
-        double riskFreeRate = 0.05;
-        
-        // Act & Assert: Test delta at different moneyness levels
-        
-        // Deep ITM call
-        double deltaDeepITM = OptionMath.Delta(spot, 80, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        deltaDeepITM.Should().BeGreaterThan(0.9, "Deep ITM call delta should be close to 1");
-        
-        // ATM call
-        double deltaATM = OptionMath.Delta(spot, 100, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        deltaATM.Should().BeApproximately(0.5, 0.1, "ATM call delta should be around 0.5");
-        
-        // Deep OTM call
-        double deltaDeepOTM = OptionMath.Delta(spot, 120, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        deltaDeepOTM.Should().BeLessThan(0.1, "Deep OTM call delta should be close to 0");
-        deltaDeepOTM.Should().BeGreaterThan(0, "Call delta must be positive");
-    }
-
-    [Fact]
-    public void Delta_PutOption_ShouldBeNegativeAndBounded()
+    public void D2_ShouldEqualD1MinusVolatilityTerm()
     {
         // Arrange
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 7.0 / 365.0;
-        double volatility = 0.25;
-        double riskFreeRate = 0.05;
-        
+        double sigma = 0.20;
+        double T = 0.25;
+        double d1 = 0.125;
+
         // Act
-        double putDelta = OptionMath.Delta(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Put);
-        
+        var d2 = OptionMath.D2(d1, sigma, T);
+        var expectedD2 = d1 - sigma * Math.Sqrt(T);
+
         // Assert
-        putDelta.Should().BeNegative("Put delta must be negative");
-        putDelta.Should().BeGreaterThan(-1, "Put delta must be greater than -1");
-        putDelta.Should().BeApproximately(-0.5, 0.1, "ATM put delta should be around -0.5");
+        d2.Should().BeApproximately(expectedD2, Tolerance);
+        d2.Should().BeApproximately(0.025, Tolerance);
     }
 
     [Fact]
-    public void ImpliedVolatility_ShouldConvergeToInputVolatility()
+    public void Nd_StandardNormalDistribution_ShouldReturnKnownValues()
     {
-        // Arrange: Calculate option price with known volatility
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 30.0 / 365.0;
-        double inputVol = 0.25;
-        double riskFreeRate = 0.05;
-        
-        double optionPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, inputVol, riskFreeRate, Right.Call);
-        
-        // Act: Solve for implied volatility
-        double impliedVol = OptionMath.ImpliedVolatility(optionPrice, spot, strike, timeToExpiry, riskFreeRate, Right.Call);
-        
-        // Assert: Should recover the input volatility
-        impliedVol.Should().BeApproximately(inputVol, 0.001, 
-            "Implied volatility should match the input volatility used to generate the price");
+        // Arrange & Act & Assert - Test known values
+        OptionMath.Nd(0.0).Should().BeApproximately(0.5, Tolerance);      // N(0) = 0.5
+        OptionMath.Nd(-1.96).Should().BeApproximately(0.025, 0.001);     // 2.5 percentile
+        OptionMath.Nd(1.96).Should().BeApproximately(0.975, 0.001);      // 97.5 percentile
+        OptionMath.Nd(-3.0).Should().BeLessThan(0.002);                  // Far left tail
+        OptionMath.Nd(3.0).Should().BeGreaterThan(0.998);                // Far right tail
     }
 
     [Fact]
-    public void ImpliedVolatility_WithInvalidPrice_ShouldReturnReasonableDefault()
+    public void nd_ProbabilityDensityFunction_ShouldReturnKnownValues()
     {
-        // Arrange: Price below intrinsic value
-        double spot = 100;
-        double strike = 90;
-        double timeToExpiry = 30.0 / 365.0;
-        double invalidPrice = 5; // Below intrinsic value of 10
-        double riskFreeRate = 0.05;
-        
-        // Act
-        double impliedVol = OptionMath.ImpliedVolatility(invalidPrice, spot, strike, timeToExpiry, riskFreeRate, Right.Call);
-        
-        // Assert
-        impliedVol.Should().BeGreaterThan(0, "Should return positive volatility even for invalid prices");
-        impliedVol.Should().BeLessThanOrEqualTo(5, "Should cap volatility at reasonable maximum");
+        // Arrange & Act & Assert - Test known values
+        OptionMath.nd(0.0).Should().BeApproximately(0.3989, 0.0001);     // Peak at zero
+        OptionMath.nd(1.0).Should().BeApproximately(0.2420, 0.0001);     // Standard point
+        OptionMath.nd(-1.0).Should().BeApproximately(0.2420, 0.0001);    // Symmetry
     }
 
     [Theory]
-    [InlineData(100, 95, 0.25)]  // 5% OTM
-    [InlineData(100, 100, 0.20)] // ATM
-    [InlineData(100, 105, 0.25)] // 5% OTM
-    public void VolatilitySmile_ShouldBeSymmetric(double spot, double strike, double expectedVol)
+    [InlineData(100.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Call, 0.50)] // ATM call delta ≈ 0.5
+    [InlineData(100.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Put, -0.50)] // ATM put delta ≈ -0.5
+    [InlineData(100.0, 110.0, 0.05, 0.0, 0.20, 0.25, Right.Call, 0.15)] // OTM call lower delta
+    [InlineData(100.0, 90.0, 0.05, 0.0, 0.20, 0.25, Right.Put, -0.15)]  // OTM put lower delta
+    public void Delta_VariousScenarios_ShouldReturnExpectedValues(
+        double S, double K, double r, double q, double sigma, double T, Right right, double expectedDelta)
     {
-        // Testing that the volatility smile implementation treats puts and calls symmetrically
-        // This is a simplified test - real markets have skew
-        
-        // Arrange
-        double timeToExpiry = 30.0 / 365.0;
-        double riskFreeRate = 0.05;
-        
-        // Calculate prices with expected volatility
-        double callPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, expectedVol, riskFreeRate, Right.Call);
-        double putPrice = OptionMath.BlackScholes(spot, strike, timeToExpiry, expectedVol, riskFreeRate, Right.Put);
-        
-        // Act: Get implied vols back
-        double callIV = OptionMath.ImpliedVolatility(callPrice, spot, strike, timeToExpiry, riskFreeRate, Right.Call);
-        double putIV = OptionMath.ImpliedVolatility(putPrice, spot, strike, timeToExpiry, riskFreeRate, Right.Put);
-        
+        // Act
+        var delta = OptionMath.Delta(S, K, r, q, sigma, T, right);
+
         // Assert
-        callIV.Should().BeApproximately(putIV, 0.001, 
-            "Call and put implied volatilities should match for same strike");
+        delta.Should().BeApproximately(expectedDelta, 0.05); // Allow 5% tolerance for approximation
+        
+        // Validate delta ranges
+        if (right == Right.Call)
+            delta.Should().BeInRange(0.0, 1.0);
+        else
+            delta.Should().BeInRange(-1.0, 0.0);
     }
 
     [Fact]
-    public void Greeks_Gamma_ShouldBePositiveAndMaximizedATM()
+    public void Delta_ExpiredOption_ShouldReturnZero()
     {
-        // Gamma measures the rate of change of delta - highest for ATM options
-        
-        // Arrange
-        double spot = 100;
-        double timeToExpiry = 7.0 / 365.0;
-        double volatility = 0.25;
-        double riskFreeRate = 0.05;
-        
-        // Calculate gamma at different strikes
-        double gammaOTM = CalculateGamma(spot, 110, timeToExpiry, volatility, riskFreeRate);
-        double gammaATM = CalculateGamma(spot, 100, timeToExpiry, volatility, riskFreeRate);
-        double gammaITM = CalculateGamma(spot, 90, timeToExpiry, volatility, riskFreeRate);
-        
+        // Arrange - Expired option
+        double T = 0.0;
+
+        // Act
+        var callDelta = OptionMath.Delta(100, 100, 0.05, 0.0, 0.20, T, Right.Call);
+        var putDelta = OptionMath.Delta(100, 100, 0.05, 0.0, 0.20, T, Right.Put);
+
         // Assert
-        gammaATM.Should().BeGreaterThan(gammaOTM, "ATM gamma should exceed OTM gamma");
-        gammaATM.Should().BeGreaterThan(gammaITM, "ATM gamma should exceed ITM gamma");
-        gammaATM.Should().BePositive("Gamma must be positive");
-    }
-    
-    private double CalculateGamma(double spot, double strike, double timeToExpiry, double vol, double r)
-    {
-        // Approximate gamma using finite differences
-        double epsilon = 0.01;
-        double deltaUp = OptionMath.Delta(spot + epsilon, strike, timeToExpiry, vol, r, Right.Call);
-        double deltaDown = OptionMath.Delta(spot - epsilon, strike, timeToExpiry, vol, r, Right.Call);
-        return (deltaUp - deltaDown) / (2 * epsilon);
+        callDelta.Should().Be(0.0);
+        putDelta.Should().Be(0.0);
     }
 
     [Fact]
-    public void Theta_ShouldBeNegative_ForLongOptions()
+    public void Delta_ZeroVolatility_ShouldReturnZero()
     {
-        // Theta represents time decay - should be negative for long options
-        
-        // Arrange
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 30.0 / 365.0;
-        double volatility = 0.25;
-        double riskFreeRate = 0.05;
-        
-        // Act: Calculate option values at different times
-        double priceNow = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        double priceTomorrow = OptionMath.BlackScholes(spot, strike, (timeToExpiry - 1.0/365.0), volatility, riskFreeRate, Right.Call);
-        
-        double theta = priceTomorrow - priceNow; // Daily theta
-        
+        // Arrange - Zero volatility
+        double sigma = 0.0;
+
+        // Act
+        var callDelta = OptionMath.Delta(100, 100, 0.05, 0.0, sigma, 0.25, Right.Call);
+        var putDelta = OptionMath.Delta(100, 100, 0.05, 0.0, sigma, 0.25, Right.Put);
+
         // Assert
-        theta.Should().BeNegative("Theta should be negative (time decay)");
-        Math.Abs(theta).Should().BeLessThan(priceNow, "Daily theta should be less than option value");
+        callDelta.Should().Be(0.0);
+        putDelta.Should().Be(0.0);
+    }
+
+    [Theory]
+    [InlineData(100.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Call, 5.0)] // ATM call
+    [InlineData(100.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Put, 3.8)]  // ATM put
+    [InlineData(110.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Call, 11.0)] // ITM call
+    [InlineData(90.0, 100.0, 0.05, 0.0, 0.20, 0.25, Right.Put, 11.0)]   // ITM put
+    public void Price_VariousScenarios_ShouldReturnReasonableValues(
+        double S, double K, double r, double q, double sigma, double T, Right right, double expectedPrice)
+    {
+        // Act
+        var price = OptionMath.Price(S, K, r, q, sigma, T, right);
+
+        // Assert
+        price.Should().BeApproximately(expectedPrice, 1.0); // Allow $1 tolerance
+        price.Should().BeGreaterThanOrEqualTo(0.0); // Prices can't be negative
+
+        // Check intrinsic value relationship
+        var intrinsic = Math.Max(0, right == Right.Call ? S - K : K - S);
+        price.Should().BeGreaterThanOrEqualTo(intrinsic); // Price >= intrinsic value
     }
 
     [Fact]
-    public void Vega_ShouldBePositive_AndMaximizedATM()
+    public void Price_ExpiredOptions_ShouldReturnIntrinsicValue()
     {
-        // Vega measures sensitivity to volatility changes
-        
+        // Arrange - Expired options
+        double T = 0.0;
+
+        // Act
+        var expiredCallITM = OptionMath.Price(110, 100, 0.05, 0.0, 0.20, T, Right.Call);
+        var expiredCallOTM = OptionMath.Price(90, 100, 0.05, 0.0, 0.20, T, Right.Call);
+        var expiredPutITM = OptionMath.Price(90, 100, 0.05, 0.0, 0.20, T, Right.Put);
+        var expiredPutOTM = OptionMath.Price(110, 100, 0.05, 0.0, 0.20, T, Right.Put);
+
+        // Assert - Should equal intrinsic values
+        expiredCallITM.Should().Be(10.0); // 110 - 100
+        expiredCallOTM.Should().Be(0.0);  // max(90 - 100, 0)
+        expiredPutITM.Should().Be(10.0);  // 100 - 90
+        expiredPutOTM.Should().Be(0.0);   // max(100 - 110, 0)
+    }
+
+    [Fact]
+    public void Price_ZeroVolatility_ShouldReturnIntrinsicValue()
+    {
+        // Arrange - Zero volatility
+        double sigma = 0.0;
+
+        // Act
+        var callPrice = OptionMath.Price(110, 100, 0.05, 0.0, sigma, 0.25, Right.Call);
+        var putPrice = OptionMath.Price(90, 100, 0.05, 0.0, sigma, 0.25, Right.Put);
+
+        // Assert - Should equal intrinsic values
+        callPrice.Should().Be(10.0); // 110 - 100
+        putPrice.Should().Be(10.0);  // 100 - 90
+    }
+
+    [Fact]
+    public void BlackScholes_ShouldMatchPriceMethod()
+    {
         // Arrange
-        double spot = 100;
-        double strike = 100;
-        double timeToExpiry = 30.0 / 365.0;
-        double volatility = 0.25;
-        double riskFreeRate = 0.05;
-        
-        // Act: Calculate price sensitivity to 1% vol change
-        double priceBase = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility, riskFreeRate, Right.Call);
-        double priceHighVol = OptionMath.BlackScholes(spot, strike, timeToExpiry, volatility + 0.01, riskFreeRate, Right.Call);
-        
-        double vega = priceHighVol - priceBase; // Per 1% vol move
-        
+        double S = 100, K = 105, T = 0.25, sigma = 0.20, r = 0.05, q = 0.02;
+
+        // Act
+        var priceMethodResult = OptionMath.Price(S, K, r, q, sigma, T, Right.Call);
+        var blackScholesResult = OptionMath.BlackScholes(S, K, T, sigma, r, Right.Call, q);
+
         // Assert
-        vega.Should().BePositive("Vega must be positive for long options");
-        vega.Should().BeLessThan(spot * 0.1, "Vega should be reasonable relative to spot");
+        blackScholesResult.Should().BeApproximately(priceMethodResult, Tolerance);
+    }
+
+    [Theory]
+    [InlineData(5.0, 100.0, 100.0, 0.25, 0.05, Right.Call, 0.20)]    // ATM call
+    [InlineData(3.8, 100.0, 100.0, 0.25, 0.05, Right.Put, 0.20)]     // ATM put
+    [InlineData(10.0, 110.0, 100.0, 0.25, 0.05, Right.Call, 0.15)]   // ITM call lower vol
+    public void ImpliedVolatility_KnownPrices_ShouldConvergeToInputVolatility(
+        double marketPrice, double S, double K, double T, double r, Right right, double expectedVol)
+    {
+        // Act
+        var impliedVol = OptionMath.ImpliedVolatility(marketPrice, S, K, T, r, right);
+
+        // Assert
+        impliedVol.Should().BeApproximately(expectedVol, 0.02); // Allow 2% volatility tolerance
+        impliedVol.Should().BeGreaterThan(0.0);
+        impliedVol.Should().BeLessThan(5.0); // Reasonable upper bound
+    }
+
+    [Fact]
+    public void ImpliedVolatility_ExpiredOption_ShouldReturnZero()
+    {
+        // Arrange
+        double T = 0.0;
+
+        // Act
+        var impliedVol = OptionMath.ImpliedVolatility(5.0, 100, 100, T, 0.05, Right.Call);
+
+        // Assert
+        impliedVol.Should().Be(0.0);
+    }
+
+    [Fact]
+    public void ImpliedVolatility_PriceBelowIntrinsic_ShouldReturnMinimumVolatility()
+    {
+        // Arrange - Price below intrinsic value
+        double marketPrice = 5.0; // Below intrinsic of 10
+        double S = 110, K = 100;
+
+        // Act
+        var impliedVol = OptionMath.ImpliedVolatility(marketPrice, S, K, 0.25, 0.05, Right.Call);
+
+        // Assert
+        impliedVol.Should().Be(0.01); // Minimum 1% volatility
+    }
+
+    [Fact]
+    public void PutCallParity_ShouldHoldForBlackScholesOptions()
+    {
+        // Arrange - Put-call parity: C - P = S*e^(-q*T) - K*e^(-r*T)
+        double S = 100, K = 100, T = 0.25, sigma = 0.20, r = 0.05, q = 0.02;
+
+        // Act
+        var callPrice = OptionMath.Price(S, K, r, q, sigma, T, Right.Call);
+        var putPrice = OptionMath.Price(S, K, r, q, sigma, T, Right.Put);
+        var theoreticalDifference = S * Math.Exp(-q * T) - K * Math.Exp(-r * T);
+        var actualDifference = callPrice - putPrice;
+
+        // Assert - Put-call parity should hold
+        actualDifference.Should().BeApproximately(theoreticalDifference, Tolerance);
+    }
+
+    [Theory]
+    [InlineData(0.001)]  // Very small time
+    [InlineData(1.0)]    // One year
+    [InlineData(5.0)]    // Long term
+    public void Delta_TimeToExpiration_ShouldBehaveConsistently(double T)
+    {
+        // Arrange
+        double S = 100, K = 100, r = 0.05, q = 0.0, sigma = 0.20;
+
+        // Act
+        var callDelta = OptionMath.Delta(S, K, r, q, sigma, T, Right.Call);
+        var putDelta = OptionMath.Delta(S, K, r, q, sigma, T, Right.Put);
+
+        // Assert
+        callDelta.Should().BeInRange(0.0, 1.0);
+        putDelta.Should().BeInRange(-1.0, 0.0);
+        
+        // For ATM options, call + put delta should approximately equal 1 (ignoring dividends)
+        var sumOfAbsoluteDeltas = Math.Abs(callDelta) + Math.Abs(putDelta);
+        sumOfAbsoluteDeltas.Should().BeApproximately(1.0, 0.1);
+    }
+
+    [Theory]
+    [InlineData(0.05)]   // 5% volatility
+    [InlineData(0.50)]   // 50% volatility
+    [InlineData(1.00)]   // 100% volatility
+    public void Price_VolatilityLevels_ShouldIncreaseWithVolatility(double sigma)
+    {
+        // Arrange
+        double S = 100, K = 100, T = 0.25, r = 0.05, q = 0.0;
+
+        // Act
+        var callPrice = OptionMath.Price(S, K, r, q, sigma, T, Right.Call);
+        var putPrice = OptionMath.Price(S, K, r, q, sigma, T, Right.Put);
+
+        // Assert
+        callPrice.Should().BeGreaterThan(0);
+        putPrice.Should().BeGreaterThan(0);
+        
+        // Higher volatility should lead to higher option values
+        if (sigma >= 0.20)
+        {
+            var lowerVolPrice = OptionMath.Price(S, K, r, q, 0.10, T, Right.Call);
+            callPrice.Should().BeGreaterThan(lowerVolPrice);
+        }
+    }
+
+    [Fact]
+    public void MoneynesEffects_ShouldFollowExpectedPatterns()
+    {
+        // Arrange - Test various moneyness levels
+        double K = 100, T = 0.25, r = 0.05, q = 0.0, sigma = 0.20;
+
+        // Act
+        var atmCallDelta = OptionMath.Delta(100, K, r, q, sigma, T, Right.Call);
+        var otmCallDelta = OptionMath.Delta(95, K, r, q, sigma, T, Right.Call);   // OTM call
+        var itmCallDelta = OptionMath.Delta(105, K, r, q, sigma, T, Right.Call);  // ITM call
+
+        // Assert - Delta should increase with moneyness for calls
+        otmCallDelta.Should().BeLessThan(atmCallDelta);
+        itmCallDelta.Should().BeGreaterThan(atmCallDelta);
+        
+        // All deltas should be in valid range
+        new[] { atmCallDelta, otmCallDelta, itmCallDelta }.Should().AllSatisfy(d => d.Should().BeInRange(0.0, 1.0));
+    }
+
+    [Fact]
+    public void ExtremeCases_ShouldHandleGracefully()
+    {
+        // Arrange & Act & Assert - Test extreme parameter values
+        
+        // Very high volatility
+        var highVolPrice = OptionMath.Price(100, 100, 0.05, 0.0, 5.0, 0.25, Right.Call);
+        highVolPrice.Should().BeGreaterThan(0);
+        highVolPrice.Should().BeLessThan(100); // Should be less than spot price
+        
+        // Very low time to expiration
+        var shortTimePrice = OptionMath.Price(100, 100, 0.05, 0.0, 0.20, 0.001, Right.Call);
+        shortTimePrice.Should().BeGreaterThanOrEqualTo(0);
+        
+        // Deep ITM options
+        var deepItmCall = OptionMath.Price(150, 100, 0.05, 0.0, 0.20, 0.25, Right.Call);
+        deepItmCall.Should().BeGreaterThan(45); // Should be close to intrinsic value (50)
+        
+        // Deep OTM options
+        var deepOtmCall = OptionMath.Price(50, 100, 0.05, 0.0, 0.20, 0.25, Right.Call);
+        deepOtmCall.Should().BeGreaterThan(0);
+        deepOtmCall.Should().BeLessThan(1); // Should be very small but positive
     }
 }

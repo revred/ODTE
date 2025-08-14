@@ -11,6 +11,12 @@ namespace ODTE.Backtest.Core;
 public enum Decision { NoGo, Condor, SingleSidePut, SingleSideCall }
 
 /// <summary>
+/// Position type classification for different option strategies.
+/// Used for tracking and risk management purposes.
+/// </summary>
+public enum PositionType { IronCondor, PutSpread, CallSpread, Other }
+
+/// <summary>
 /// Option right: Call or Put.
 /// Call = right to buy underlying at strike
 /// Put = right to sell underlying at strike
@@ -56,7 +62,11 @@ public record OptionQuote(
     double Mid,            // (Bid + Ask) / 2
     double Delta,          // Price sensitivity to underlying
     double Iv              // Implied volatility (annualized %)
-);
+)
+{
+    // Backward compatibility property
+    public double IV => Iv;
+}
 
 /// <summary>
 /// Individual leg of a spread strategy.
@@ -92,7 +102,22 @@ public record SpreadOrder(
     Decision Type,         // Strategy type that created this order
     SpreadLeg Short,       // Short leg (sell)
     SpreadLeg Long         // Long leg (buy, protection)
-);
+)
+{
+    // Compatibility properties for existing test code
+    public double NetCredit => Credit;
+    public PositionType PositionType => Type switch
+    {
+        Decision.Condor => PositionType.IronCondor,
+        Decision.SingleSidePut => PositionType.PutSpread,
+        Decision.SingleSideCall => PositionType.CallSpread,
+        _ => PositionType.Other
+    };
+    
+    // For iron condor strategies (4-leg), these would be the call spread legs
+    public SpreadLeg? Short2 { get; init; }
+    public SpreadLeg? Long2 { get; init; }
+};
 
 /// <summary>
 /// Trade execution record.
@@ -153,7 +178,12 @@ public record TradeResult(
     double Fees,                    // Total transaction costs
     double MaxAdverseExcursion,     // Worst unrealized loss during trade
     double MaxFavorableExcursion    // Best unrealized profit during trade
-);
+)
+{
+    // Compatibility properties for existing test code
+    public OpenPosition Position => Pos;
+    public string ExitReason => Pos.ExitReason;
+};
 
 /// <summary>
 /// Comprehensive backtest performance report.

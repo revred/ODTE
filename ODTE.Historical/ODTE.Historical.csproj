@@ -1,16 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>ODTE.Historical</AssemblyName>
     <RootNamespace>ODTE.Historical</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>ODTE.Historical</PackageId>
+    <Title>ODTE Historical Data Management Library</Title>
+    <Description>Historical market data management, synthetic data generation, and data quality validation for the ODTE trading platform.</Description>
+    <Authors>ODTE Development Team</Authors>
+    <Company>ODTE</Company>
+    <Product>ODTE Platform</Product>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
   </ItemGroup>
 
 </Project>

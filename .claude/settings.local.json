@@ -28,9 +28,18 @@
       "Bash(python:*)",
       "Bash(powershell:*)",
       "Bash(move:*)",
-      "Bash(copy:*)"
+      "Bash(copy:*)",
+      "WebSearch",
+      "Bash(del:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(sqlite3:*)",
+      "Bash(dotnet sln add:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\code\\ODTE"
+    ]
   }
 }

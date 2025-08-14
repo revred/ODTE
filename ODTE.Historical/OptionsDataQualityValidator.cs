@@ -49,7 +49,7 @@ public class OptionsDataQualityValidator
         IOptionsDataGenerator generator,
         DateTime startDate,
         DateTime endDate,
-        ValidationParameters parameters = null)
+        ValidationParameters? parameters = null)
     {
         parameters ??= ValidationParameters.Default();
         _validationResults.Clear();

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.VisualBasic;
 
 namespace ODTE.Historical;
 
@@ -100,7 +101,8 @@ public class HistoricalDataManager : IDisposable
         
         if (result.Success)
         {
-            Console.WriteLine($"✅ Export completed: {result.RecordCount:N0} records, {result.FileSizeMB:N2} MB");
+            var fileSizeMB = result.FileSizeBytes / (1024.0 * 1024.0);
+            Console.WriteLine($"✅ Export completed: {result.RecordsExported:N0} records, {fileSizeMB:N2} MB");
         }
         else
         {
@@ -139,6 +141,32 @@ public class HistoricalDataManager : IDisposable
     public async Task<DatabaseStats> GetStatsAsync()
     {
         return await _database.GetStatsAsync();
+    }
+
+    /// <summary>
+    /// Get market data for a specific symbol and date range
+    /// </summary>
+    public async Task<List<MarketDataBar>> GetMarketDataAsync(
+        string symbol, 
+        DateTime startDate, 
+        DateTime endDate)
+    {
+        return await _database.GetRangeAsync(startDate, endDate, symbol);
+    }
+    
+
+
+        // TODO: Query actual symbols from database
+    static List<string> _symbols = new List<string> { "XSP", "SPY", "QQQ", "IWM" };
+
+    /// <summary>
+    /// Get list of available symbols in the database
+    /// </summary>
+    public async Task<List<string>> GetAvailableSymbolsAsync()
+    {
+        await Task.Delay(0); // Simulate async delay for testing purposes
+        // For now, return default symbols
+        return _symbols;
     }
 
     /// <summary>
@@ -184,8 +212,8 @@ public class HistoricalDataManager : IDisposable
         result.Exports.Add("Monthly Samples", monthlyExport);
 
         result.Success = result.Exports.Values.All(e => e.Success);
-        result.TotalRecords = result.Exports.Values.Sum(e => e.RecordCount);
-        result.TotalSizeMB = result.Exports.Values.Sum(e => e.FileSizeMB);
+        result.TotalRecords = result.Exports.Values.Sum(e => e.RecordsExported);
+        result.TotalSizeMB = result.Exports.Values.Sum(e => e.FileSizeBytes / (1024.0 * 1024.0));
 
         Console.WriteLine($"✅ Batch export completed: {result.Exports.Count} datasets, {result.TotalSizeMB:N1} MB total");
 

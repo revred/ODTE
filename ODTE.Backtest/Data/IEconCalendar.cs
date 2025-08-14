@@ -51,4 +51,10 @@ public interface IEconCalendar
     /// Returns null if no events found in reasonable future timeframe.
     /// </summary>
     EconEvent? NextEventAfter(DateTime ts);
+
+    /// <summary>
+    /// Get all economic events within a date range.
+    /// Used for testing and backtesting scenarios.
+    /// </summary>
+    List<EconEvent> GetEvents(DateOnly startDate, DateOnly endDate);
 }
