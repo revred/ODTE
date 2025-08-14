@@ -414,14 +414,14 @@ public class RiskManagerTests
         
         // Large order that exceeds budget
         var order = new SpreadOrder(
-            Symbol: "XSP",
-            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Ts: DateTime.Now,
+            Underlying: "XSP",
             Credit: 0.50,
             Width: 2.0,     // $200 width
             CreditPerWidth: 0.25,
             Type: Decision.SingleSidePut,
-            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
-            Long: new SpreadLeg(Right.Put, 528, 0.25, 0.30)
+            Short: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 530, Right.Put, -1),
+            Long: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 528, Right.Put, 1)
         ); // Max loss = (2.0 - 0.50) * 100 = $150 > $100 budget
 
         // Act
@@ -443,14 +443,14 @@ public class RiskManagerTests
         
         // Small order within budget
         var order = new SpreadOrder(
-            Symbol: "XSP",
-            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Ts: DateTime.Now,
+            Underlying: "XSP",
             Credit: 0.80,
             Width: 1.0,     // $100 width
             CreditPerWidth: 0.80,
             Type: Decision.SingleSidePut,
-            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
-            Long: new SpreadLeg(Right.Put, 529, 0.15, 0.20)
+            Short: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 530, Right.Put, -1),
+            Long: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 529, Right.Put, 1)
         ); // Max loss = (1.0 - 0.80) * 100 = $20 << $500 budget
 
         // Act
@@ -475,14 +475,14 @@ public class RiskManagerTests
         
         // Order that would exceed remaining budget
         var order = new SpreadOrder(
-            Symbol: "XSP",
-            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Ts: DateTime.Now,
+            Underlying: "XSP",
             Credit: 0.30,
             Width: 1.0,     // $100 width
             CreditPerWidth: 0.30,
             Type: Decision.SingleSideCall,
-            Short: new SpreadLeg(Right.Call, 535, 0.30, 0.35),
-            Long: new SpreadLeg(Right.Call, 536, 0.10, 0.15)
+            Short: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 535, Right.Call, -1),
+            Long: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 536, Right.Call, 1)
         ); // Max loss = (1.0 - 0.30) * 100 = $70
         // Remaining budget = $200 - $150 = $50
         // Order needs $70 > $50 remaining
@@ -508,14 +508,14 @@ public class RiskManagerTests
         var riskManager = new RiskManager(config);
         
         var order = new SpreadOrder(
-            Symbol: "XSP",
-            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Ts: DateTime.Now,
+            Underlying: "XSP",
             Credit: credit,
             Width: width,
             CreditPerWidth: credit / width,
             Type: spreadType == SpreadType.IronCondor ? Decision.Condor : Decision.SingleSidePut,
-            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
-            Long: new SpreadLeg(Right.Put, 528, 0.25, 0.30)
+            Short: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 530, Right.Put, -1),
+            Long: new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 528, Right.Put, 1)
         );
 
         // Act & Assert - Verify calculation by checking if it would block at limit

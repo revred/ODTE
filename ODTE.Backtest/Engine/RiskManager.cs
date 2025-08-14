@@ -161,8 +161,8 @@ public sealed class RiskManager
     /// </summary>
     private decimal CalculateMaxLoss(SpreadOrder order) => order.Type switch
     {
-        SpreadType.CreditSpread => (order.Width - order.Credit) * 100m, // $100 per point for XSP
-        SpreadType.IronCondor => order.Width * 100m - order.Credit,     // Worst wing minus credit
+        Decision.SingleSidePut or Decision.SingleSideCall => (decimal)(order.Width - order.Credit) * 100m, // $100 per point for XSP
+        Decision.Condor => (decimal)order.Width * 100m - (decimal)order.Credit,     // Worst wing minus credit
         _ => throw new NotSupportedException($"Max loss calculation not implemented for {order.Type}")
     };
 

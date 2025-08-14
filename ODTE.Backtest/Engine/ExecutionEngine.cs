@@ -1,5 +1,6 @@
 using ODTE.Backtest.Config;
 using ODTE.Backtest.Core;
+using ODTE.Backtest.Data;
 
 namespace ODTE.Backtest.Engine;
 
@@ -36,13 +37,15 @@ namespace ODTE.Backtest.Engine;
 /// - Gamma Risk: "Dynamic Hedging" by Nassim Taleb
 /// - Market Microstructure: "Trading and Exchanges" by Larry Harris
 /// </summary>
-public sealed class ExecutionEngine
+public sealed class ExecutionEngine : IDisposable
 {
     private readonly SimConfig _cfg;
+    private readonly TradeLogDatabase _tradeLogDb;
     
-    public ExecutionEngine(SimConfig cfg) 
+    public ExecutionEngine(SimConfig cfg, string logBasePath = "./TradeLogs") 
     { 
-        _cfg = cfg; 
+        _cfg = cfg;
+        _tradeLogDb = new TradeLogDatabase(logBasePath);
     }
 
     /// <summary>
@@ -125,5 +128,87 @@ public sealed class ExecutionEngine
         
         // No exit conditions met
         return (false, 0, "");
+    }
+
+    /// <summary>
+    /// Log trade closure for forensics and pattern analysis.
+    /// Implements structured logging per code review recommendations.
+    /// 
+    /// FORENSICS PIPELINE:
+    /// - Captures market conditions at trade closure
+    /// - Enables ML-based pattern recognition
+    /// - Supports Syntricks replay for loss analysis
+    /// - Feeds nightly clustering of losing trades
+    /// 
+    /// LOG FORMAT:
+    /// JSONL format for easy ingestion into analytics pipelines
+    /// Compatible with time-series databases and ML frameworks
+    /// </summary>
+    /// <param name="position">Closed position details</param>
+    /// <param name="exitPrice">Actual exit price achieved</param>
+    /// <param name="exitReason">Why trade was closed</param>
+    /// <param name="marketRegime">Current market conditions</param>
+    public async Task LogTradeClosureAsync(OpenPosition position, double exitPrice, string exitReason, string marketRegime = "unknown")
+    {
+        try
+        {
+            var pnl = (decimal)(exitPrice - position.EntryPrice);
+            var maxLoss = CalculateMaxLoss(position.Order);
+
+            var tradeLog = new TradeLog(
+                Timestamp: DateTime.UtcNow,
+                Symbol: position.Order.Underlying,
+                Expiry: position.Order.Short.Expiry,
+                Right: position.Order.Short.Right, // Primary leg right
+                Strike: (decimal)position.Order.Short.Strike,
+                Type: GetSpreadType(position.Order.Type),
+                MaxLoss: maxLoss,
+                ExitPnL: pnl,
+                ExitReason: exitReason,
+                MarketRegime: marketRegime
+            );
+
+            // Log to SQLite database for analytics and forensics
+            await _tradeLogDb.LogTradeAsync(tradeLog);
+            
+            // Also log to console for immediate feedback
+            Console.WriteLine($"TRADE_LOG: {tradeLog.ToJson()}");
+        }
+        catch (Exception ex)
+        {
+            // Defensive: Never let logging break execution
+            Console.WriteLine($"Trade logging failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Calculate maximum potential loss for position risk tracking.
+    /// Mirrors RiskManager calculation for consistency.
+    /// </summary>
+    private decimal CalculateMaxLoss(SpreadOrder order) => order.Type switch
+    {
+        Decision.SingleSidePut or Decision.SingleSideCall => 
+            (decimal)(order.Width - order.Credit) * 100m, // Credit spread
+        Decision.Condor => 
+            (decimal)order.Width * 100m - (decimal)order.Credit, // Iron condor
+        _ => 0m
+    };
+
+    /// <summary>
+    /// Convert Decision enum to SpreadType for logging consistency.
+    /// </summary>
+    private SpreadType GetSpreadType(Decision decision) => decision switch
+    {
+        Decision.SingleSidePut or Decision.SingleSideCall => SpreadType.CreditSpread,
+        Decision.Condor => SpreadType.IronCondor,
+        _ => SpreadType.Other
+    };
+
+    /// <summary>
+    /// Cleanup resources including database connections.
+    /// </summary>
+    public void Dispose()
+    {
+        _tradeLogDb?.Dispose();
     }
 }
