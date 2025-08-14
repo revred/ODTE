@@ -240,3 +240,54 @@ public sealed class RunReport
     /// <summary>Maximum drawdown: worst peak-to-trough loss</summary>
     public double MaxDrawdown { get; set; }
 }
+
+/// <summary>
+/// Structured trade logging for loss forensics and pattern analysis.
+/// WHY: Enables ML-based learning from losing trades as per code review recommendations.
+/// 
+/// FORENSICS PIPELINE:
+/// 1. Every trade closure generates a log entry
+/// 2. Nightly clustering groups similar losing patterns
+/// 3. Syntricks replay validates scenarios
+/// 4. ML classifier learns skip/allow rules
+/// 
+/// MARKET ENVIRONMENT CAPTURE:
+/// - Tracks key market conditions at trade entry
+/// - Enables correlation analysis with trade outcomes
+/// - Supports regime-aware strategy adjustments
+/// 
+/// JSON FORMAT:
+/// Designed for easy ingestion into analytics pipelines
+/// Compatible with standard logging frameworks and time-series databases
+/// 
+/// Reference: Code Review Summary - Loss Forensics Pipeline
+/// </summary>
+public record TradeLog(
+    DateTime Timestamp,      // Trade closure time (UTC)
+    string Symbol,          // Underlying symbol (e.g., "XSP")
+    DateOnly Expiry,        // Option expiration date
+    Right Right,            // Put or Call
+    decimal Strike,         // Strike price
+    SpreadType Type,        // Strategy type (CreditSpread, IronCondor)
+    decimal MaxLoss,        // Maximum potential loss at entry
+    decimal ExitPnL,        // Actual realized P&L
+    string ExitReason,      // Why trade was closed ("Stop", "Target", "Expiry")
+    string MarketRegime     // Market conditions ("trending", "ranging", "volatile")
+)
+{
+    /// <summary>JSON serialization helper for logging pipelines</summary>
+    public string ToJson() => System.Text.Json.JsonSerializer.Serialize(this);
+};
+
+/// <summary>
+/// Spread type classification for different option strategies.
+/// Used for risk calculation and performance analysis.
+/// </summary>
+public enum SpreadType 
+{ 
+    CreditSpread,    // Single-sided put or call spread
+    IronCondor,      // Double-sided condor spread  
+    Butterfly,       // Butterfly spread (future)
+    Straddle,        // Long/short straddle (future)
+    Other            // Undefined strategy type
+}

@@ -34,7 +34,8 @@
       "Bash(dotnet restore:*)",
       "Bash(dotnet clean:*)",
       "Bash(sqlite3:*)",
-      "Bash(dotnet sln add:*)"
+      "Bash(dotnet sln add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],

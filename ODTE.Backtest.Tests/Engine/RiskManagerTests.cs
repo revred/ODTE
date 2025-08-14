@@ -401,4 +401,141 @@ public class RiskManagerTests
         canAddCallEarly.Should().BeTrue("Should allow call early - only partial loss constraint");
         canAddCallLate.Should().BeFalse("Should block call late - time constraint");
     }
+
+    [Fact]
+    public void CanAddOrder_ExceedsFibonacciBudget_ShouldBlockOrder()
+    {
+        // Arrange - Small daily loss limit
+        var config = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = 100 } // Only $100 daily budget
+        };
+        var riskManager = new RiskManager(config);
+        
+        // Large order that exceeds budget
+        var order = new SpreadOrder(
+            Symbol: "XSP",
+            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Credit: 0.50,
+            Width: 2.0,     // $200 width
+            CreditPerWidth: 0.25,
+            Type: Decision.SingleSidePut,
+            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
+            Long: new SpreadLeg(Right.Put, 528, 0.25, 0.30)
+        ); // Max loss = (2.0 - 0.50) * 100 = $150 > $100 budget
+
+        // Act
+        var canAdd = riskManager.CanAddOrder(order);
+
+        // Assert
+        canAdd.Should().BeFalse("Order max loss ($150) exceeds daily Fibonacci budget ($100)");
+    }
+
+    [Fact]
+    public void CanAddOrder_WithinFibonacciBudget_ShouldAllowOrder()
+    {
+        // Arrange - Reasonable daily loss limit
+        var config = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = 500 } // $500 daily budget
+        };
+        var riskManager = new RiskManager(config);
+        
+        // Small order within budget
+        var order = new SpreadOrder(
+            Symbol: "XSP",
+            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Credit: 0.80,
+            Width: 1.0,     // $100 width
+            CreditPerWidth: 0.80,
+            Type: Decision.SingleSidePut,
+            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
+            Long: new SpreadLeg(Right.Put, 529, 0.15, 0.20)
+        ); // Max loss = (1.0 - 0.80) * 100 = $20 << $500 budget
+
+        // Act
+        var canAdd = riskManager.CanAddOrder(order);
+
+        // Assert
+        canAdd.Should().BeTrue("Order max loss ($20) is well within daily Fibonacci budget ($500)");
+    }
+
+    [Fact]
+    public void CanAddOrder_AfterLosses_ShouldReduceAvailableBudget()
+    {
+        // Arrange
+        var config = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = 200 } // $200 daily budget
+        };
+        var riskManager = new RiskManager(config);
+        
+        // Simulate some losses already realized today
+        riskManager.RegisterClose(Decision.SingleSidePut, -150.0); // Lost $150
+        
+        // Order that would exceed remaining budget
+        var order = new SpreadOrder(
+            Symbol: "XSP",
+            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Credit: 0.30,
+            Width: 1.0,     // $100 width
+            CreditPerWidth: 0.30,
+            Type: Decision.SingleSideCall,
+            Short: new SpreadLeg(Right.Call, 535, 0.30, 0.35),
+            Long: new SpreadLeg(Right.Call, 536, 0.10, 0.15)
+        ); // Max loss = (1.0 - 0.30) * 100 = $70
+        // Remaining budget = $200 - $150 = $50
+        // Order needs $70 > $50 remaining
+
+        // Act
+        var canAdd = riskManager.CanAddOrder(order);
+
+        // Assert
+        canAdd.Should().BeFalse("Order max loss ($70) exceeds remaining Fibonacci budget ($50 after $150 loss)");
+    }
+
+    [Theory]
+    [InlineData(SpreadType.CreditSpread, 2.0, 0.60, 140)] // (2.0 - 0.60) * 100 = $140
+    [InlineData(SpreadType.IronCondor, 1.5, 0.40, 110)]   // 1.5 * 100 - 40 = $110  
+    public void CanAddOrder_DifferentSpreadTypes_ShouldCalculateMaxLossCorrectly(
+        SpreadType spreadType, double width, double credit, decimal expectedMaxLoss)
+    {
+        // Arrange
+        var config = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = 1000 } // Large budget to focus on calculation
+        };
+        var riskManager = new RiskManager(config);
+        
+        var order = new SpreadOrder(
+            Symbol: "XSP",
+            Expiry: DateOnly.FromDateTime(DateTime.Today),
+            Credit: credit,
+            Width: width,
+            CreditPerWidth: credit / width,
+            Type: spreadType == SpreadType.IronCondor ? Decision.Condor : Decision.SingleSidePut,
+            Short: new SpreadLeg(Right.Put, 530, 0.80, 0.85),
+            Long: new SpreadLeg(Right.Put, 528, 0.25, 0.30)
+        );
+
+        // Act & Assert - Verify calculation by checking if it would block at limit
+        var configAtLimit = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = (double)expectedMaxLoss - 1 } // $1 under limit
+        };
+        var limitRiskManager = new RiskManager(configAtLimit);
+        
+        limitRiskManager.CanAddOrder(order).Should().BeFalse(
+            $"Order with {spreadType} should calculate max loss as ${expectedMaxLoss}");
+        
+        // Should pass with budget just above the limit
+        var configAboveLimit = new SimConfig
+        {
+            Risk = new RiskCfg { DailyLossStop = (double)expectedMaxLoss + 1 } // $1 over limit
+        };
+        var aboveLimitRiskManager = new RiskManager(configAboveLimit);
+        
+        aboveLimitRiskManager.CanAddOrder(order).Should().BeTrue(
+            $"Order should pass when budget (${expectedMaxLoss + 1}) exceeds max loss (${expectedMaxLoss})");
+    }
 }
