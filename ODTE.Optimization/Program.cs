@@ -37,6 +37,39 @@ namespace ODTE.Optimization
                 return;
             }
             
+            // Check if running genetic optimization mode
+            if (args.Length > 0 && args[0].ToLower() == "genetic")
+            {
+                Console.WriteLine("🧬 ODTE Real Data Genetic Optimization");
+                Console.WriteLine("=====================================");
+                
+                int generations = args.Length > 1 && int.TryParse(args[1], out var gen) ? gen : 100;
+                int populationSize = args.Length > 2 && int.TryParse(args[2], out var pop) ? pop : 50;
+                
+                Console.WriteLine($"Configuration:");
+                Console.WriteLine($"  Generations: {generations}");
+                Console.WriteLine($"  Population Size: {populationSize}");
+                Console.WriteLine($"  Data Source: Real SPY/VIX (2015-2020)");
+                Console.WriteLine();
+                
+                try
+                {
+                    var optimizer = new RealDataRegimeOptimizer();
+                    var results = await optimizer.OptimizeAsync(generations, populationSize);
+                    
+                    Console.WriteLine("\n✅ Genetic optimization completed successfully!");
+                    Console.WriteLine($"Best fitness achieved: {results.BestChromosome.Fitness:F2}");
+                    Console.WriteLine($"Total time: {(results.EndTime - results.StartTime).TotalMinutes:F1} minutes");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Genetic optimization failed: {ex.Message}");
+                    Console.WriteLine(ex.StackTrace);
+                }
+                
+                return;
+            }
+            
             Console.WriteLine("ODTE Strategy Optimization System");
             Console.WriteLine("Version 1.0.0");
             Console.WriteLine("=" .PadRight(60, '='));
