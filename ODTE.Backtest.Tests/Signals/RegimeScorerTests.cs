@@ -18,7 +18,7 @@ public class RegimeScorerTests
     private readonly Mock<IEconCalendar> _mockCalendar;
     private readonly SimConfig _config;
     private readonly RegimeScorer _regimeScorer;
-    private readonly DateTime _testTime = new(2024, 2, 1, 11, 0, 0); // 11:00 AM
+    private readonly DateTime _testTime = new(2024, 2, 1, 16, 0, 0, DateTimeKind.Utc); // 11:00 AM ET = 4:00 PM UTC
 
     public RegimeScorerTests()
     {
@@ -314,7 +314,7 @@ public class RegimeScorerTests
     private List<Bar> CreateTrendingUpBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // Opening range: 99.5 - 100.5
         for (int i = 0; i < 3; i++) // First 15 minutes
@@ -337,7 +337,7 @@ public class RegimeScorerTests
     private List<Bar> CreateTrendingDownBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // Opening range: 99.5 - 100.5
         for (int i = 0; i < 3; i++)
@@ -360,7 +360,7 @@ public class RegimeScorerTests
     private List<Bar> CreateRangeBoundBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // Stays within opening range - no breakout
         for (int i = 0; i < 30; i++)
@@ -376,7 +376,7 @@ public class RegimeScorerTests
     private List<Bar> CreateVwapPersistentBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // Most bars above VWAP level (99.5)
         for (int i = 0; i < 30; i++)
@@ -392,7 +392,7 @@ public class RegimeScorerTests
     private List<Bar> CreateBarsWithRange(double dailyRange)
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
         var low = 100.0 - dailyRange / 2;
         var high = 100.0 + dailyRange / 2;
 
@@ -409,7 +409,7 @@ public class RegimeScorerTests
     private List<Bar> CreateAlignedSignalsBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // OR break up AND upward price progression (aligned signals)
         for (int i = 0; i < 3; i++) // Opening range
@@ -431,7 +431,7 @@ public class RegimeScorerTests
     private List<Bar> CreateVwapBarsWithRatio(double aboveVwapRatio)
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
         int totalBars = 30;
         int barsAboveVwap = (int)(totalBars * aboveVwapRatio);
 
@@ -456,7 +456,7 @@ public class RegimeScorerTests
     private List<Bar> CreateIdealConditionsBars()
     {
         var bars = new List<Bar>();
-        var sessionStart = new DateTime(2024, 2, 1, 9, 30, 0);
+        var sessionStart = new DateTime(2024, 2, 1, 14, 30, 0, DateTimeKind.Utc); // 9:30 AM ET = 2:30 PM UTC
 
         // Perfect conditions: OR break up, VWAP persistence, calm range
         for (int i = 0; i < 3; i++) // Opening range

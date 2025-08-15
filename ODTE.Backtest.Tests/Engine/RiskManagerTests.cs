@@ -142,9 +142,10 @@ public class RiskManagerTests
     [InlineData(15, 15, 0)] // 3:15 PM - 45 minutes to close (outside limit)
     public void CanAdd_TimeToCloseWindow_ShouldBlockWhenTooClose(int hour, int minute, int second)
     {
-        // Arrange
-        var testTime = new DateTime(2024, 2, 1, hour, minute, second);
-        var minutesToClose = (16 * 60) - (hour * 60 + minute); // 4:00 PM close
+        // Arrange - Convert ET time to UTC (add 5 hours)
+        var etTime = new DateTime(2024, 2, 1, hour, minute, second);
+        var testTime = etTime.AddHours(5).ToUtc(); // Convert 3:25 PM ET to 8:25 PM UTC
+        var minutesToClose = (16 * 60) - (hour * 60 + minute); // 4:00 PM ET close
 
         // Act
         var canAdd = _riskManager.CanAdd(testTime, Decision.SingleSidePut);
@@ -386,7 +387,8 @@ public class RiskManagerTests
     public void MultipleConstraints_ShouldEnforceAllConstraints()
     {
         // Arrange - Set up scenario with multiple constraints
-        var lateTime = new DateTime(2024, 2, 1, 15, 25, 0); // 35 minutes to close (within gamma hour)
+        var lateTimeEt = new DateTime(2024, 2, 1, 15, 25, 0); // 3:25 PM ET = 35 minutes to close
+        var lateTime = lateTimeEt.AddHours(5).ToUtc(); // Convert ET to UTC (8:25 PM UTC)
         
         _riskManager.RegisterOpen(Decision.SingleSidePut);
         _riskManager.RegisterOpen(Decision.SingleSidePut); // Max put positions
