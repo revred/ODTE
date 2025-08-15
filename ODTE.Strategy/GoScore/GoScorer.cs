@@ -9,10 +9,35 @@ namespace ODTE.Strategy.GoScore
     /// GoScore: Core trade selector that computes 0-100 probability score for profitable exits
     /// Integrates: PoE, PoT, Edge, Liquidity, Regime fit, Pin risk, RFib utilization
     /// Decision policy: Score ≥70 = Full, 55-69 = Half, <55 = Skip
+    /// 
+    /// ** ML/GENETIC ALGORITHM OPTIMIZATION TARGETS **
+    /// This framework is designed for continuous ML/GA optimization where algorithms can:
+    /// 1. Tune weight parameters (wPoE, wPoT, wEdge, wLiq, wReg, wPin, wRfib)
+    /// 2. Adjust decision thresholds (full=70.0, half=55.0)
+    /// 3. Optimize regime-specific parameters (VIX thresholds, RFib levels)
+    /// 4. Calibrate component calculators (pin alpha, pot delta multiplier)
+    /// 
+    /// STRATEGY SELECTION IMPACT:
+    /// - Higher PoE weight → Favors high probability trades (conservative)
+    /// - Higher Edge weight → Favors trades with mathematical advantage
+    /// - Negative PoT weight → Penalizes high tail risk scenarios  
+    /// - RFib penalty → Prevents position sizing violations
+    /// - Regime scoring → Adapts strategy selection to market conditions
     /// </summary>
     public sealed record GoInputs(
-        double PoE, double PoT, double Edge, double LiqScore,
-        double RegScore, double PinScore, double RfibUtil);
+        // CORE PROFITABILITY METRICS (ML-tunable via weight optimization)
+        double PoE,        // Probability of Expiring profitable [0.0-1.0] - GENETIC TARGET: wPoE weight
+        double PoT,        // Probability of Tail event loss [0.0-1.0] - GENETIC TARGET: wPoT weight  
+        double Edge,       // Expected profit edge [-1.0 to +1.0] - GENETIC TARGET: wEdge weight
+        
+        // EXECUTION QUALITY FACTORS (ML-tunable via scoring algorithms)
+        double LiqScore,   // Liquidity quality score [0.0-1.0] - GENETIC TARGET: wLiq weight
+        double RegScore,   // Regime fit score [0.0-1.0] - GENETIC TARGET: wReg weight
+        double PinScore,   // Pin risk score [0.0-1.0] - GENETIC TARGET: wPin weight
+        
+        // RISK MANAGEMENT INTEGRATION (ML-tunable via penalty functions)
+        double RfibUtil    // RFib utilization [0.0-1.0] - GENETIC TARGET: wRfib penalty strength
+    );
 
     public sealed class GoPolicy
     {
@@ -36,17 +61,141 @@ namespace ODTE.Strategy.GoScore
         }
     }
 
-    public sealed record Weights(double wPoE=1.6, double wPoT=-1.0, double wEdge=0.9, double wLiq=0.6, double wReg=0.8, double wPin=0.3, double wRfib=-1.2);
-    public sealed record Thresholds(double full=70.0, double half=55.0, double minLiqScore=0.5);
-    public sealed record Rfib(double softStart=0.8, double warn=0.9, double block=1.0);
-    public sealed record RegimeAllow(RegimeAllowed icAllowed, RegimeAllowed bwbAllowed) { public RegimeAllow():this(new(),new()){} }
-    public sealed record RegimeAllowed(bool Calm=true,bool Mixed=true,bool Convex=false);
-    public sealed record Pin(double alphaPoints=10.0);
-    public sealed record Pot(double deltaMultiplier=2.0, double max=1.0);
-    public sealed record Iv(double ivrMinIC=25.0, double ivrMinBWB=0.0);
-    public sealed record Vix(double halfSize=30.0, double quarterSize=40.0);
-    public sealed record Sizing(int contractsMin=1);
-    public sealed record Liquidity(double maxSpreadMid=0.25);
+    /// <summary>
+    /// GENETIC ALGORITHM OPTIMIZATION CORE: Weight vector for trade scoring
+    /// These are the PRIMARY TARGETS for ML/GA optimization algorithms
+    /// 
+    /// OPTIMIZATION STRATEGY:
+    /// - Use genetic algorithms to evolve weight combinations over 1000+ generations  
+    /// - Fitness function: Sharpe ratio + win rate + drawdown minimization
+    /// - Crossover: Weighted averaging of successful parameter sets
+    /// - Mutation: ±10% random variations with 5% probability
+    /// - Selection pressure: Top 20% performers breed for next generation
+    /// 
+    /// PARAMETER SENSITIVITY (for ML tuning):
+    /// - wPoE: High sensitivity - controls conservative vs aggressive trade selection
+    /// - wPoT: Critical for tail risk - negative values penalize dangerous scenarios
+    /// - wEdge: Mathematical profit bias - should remain positive for profitability
+    /// - wRfib: Position sizing safety - large negative values prevent overexposure
+    /// </summary>
+    public sealed record Weights(
+        double wPoE=1.6,     // Probability of Expiring profitable weight [GENETIC RANGE: 0.1-3.0]
+        double wPoT=-1.0,    // Tail risk penalty weight [GENETIC RANGE: -3.0 to -0.1] 
+        double wEdge=0.9,    // Expected edge importance [GENETIC RANGE: 0.1-2.0]
+        double wLiq=0.6,     // Liquidity quality weight [GENETIC RANGE: 0.1-1.5]
+        double wReg=0.8,     // Regime fit weight [GENETIC RANGE: 0.1-1.5] 
+        double wPin=0.3,     // Pin risk weight [GENETIC RANGE: 0.0-1.0]
+        double wRfib=-1.2    // RFib violation penalty [GENETIC RANGE: -3.0 to -0.5]
+    );
+    
+    /// <summary>
+    /// STRATEGY SELECTION DECISION BOUNDARIES - Key ML optimization targets
+    /// These thresholds directly control trade execution frequency and risk
+    /// 
+    /// ML OPTIMIZATION APPROACH:
+    /// - Grid search over threshold combinations (full: 60-80, half: 45-65)
+    /// - Optimize for: maximize profit while maintaining <7% loss frequency
+    /// - Adaptive thresholds: Higher in volatile markets, lower in calm periods
+    /// - Reinforcement learning: Adjust based on recent performance feedback
+    /// </summary>
+    public sealed record Thresholds(
+        double full=70.0,        // Full position threshold [ML RANGE: 60-80] - Higher = more selective
+        double half=55.0,        // Half position threshold [ML RANGE: 45-65] - Gap controls sizing logic  
+        double minLiqScore=0.5   // Minimum liquidity requirement [ML RANGE: 0.3-0.8] - Market access filter
+    );
+    
+    /// <summary>
+    /// REVERSE FIBONACCI RISK INTEGRATION - ML-tunable position sizing controls
+    /// These parameters integrate with the RFib risk management system and can be optimized
+    /// for different market volatility regimes and portfolio risk targets
+    /// </summary>
+    public sealed record Rfib(
+        double softStart=0.8,  // Soft penalty start point [ML RANGE: 0.6-0.9] - When to begin size reduction
+        double warn=0.9,       // Warning threshold [ML RANGE: 0.8-0.95] - Caution zone entry
+        double block=1.0       // Hard block threshold [FIXED] - Absolute safety limit
+    );
+    /// <summary>
+    /// REGIME-BASED STRATEGY SELECTION - Core ML optimization target for market adaptation
+    /// Controls which strategies are allowed in different market volatility regimes
+    /// 
+    /// GENETIC ALGORITHM OPTIMIZATION:
+    /// - Boolean flags can be optimized via discrete genetic algorithms
+    /// - Fitness evaluation: backtest each regime combination over 20-year dataset
+    /// - Strategy: Iron Condor (IC) vs Credit Broken Wing Butterfly (BWB) selection
+    /// - Meta-optimization: Learn regime classification thresholds themselves
+    /// </summary>
+    public sealed record RegimeAllow(
+        RegimeAllowed icAllowed,   // Iron Condor permissions per regime [ML TARGET: optimize regime mapping]
+        RegimeAllowed bwbAllowed   // BWB permissions per regime [ML TARGET: optimize strategy selection]
+    ) { public RegimeAllow():this(new(),new()){} }
+    
+    /// <summary>
+    /// REGIME-SPECIFIC STRATEGY PERMISSIONS - Direct ML/GA optimization targets
+    /// These boolean flags control strategy availability and can be optimized via:
+    /// - Binary genetic algorithms (0/1 encoding)
+    /// - Reinforcement learning (reward profitable regime-strategy combinations)
+    /// - Ensemble methods (combine multiple regime classifiers)
+    /// </summary>
+    public sealed record RegimeAllowed(
+        bool Calm=true,     // Allow strategy in calm markets [ML TARGET: optimize via backtesting]
+        bool Mixed=true,    // Allow strategy in mixed volatility [ML TARGET: performance-driven selection]
+        bool Convex=false   // Allow strategy in high volatility [ML TARGET: risk-adjusted optimization]
+    );
+    
+    /// <summary>
+    /// PIN RISK CALCULATION PARAMETERS - ML-tunable for options expiry dynamics
+    /// Pin risk occurs when underlying price gravitates toward strike prices near expiry
+    /// </summary>
+    public sealed record Pin(
+        double alphaPoints=10.0  // Pin influence radius in points [ML RANGE: 5.0-20.0] - Strike clustering effect
+    );
+    
+    /// <summary>
+    /// PROBABILITY OF TAIL (PoT) CALCULATION - Critical ML target for tail risk management  
+    /// Controls how the system evaluates extreme loss scenarios in option strategies
+    /// </summary>
+    public sealed record Pot(
+        double deltaMultiplier=2.0,  // Delta sensitivity amplifier [ML RANGE: 1.0-4.0] - Tail event magnitude
+        double max=1.0               // Maximum PoT value cap [FIXED] - Probability ceiling
+    );
+    
+    /// <summary>
+    /// IMPLIED VOLATILITY RANK THRESHOLDS - Strategy selection filters based on IV environment
+    /// These parameters control when strategies are enabled based on volatility percentiles
+    /// </summary>
+    public sealed record Iv(
+        double ivrMinIC=25.0,   // Min IV rank for Iron Condor [ML RANGE: 10-40] - Credit strategy threshold
+        double ivrMinBWB=0.0    // Min IV rank for BWB [ML RANGE: 0-20] - Always-available vs selective
+    );
+    
+    /// <summary>
+    /// VIX-BASED POSITION SIZING - Critical risk management parameters for ML optimization
+    /// These thresholds control position sizing based on market fear/volatility levels
+    /// 
+    /// OPTIMIZATION APPROACH:
+    /// - Backtest different VIX thresholds against historical volatility clusters
+    /// - Optimize for: maximum return per unit of VIX risk
+    /// - Adaptive sizing: ML models can learn regime-specific VIX sensitivity
+    /// </summary>
+    public sealed record Vix(
+        double halfSize=30.0,      // VIX level for 50% position sizing [ML RANGE: 25-35] - Caution threshold
+        double quarterSize=40.0    // VIX level for 25% position sizing [ML RANGE: 35-45] - High fear threshold
+    );
+    
+    /// <summary>
+    /// POSITION SIZING CONSTRAINTS - Minimum execution parameters
+    /// </summary>
+    public sealed record Sizing(
+        int contractsMin=1  // Minimum contracts per trade [FIXED] - Execution minimum
+    );
+    
+    /// <summary>
+    /// LIQUIDITY QUALITY FILTERS - Market microstructure optimization targets
+    /// These parameters ensure trades only execute in liquid market conditions
+    /// </summary>
+    public sealed record Liquidity(
+        double maxSpreadMid=0.25  // Maximum bid-ask spread [ML RANGE: 0.15-0.40] - Transaction cost filter
+    );
 
     public enum StrategyKind { IronCondor, CreditBwb }
     public enum Regime { Calm, Mixed, Convex }

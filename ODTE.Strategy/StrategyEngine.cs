@@ -53,12 +53,12 @@ namespace ODTE.Strategy
         /// <summary>
         /// Execute 24-day regime switching strategy
         /// </summary>
-        public async Task<RegimeSwitchingResult> Execute24DayRegimeSwitchingAsync(DateTime startDate, DateTime endDate, decimal startingCapital = 5000m)
+        public Task<RegimeSwitchingResult> Execute24DayRegimeSwitchingAsync(DateTime startDate, DateTime endDate, decimal startingCapital = 5000m)
         {
             var regimeSwitcher = new RegimeSwitcher(_random);
             var results = regimeSwitcher.RunHistoricalAnalysis(startDate, endDate);
             
-            return new RegimeSwitchingResult
+            return Task.FromResult(new RegimeSwitchingResult
             {
                 Periods = results.Periods.Select(p => new TwentyFourDayPeriod
                 {
@@ -80,7 +80,7 @@ namespace ODTE.Strategy
                 TotalPeriods = results.TotalPeriods,
                 MaxDrawdown = (decimal)results.Periods.Min(p => p.MaxDrawdown),
                 SharpeRatio = CalculateSharpeRatio(results.Periods)
-            };
+            });
         }
 
         /// <summary>

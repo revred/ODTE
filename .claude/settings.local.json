@@ -43,7 +43,9 @@
       "Bash(temp_inspect.exe)",
       "Bash(dotnet:*)",
       "Bash(pip install:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(OptimizationDemo.exe)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],

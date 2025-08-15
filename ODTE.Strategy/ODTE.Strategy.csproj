@@ -17,6 +17,10 @@
     <PackageDescription>Comprehensive 0DTE options trading strategies with genetic optimization and regime switching</PackageDescription>
     <RepositoryUrl>https://github.com/odte/strategy</RepositoryUrl>
     <PackageTags>options trading 0dte strategy</PackageTags>
+    <!-- Suppress verbose build messages and warnings -->
+    <RestoreVerbosity>minimal</RestoreVerbosity>
+    <MSBuildVerbosity>minimal</MSBuildVerbosity>
+    <NoWarn>$(NoWarn);CS8618;CS8625;CS1998;CS0168;CS8604</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

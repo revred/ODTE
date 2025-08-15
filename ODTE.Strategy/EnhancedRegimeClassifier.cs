@@ -7,6 +7,31 @@ namespace ODTE.Strategy
     /// <summary>
     /// Enhanced regime classifier that suppresses IC in Convex regimes and enforces strategy selection rules
     /// Implements the strategy suppression and preference logic from the next-steps document
+    /// 
+    /// ** MACHINE LEARNING / GENETIC ALGORITHM OPTIMIZATION TARGETS **
+    /// 
+    /// REGIME CLASSIFICATION PARAMETERS (Key ML targets):
+    /// 1. VIX thresholds: >40=Convex, >25=Mixed, else=Calm [GENETIC RANGE: VIX±5 points]
+    /// 2. Trend strength: |trendScore| ≥0.8 → Convex [ML RANGE: 0.6-1.0] 
+    /// 3. IV rank thresholds for regime transitions [ML RANGE: 0.1-0.9]
+    /// 
+    /// STRATEGY SELECTION LOGIC (Primary optimization focus):
+    /// - Iron Condor suppression in Convex regimes (high volatility protection)
+    /// - BWB preference during volatility expansion periods  
+    /// - Regime-specific ROC requirements (Convex needs ≥30% vs 15% for others)
+    /// - VIX-based position sizing (>40 VIX = 25% sizing, >30 VIX = 50% sizing)
+    /// 
+    /// GENETIC ALGORITHM APPROACH:
+    /// - Encode thresholds as gene sequences: [vixMixed, vixConvex, trendThresh, rocThresh]
+    /// - Fitness function: 20-year backtest Sharpe ratio + win rate - max drawdown
+    /// - Crossover: Arithmetic averaging with ±10% mutation rates
+    /// - Population: 100 parameter sets, 50 generations minimum
+    /// - Elite preservation: Top 10% always survive to next generation
+    /// 
+    /// REINFORCEMENT LEARNING TARGETS:
+    /// - Real-time regime classification accuracy (vs realized volatility outcomes)
+    /// - Strategy selection rewards (profit per regime-strategy combination)
+    /// - Adaptive threshold learning (market regime shifts over time)
     /// </summary>
     public class EnhancedRegimeClassifier
     {
@@ -78,26 +103,56 @@ namespace ODTE.Strategy
             return true;
         }
 
+        /// <summary>
+        /// CORE REGIME CLASSIFICATION ALGORITHM - Primary ML/GA optimization target
+        /// 
+        /// This method contains the most critical decision thresholds for strategy selection.
+        /// Every parameter here directly impacts trading performance and should be optimized.
+        /// 
+        /// GENETIC ALGORITHM OPTIMIZATION PARAMETERS:
+        /// - VIX_CONVEX_THRESHOLD: Currently 40, optimize range [35-45]
+        /// - VIX_MIXED_THRESHOLD: Currently 25, optimize range [20-30] 
+        /// - TREND_CONVEX_THRESHOLD: Currently 0.8, optimize range [0.6-1.0]
+        /// - TREND_MIXED_THRESHOLD: Currently 0.4, optimize range [0.3-0.6]
+        /// - IVRANK_MIXED_THRESHOLD: Currently 0.7, optimize range [0.5-0.9]
+        /// 
+        /// MACHINE LEARNING APPROACH:
+        /// 1. Feature engineering: Add moving averages, volatility ratios, correlation measures
+        /// 2. Classification models: Random Forest, SVM, Neural Networks for regime prediction
+        /// 3. Ensemble methods: Combine multiple regime classifiers with voting
+        /// 4. Time-series models: LSTM/GRU for regime transition prediction
+        /// 
+        /// OPTIMIZATION FITNESS FUNCTION:
+        /// - Primary: Maximize profit per regime (measured over 20-year backtest)
+        /// - Secondary: Minimize regime misclassification rate
+        /// - Penalty: Excessive regime switches (prevent overfitting to noise)
+        /// </summary>
         private RegimeSwitcher.Regime ClassifyRegime(MarketSnapshot market)
         {
-            // Enhanced classification with evidence logging
-            var vix = market.VIX;
-            var trendScore = Math.Abs(market.TrendScore);
-            var ivRank = market.IVRank;
+            // GENETIC ALGORITHM TARGET: These threshold values are prime optimization candidates
+            var vix = market.VIX;                          // Raw market fear/volatility measure
+            var trendScore = Math.Abs(market.TrendScore);  // Directional momentum strength [0-1]
+            var ivRank = market.IVRank;                    // Implied volatility percentile [0-1]
 
-            // Convex: High volatility or strong trend
-            if (vix > 40 || trendScore >= 0.8m)
+            // CONVEX REGIME: High volatility or strong directional movement
+            // ML OPTIMIZATION TARGET: Tune these thresholds for maximum tail risk protection
+            if (vix > 40 ||                    // VIX_CONVEX_THRESHOLD [GENETIC RANGE: 35-45]
+                trendScore >= 0.8m)            // TREND_CONVEX_THRESHOLD [GENETIC RANGE: 0.6-1.0]
             {
                 return RegimeSwitcher.Regime.Convex;
             }
 
-            // Mixed: Elevated volatility or moderate trend  
-            if (vix > 25 || ivRank > 0.7m || trendScore >= 0.4m)
+            // MIXED REGIME: Elevated volatility or moderate trends
+            // ML OPTIMIZATION TARGET: Balance between Calm and Convex classification accuracy
+            if (vix > 25 ||                    // VIX_MIXED_THRESHOLD [GENETIC RANGE: 20-30]
+                ivRank > 0.7m ||               // IVRANK_MIXED_THRESHOLD [GENETIC RANGE: 0.5-0.9] 
+                trendScore >= 0.4m)            // TREND_MIXED_THRESHOLD [GENETIC RANGE: 0.3-0.6]
             {
                 return RegimeSwitcher.Regime.Mixed;
             }
 
-            // Calm: Low volatility, range-bound
+            // CALM REGIME: Low volatility, range-bound markets (DEFAULT)
+            // STRATEGY IMPLICATIONS: Allow both IC and BWB, standard position sizing
             return RegimeSwitcher.Regime.Calm;
         }
 
@@ -123,46 +178,97 @@ namespace ODTE.Strategy
             };
         }
 
+        /// <summary>
+        /// VIX-BASED POSITION SIZING AND STRATEGY SUPPRESSION - Critical ML optimization target
+        /// 
+        /// This method implements the core risk management system that scales position sizes
+        /// and suppresses risky strategies based on market volatility (VIX) levels.
+        /// 
+        /// MACHINE LEARNING OPTIMIZATION TARGETS:
+        /// 1. VIX thresholds for position size reduction [GENETIC ALGORITHM TARGET]
+        /// 2. Strategy suppression levels [REINFORCEMENT LEARNING TARGET]  
+        /// 3. Position size multipliers [CONTINUOUS OPTIMIZATION TARGET]
+        /// 
+        /// GENETIC ALGORITHM PARAMETERS:
+        /// - VIX_HIGH_THRESHOLD: Currently 40, optimize range [35-45]
+        /// - VIX_MEDIUM_THRESHOLD: Currently 30, optimize range [25-35]
+        /// - HIGH_VIX_SIZE_MULTIPLIER: Currently 0.25, optimize range [0.15-0.35]
+        /// - MEDIUM_VIX_SIZE_MULTIPLIER: Currently 0.5, optimize range [0.4-0.7]
+        /// 
+        /// STRATEGY SELECTION IMPACT:
+        /// - Iron Condor suppression in high VIX protects against gamma risk
+        /// - Position size reduction prevents catastrophic losses during vol expansion
+        /// - Adaptive sizing allows profitable participation while managing tail risk
+        /// 
+        /// OPTIMIZATION APPROACH:
+        /// - Backtest different VIX thresholds against historical vol clusters
+        /// - Optimize for maximum return per unit of VIX risk
+        /// - Machine learning models can learn regime-specific VIX sensitivity
+        /// </summary>
         private bool ValidateVIXSizing(CandidateOrder candidate, MarketSnapshot market, out string reason)
         {
-            var vix = market.VIX;
+            var vix = market.VIX;  // Market fear/volatility index
             
-            if (vix > 40)
+            // HIGH VOLATILITY REGIME: Extreme risk management
+            if (vix > 40)  // VIX_HIGH_THRESHOLD [GENETIC RANGE: 35-45]
             {
-                // Suppress IC completely when VIX > 40
+                // STRATEGY SUPPRESSION: Iron Condor completely banned in high VIX
+                // ML TARGET: Learn optimal strategy suppression thresholds per volatility level
                 if (candidate.Shape.Name == "IronCondor")
                 {
                     reason = "IC suppressed when VIX > 40";
                     return false;
                 }
                 
-                // Reduce position size to 0.25x when VIX > 40
-                if (candidate.RfibUtilization > 0.25m)
+                // POSITION SIZE REDUCTION: Maximum 25% position sizing
+                // GENETIC TARGET: Optimize size multiplier for high VIX scenarios
+                if (candidate.RfibUtilization > 0.25m)  // HIGH_VIX_SIZE_MULTIPLIER [GENETIC RANGE: 0.15-0.35]
                 {
                     reason = "Position size too large for VIX > 40 (max 0.25x sizing)";
                     return false;
                 }
             }
-            else if (vix > 30)
+            // MEDIUM VOLATILITY REGIME: Moderate risk management
+            else if (vix > 30)  // VIX_MEDIUM_THRESHOLD [GENETIC RANGE: 25-35]
             {
-                // Reduce position size to 0.5x when VIX > 30
-                if (candidate.RfibUtilization > 0.5m)
+                // POSITION SIZE REDUCTION: Maximum 50% position sizing for elevated volatility
+                // GENETIC TARGET: Optimize medium VIX size multiplier for balance of profit vs risk
+                if (candidate.RfibUtilization > 0.5m)  // MEDIUM_VIX_SIZE_MULTIPLIER [GENETIC RANGE: 0.4-0.7]
                 {
                     reason = "Position size too large for VIX > 30 (max 0.5x sizing)";
                     return false;
                 }
             }
-
+            // LOW VOLATILITY REGIME: Standard position sizing allowed (up to RFib limits)
+            
             reason = "VIX sizing rules satisfied";
             return true;
         }
 
+        /// <summary>
+        /// TREND-BASED ENTRY BLOCKING - ML optimization target for momentum protection
+        /// 
+        /// Prevents new option positions during strong directional moves to avoid
+        /// getting caught in momentum breakouts that can cause rapid losses.
+        /// 
+        /// GENETIC ALGORITHM OPTIMIZATION:
+        /// - TREND_BLOCK_THRESHOLD: Currently 0.8, optimize range [0.6-1.0]
+        /// - Consider adaptive thresholds based on volatility regime
+        /// - ML models could predict trend continuation vs reversal probability
+        /// 
+        /// STRATEGY SELECTION IMPACT:
+        /// - Protects credit spreads from directional risk during breakouts
+        /// - Prevents entries during potential gamma squeeze scenarios
+        /// - Maintains position quality by avoiding high-momentum environments
+        /// </summary>
         private bool ValidateTrendConditions(CandidateOrder candidate, MarketSnapshot market, out string reason)
         {
-            var trendScore = Math.Abs(market.TrendScore);
+            // GENETIC TARGET: Trend strength threshold for entry blocking
+            var trendScore = Math.Abs(market.TrendScore);  // Absolute momentum strength [0-1]
             
-            // Block new entries during strong trends (cooldown period)
-            if (trendScore >= 0.8m)
+            // TREND BLOCKING: Prevent entries during strong directional moves
+            // ML OPTIMIZATION TARGET: Learn optimal trend threshold per market regime
+            if (trendScore >= 0.8m)  // TREND_BLOCK_THRESHOLD [GENETIC RANGE: 0.6-1.0]
             {
                 reason = "New entries blocked during strong trend (|Trend5m| >= 0.8)";
                 return false;
@@ -191,10 +297,34 @@ namespace ODTE.Strategy
             return true;
         }
 
+        /// <summary>
+        /// CONVEX REGIME ROC THRESHOLD - Critical ML optimization target for high volatility trading
+        /// 
+        /// In high volatility (Convex) regimes, strategies must meet higher return-on-capital
+        /// requirements to justify the increased tail risk and volatility exposure.
+        /// 
+        /// GENETIC ALGORITHM OPTIMIZATION:
+        /// - CONVEX_ROC_THRESHOLD: Currently 30%, optimize range [20%-40%]
+        /// - Could be adaptive based on VIX level (higher VIX = higher ROC requirement)
+        /// - ML models could learn optimal ROC thresholds per volatility cluster
+        /// 
+        /// STRATEGY SELECTION IMPACT:
+        /// - Forces higher quality setups during dangerous market conditions
+        /// - Prevents low-return trades when tail risk is elevated  
+        /// - Maintains portfolio performance by being more selective in Convex regimes
+        /// 
+        /// OPTIMIZATION APPROACH:
+        /// - Backtest different ROC thresholds vs actual Convex regime outcomes
+        /// - Optimize for: maximum Sharpe ratio in high volatility periods
+        /// - Consider regime-specific vs adaptive threshold approaches
+        /// </summary>
         private bool ValidateConvexROC(CandidateOrder candidate, out string reason)
         {
-            const decimal ConvexROCThreshold = 0.30m; // Higher ROC required in Convex
+            // GENETIC ALGORITHM TARGET: ROC threshold for high volatility regime trading
+            const decimal ConvexROCThreshold = 0.30m; // CONVEX_ROC_THRESHOLD [GENETIC RANGE: 0.20-0.40]
             
+            // CONVEX ROC REQUIREMENT: Higher returns required to justify elevated risk
+            // ML OPTIMIZATION TARGET: Learn optimal ROC thresholds per VIX level  
             if (candidate.Roc < ConvexROCThreshold)
             {
                 reason = $"ROC too low for Convex regime (required: {ConvexROCThreshold:P0}, actual: {candidate.Roc:P1})";
