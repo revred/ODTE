@@ -35,7 +35,11 @@
       "Bash(dotnet clean:*)",
       "Bash(sqlite3:*)",
       "Bash(dotnet sln add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "mcp__ide__executeCode",
+      "Bash(csc:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": [],

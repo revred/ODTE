@@ -535,9 +535,9 @@ public enum AdaptiveMode
 }
 
 /// <summary>
-/// Market conditions data structure
+/// Legacy market conditions - use MarketConditions from IStrategyEngine instead
 /// </summary>
-public class MarketConditions
+public class LegacyMarketConditions
 {
     public decimal IVRank { get; set; }           // 0-100, implied volatility rank
     public decimal RSI { get; set; }             // 0-100, relative strength index

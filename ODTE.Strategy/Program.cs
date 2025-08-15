@@ -35,6 +35,27 @@ public class Program
             var mode = ParseMode(args);
             var specificScenario = ParseScenario(args);
 
+            // Check for RegimeSwitcher mode
+            if (args.Contains("--regime") || args.Contains("regime"))
+            {
+                await RunRegimeSwitcherAnalysis();
+                return;
+            }
+            
+            // Check for RegimeSwitcher stress test mode
+            if (args.Contains("--stress") || args.Contains("stress"))
+            {
+                RunRegimeSwitcherStressTest();
+                return;
+            }
+            
+            // Check for regression test mode
+            if (args.Contains("--regression") || args.Contains("regression"))
+            {
+                RunStrategyRegressionTests();
+                return;
+            }
+
             // Initialize framework configuration
             var frameworkConfig = new FrameworkConfig
             {
@@ -88,8 +109,7 @@ public class Program
             Environment.Exit(1);
         }
 
-        Console.WriteLine("\n🎯 Program completed. Press any key to exit...");
-        Console.ReadKey();
+        Console.WriteLine("\n🎯 Program completed.");
     }
 
     /// <summary>
@@ -275,25 +295,33 @@ public class Program
         
         if (day <= 8) // Initial bull phase
         {
-            conditions.IVRank = (decimal)(20 + day * 1.5);
-            conditions.RSI = (decimal)(52 + day * 1.2);
+            conditions.IVRank = 20 + day * 1.5;
+            conditions.RSI = 52 + day * 1.2;
             conditions.MomentumDivergence = 0.4 + day * 0.02;
-            conditions.VIXContango = 4m;
+            conditions.VIXContango = 4.0;
+            conditions.VIX = 15 + day * 0.5;
         }
         else if (day <= 16) // Volatile correction phase
         {
-            conditions.IVRank = (decimal)(45 + (day - 8) * 2.5);
-            conditions.RSI = (decimal)(65 - (day - 8) * 2.8);
+            conditions.IVRank = 45 + (day - 8) * 2.5;
+            conditions.RSI = 65 - (day - 8) * 2.8;
             conditions.MomentumDivergence = 0.6 - (day - 8) * 0.15;
-            conditions.VIXContango = 8m + (day - 8) * 0.5m;
+            conditions.VIXContango = 8.0 + (day - 8) * 0.5;
+            conditions.VIX = 20 + (day - 8) * 2.0;
         }
         else // Recovery phase
         {
-            conditions.IVRank = (decimal)(70 - (day - 16) * 4.0);
-            conditions.RSI = (decimal)(35 + (day - 16) * 3.5);
+            conditions.IVRank = 70 - (day - 16) * 4.0;
+            conditions.RSI = 35 + (day - 16) * 3.5;
             conditions.MomentumDivergence = -0.3 + (day - 16) * 0.12;
-            conditions.VIXContango = 15m - (day - 16) * 1.2m;
+            conditions.VIXContango = 15.0 - (day - 16) * 1.2;
+            conditions.VIX = 35 - (day - 16) * 1.5;
         }
+        
+        // Set common properties
+        conditions.Date = DateTime.Now.AddDays(day - 1);
+        conditions.UnderlyingPrice = 4500;
+        conditions.DaysToExpiry = 1;
 
         return conditions;
     }
@@ -360,6 +388,111 @@ public class Program
             return args[index + 1];
         }
         return null;
+    }
+
+    /// <summary>
+    /// Run RegimeSwitcher 24-Day Rolling Analysis
+    /// </summary>
+    private static async Task RunRegimeSwitcherAnalysis()
+    {
+        Console.WriteLine("🔄 REGIME SWITCHER: 24-Day Rolling Strategy Analysis");
+        Console.WriteLine("🎯 Maximizing returns in each 24-day period through adaptive regime-based strategies");
+        Console.WriteLine("=" .PadRight(80, '='));
+        Console.WriteLine();
+        
+        var regimeSwitcher = new RegimeSwitcher();
+        
+        // Run 5-year analysis with 24-day rolling periods
+        var startDate = new DateTime(2019, 1, 2);
+        var endDate = new DateTime(2024, 12, 31);
+        
+        Console.WriteLine($"📅 Analysis Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+        Console.WriteLine($"🔄 24-day rolling periods with fresh capital reset each cycle");
+        Console.WriteLine($"🎯 Strategy Selection: Calm (BWB) | Mixed (BWB+Tail) | Convex (RatioBS)");
+        Console.WriteLine();
+        
+        var results = regimeSwitcher.RunHistoricalAnalysis(startDate, endDate);
+        
+        Console.WriteLine("\n" + "=" .PadRight(80, '='));
+        Console.WriteLine("🎉 REGIME SWITCHER ANALYSIS COMPLETE!");
+        Console.WriteLine("=" .PadRight(80, '='));
+        
+        Console.WriteLine($"\n📊 OVERALL PERFORMANCE METRICS:");
+        Console.WriteLine($"   Total 24-day periods: {results.TotalPeriods}");
+        Console.WriteLine($"   Average return per period: {results.AverageReturn:F1}%");
+        Console.WriteLine($"   Best period return: {results.BestPeriodReturn:F1}%");
+        Console.WriteLine($"   Worst period return: {results.WorstPeriodReturn:F1}%");
+        Console.WriteLine($"   Win rate: {results.WinRate:P1}");
+        Console.WriteLine($"   Total compound return: {results.TotalReturn:F1}%");
+        
+        Console.WriteLine($"\n🎯 STRATEGY REGIME PERFORMANCE:");
+        foreach (var (regime, pnl) in results.RegimePerformance.OrderByDescending(r => r.Value))
+        {
+            Console.WriteLine($"   {regime}: ${pnl:F0}");
+        }
+        
+        // Calculate annualized metrics
+        var years = (endDate - startDate).TotalDays / 365.25;
+        var annualizedReturn = Math.Pow(1 + results.TotalReturn / 100, 1 / years) - 1;
+        var periodsPerYear = 365.25 / 24; // ~15.2 periods per year
+        
+        Console.WriteLine($"\n📈 ANNUALIZED METRICS:");
+        Console.WriteLine($"   Annualized return: {annualizedReturn * 100:F1}%");
+        Console.WriteLine($"   Periods per year: ~{periodsPerYear:F1}");
+        Console.WriteLine($"   Expected periods needed to double capital: {Math.Log(2) / Math.Log(1 + results.AverageReturn / 100):F1}");
+        
+        if (results.TotalReturn > 100)
+        {
+            Console.WriteLine($"\n🏆 EXCEPTIONAL PERFORMANCE!");
+            Console.WriteLine($"   RegimeSwitcher achieved {results.TotalReturn:F1}% total return");
+            Console.WriteLine($"   This demonstrates the power of adaptive 24-day regime-based strategies");
+        }
+        else if (results.TotalReturn > 50)
+        {
+            Console.WriteLine($"\n✅ STRONG PERFORMANCE!");
+            Console.WriteLine($"   RegimeSwitcher achieved solid {results.TotalReturn:F1}% total return");
+            Console.WriteLine($"   Consistent performance across market regimes");
+        }
+        else
+        {
+            Console.WriteLine($"\n⚠️ MODERATE PERFORMANCE");
+            Console.WriteLine($"   RegimeSwitcher achieved {results.TotalReturn:F1}% total return");
+            Console.WriteLine($"   Consider parameter optimization for enhanced results");
+        }
+        
+        await Task.CompletedTask;
+    }
+    
+    /// <summary>
+    /// Run RegimeSwitcher Stress Test with synthetic data
+    /// </summary>
+    private static void RunRegimeSwitcherStressTest()
+    {
+        Console.WriteLine("🔥 REGIME SWITCHER STRESS TEST");
+        Console.WriteLine("Testing performance under rapid regime changes with synthetic data");
+        Console.WriteLine("=".PadRight(80, '='));
+        Console.WriteLine();
+        
+        var stressTest = new RegimeSwitcherStressTest();
+        stressTest.RunComprehensiveStressTest();
+        
+        Console.WriteLine("\n🎯 Stress test completed.");
+    }
+    
+    /// <summary>
+    /// Run Strategy Regression Tests
+    /// </summary>
+    private static void RunStrategyRegressionTests()
+    {
+        Console.WriteLine("🧪 STRATEGY REGRESSION TESTS");
+        Console.WriteLine("Validating Iron Condor, Credit BWB, and Convex Tail Overlay performance");
+        Console.WriteLine("=".PadRight(80, '='));
+        Console.WriteLine();
+        
+        var regressionTests = new StrategyRegressionTests();
+        regressionTests.RunCompleteRegressionSuite();
+        
+        Console.WriteLine("\n🎯 Regression tests completed.");
     }
 }
 

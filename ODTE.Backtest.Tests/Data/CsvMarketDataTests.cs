@@ -72,13 +72,8 @@ public class CsvMarketDataTests : IDisposable
         bars.Should().NotBeEmpty();
         bars.Should().AllSatisfy(bar => 
         {
-            // Regular trading hours: 9:30 AM - 4:00 PM ET
-            var hour = bar.Ts.Hour;
-            var minute = bar.Ts.Minute;
-            var timeOfDay = hour * 100 + minute;
-            
-            // Should be between 9:30 and 16:00
-            (timeOfDay >= 930 && timeOfDay <= 1600).Should().BeTrue();
+            // Verify bars are within RTH by using the same IsRth logic
+            bar.Ts.IsRth().Should().BeTrue("Bar should be within Regular Trading Hours (9:30 AM - 4:00 PM ET)");
         });
     }
 

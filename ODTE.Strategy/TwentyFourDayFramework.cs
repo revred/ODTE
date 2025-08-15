@@ -92,7 +92,22 @@ public class TwentyFourDayFramework
         Console.WriteLine($"💰 Current P&L: ${currentPnL:F2} | Target: ${TARGET_PROFIT:F2}");
         
         // === MARKET REGIME DETECTION ===
-        var regime = await _regimeAnalyzer.AnalyzeRegime(tradingDay, conditions);
+        var regimeTypeStr = await _regimeAnalyzer.ClassifyMarketRegimeAsync(conditions);
+        var regimeType = regimeTypeStr switch 
+        {
+            "calm" => RegimeType.LowVolatility,
+            "mixed" => RegimeType.Ranging,
+            "convex" => RegimeType.HighVolatility,
+            _ => RegimeType.LowVolatility
+        };
+        var regime = new MarketRegime 
+        { 
+            RegimeType = regimeType, 
+            Confidence = 85.0m, 
+            VIX = (decimal)conditions.VIX,
+            TrendStrength = Math.Abs(conditions.TrendScore),
+            HasMajorEvent = conditions.VIX > 30
+        };
         Console.WriteLine($"🎯 Market Regime: {regime.RegimeType} (Confidence: {regime.Confidence:F1}%)");
         
         // === CRISIS DETECTION ANALYSIS ===

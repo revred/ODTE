@@ -51,10 +51,12 @@ public class RealisticMarketSimulator
 
         return new MarketConditions
         {
-            IVRank = (decimal)Math.Max(0, Math.Min(100, ivRank)),
-            RSI = (decimal)Math.Max(0, Math.Min(100, rsi)),
+            IVRank = Math.Max(0, Math.Min(100, ivRank)),
+            RSI = Math.Max(0, Math.Min(100, rsi)),
             MomentumDivergence = Math.Max(-1, Math.Min(1, momentumDivergence)),
-            VIXContango = (decimal)Math.Max(-5, Math.Min(25, vixContango))
+            VIXContango = Math.Max(-5, Math.Min(25, vixContango)),
+            VIX = vixLevel, // Add VIX for new API compatibility
+            Date = DateTime.Now
         };
     }
 

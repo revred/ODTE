@@ -265,15 +265,20 @@ namespace ODTE.Optimization.Engine
         
         private bool HasConverged(Dictionary<int, GenerationStats> history, int currentGen)
         {
-            if (currentGen < 10) return false;
+            if (currentGen < 15) return false; // Require at least 15 generations
             
-            // Check if best fitness hasn't improved significantly in last 5 generations
-            var recentGens = Enumerable.Range(currentGen - 4, 5)
+            // For targeting 50%+ returns, be much more aggressive about convergence
+            // Check if best fitness hasn't improved significantly in last 8 generations
+            var recentGens = Enumerable.Range(currentGen - 7, 8)
                 .Select(g => history[g].BestFitness)
                 .ToList();
             
             var variance = CalculateStdDev(recentGens);
-            return variance < 0.01; // Less than 1% variation
+            var bestFitness = recentGens.Max();
+            
+            // Don't converge until we have really good performance (targeting 50%+ returns)
+            // Sharpe > 10 or very low variance with high performance
+            return variance < 0.005 && bestFitness > 15.0; // Much stricter criteria for high performance
         }
         
         private async Task<List<StrategyVersion>> CreateNextGenerationAsync(

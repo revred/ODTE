@@ -344,10 +344,12 @@ public class SimulationScenario
     {
         return new MarketConditions
         {
-            IVRank = (decimal)IVRankPattern(day),
-            RSI = (decimal)RSIPattern(day),
+            IVRank = IVRankPattern(day),
+            RSI = RSIPattern(day),
             MomentumDivergence = TrendDirection + (new Random(day).NextDouble() - 0.5) * 0.3,
-            VIXContango = BaseVIX > 30 ? 8m : 3m // Higher contango in high vol
+            VIXContango = (double)(BaseVIX > 30 ? 8m : 3m), // Higher contango in high vol
+            VIX = (double)BaseVIX,
+            Date = DateTime.Now.AddDays(day - 1)
         };
     }
 }

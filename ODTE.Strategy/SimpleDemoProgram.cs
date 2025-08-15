@@ -42,7 +42,6 @@ public class SimpleDemoProgram
             Console.WriteLine($"❌ DEMO FAILED: {ex.Message}");
         }
         
-        Console.WriteLine("\nPress any key to exit...");
-        Console.ReadKey();
+        Console.WriteLine("\nDemo completed.");
     }
 }

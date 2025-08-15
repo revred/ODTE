@@ -84,11 +84,11 @@ namespace ODTE.Optimization
                     Console.WriteLine("Running genetic algorithm optimization...");
                     var geneticConfig = new OptimizationConfig
                     {
-                        MaxGenerations = 50,
-                        PopulationSize = 30,
-                        MutationRate = 0.1,
-                        CrossoverRate = 0.7,
-                        EliteRatio = 0.1,
+                        MaxGenerations = 100, // More generations for 50%+ target
+                        PopulationSize = 150, // Larger population for better exploration
+                        MutationRate = 0.25,  // Higher mutation for aggressive exploration
+                        CrossoverRate = 0.8,  // More crossover for combination exploration
+                        EliteRatio = 0.05,    // Smaller elite to allow more variation
                         FitnessMetric = FitnessFunction.Combined,
                         UseAdaptiveMutation = true
                     };

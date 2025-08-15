@@ -1,15 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <StartupObject>ODTE.Strategy.SimpleDemoProgram</StartupObject>
-    <AssemblyTitle>ODTE 24-Day Strategy Framework</AssemblyTitle>
-    <AssemblyDescription>Advanced 24-day trading framework with $6000 target and intelligent contingency management</AssemblyDescription>
+    <AssemblyTitle>ODTE Strategy Library</AssemblyTitle>
+    <AssemblyDescription>0DTE Options Trading Strategy Library with Iron Condor, Credit BWB, Convex Tail Overlay, and 24-day regime switching</AssemblyDescription>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.0.0</AssemblyFileVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>ODTE.Strategy</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>ODTE Team</Authors>
+    <Company>ODTE</Company>
+    <Product>ODTE Strategy Library</Product>
+    <PackageDescription>Comprehensive 0DTE options trading strategies with genetic optimization and regime switching</PackageDescription>
+    <RepositoryUrl>https://github.com/odte/strategy</RepositoryUrl>
+    <PackageTags>options trading 0dte strategy</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
