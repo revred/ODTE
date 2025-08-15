@@ -49,6 +49,15 @@ namespace ODTE.Strategy.GoScore
     public sealed record Liquidity(double maxSpreadMid=0.25);
 
     public enum StrategyKind { IronCondor, CreditBwb }
+
+    /// <summary>
+    /// Strategy specification for GoScore validation
+    /// </summary>
+    public class StrategySpec
+    {
+        public StrategyKind Type { get; set; }
+        public double CreditTarget { get; set; }
+    }
     public enum Regime { Calm, Mixed, Convex }
     public enum Decision { Skip, Half, Full }
 
