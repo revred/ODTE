@@ -42,7 +42,7 @@ namespace ODTE.Backtest.Strategy;
 /// - XSP Cash Settlement: https://www.cboe.com/tradable_products/sp_500/mini_spx_options/cash_settlement/
 /// - Options Risk: https://www.theocc.com/getmedia/a151a9ae-d784-4a15-bdeb-23a029f50b70/riskstoc.pdf
 /// </summary>
-public sealed class SpreadBuilder
+public sealed class SpreadBuilder : ISpreadBuilder
 {
     private readonly SimConfig _cfg;
     
@@ -106,14 +106,15 @@ public sealed class SpreadBuilder
         /// </summary>
         (OptionQuote? shortQ, OptionQuote? longQ) pickSingle(Right r, double dMin, double dMax)
         {
-            // Filter to strikes within delta criteria, order by delta (closest to threshold first)
+            // Filter to strikes within delta criteria
             var side = quotes.Where(q => q.Right == r && Math.Abs(q.Delta) >= dMin && Math.Abs(q.Delta) <= dMax)
-                             .OrderBy(q => Math.Abs(q.Delta))
                              .ToList();
             
             Console.WriteLine($"      DEBUG: pickSingle {r} delta [{dMin:F2}-{dMax:F2}]: found {side.Count} candidates");
             
-            var sh = side.FirstOrDefault(); 
+            // Pick second-highest delta for short leg (good premium, not too risky)
+            var sh = side.OrderByDescending(q => Math.Abs(q.Delta)).Skip(1).FirstOrDefault()
+                     ?? side.OrderByDescending(q => Math.Abs(q.Delta)).FirstOrDefault(); 
             if (sh is null) 
             {
                 Console.WriteLine($"      DEBUG: No short strike found in delta range [{dMin:F2}-{dMax:F2}]");
@@ -125,8 +126,10 @@ public sealed class SpreadBuilder
                 ? sh.Strike - _cfg.WidthPoints.Min  // Put spread: long leg below short
                 : sh.Strike + _cfg.WidthPoints.Min; // Call spread: long leg above short
             
-            // Find closest available strike to target width
-            var lg = side.OrderBy(q => Math.Abs(q.Strike - targetK)).FirstOrDefault();
+            // Find closest available strike to target width (excluding short strike)
+            var lg = side.Where(q => q.Strike != sh.Strike)
+                         .OrderBy(q => Math.Abs(q.Strike - targetK))
+                         .FirstOrDefault();
             return (sh, lg);
         }
 
@@ -250,9 +253,9 @@ public sealed class SpreadBuilder
             return null;
         }
 
-        // Select strikes closest to delta criteria
-        var sp = puts.First();   // Short put (primary income)
-        var sc = calls.First();  // Short call (primary income)
+        // Select strikes for maximum credit: higher delta = more premium
+        var sp = puts.OrderByDescending(q => Math.Abs(q.Delta)).First();   // Short put: highest delta (most premium)
+        var sc = calls.OrderByDescending(q => Math.Abs(q.Delta)).First();  // Short call: highest delta (most premium)
         
         Console.WriteLine($"      DEBUG: Selected short strikes - Put K={sp.Strike:F1} Δ={Math.Abs(sp.Delta):F3}, Call K={sc.Strike:F1} Δ={Math.Abs(sc.Delta):F3}");
         
@@ -260,8 +263,17 @@ public sealed class SpreadBuilder
         var allPuts = quotes.Where(q => q.Right == Right.Put).ToList();
         var allCalls = quotes.Where(q => q.Right == Right.Call).ToList();
         
-        var lp = allPuts.OrderBy(q => Math.Abs(q.Strike - (sp.Strike - _cfg.WidthPoints.Min))).FirstOrDefault();
-        var lc = allCalls.OrderBy(q => Math.Abs(q.Strike - (sc.Strike + _cfg.WidthPoints.Min))).FirstOrDefault();
+        // Target strikes for protective wings  
+        double targetLongPut = sp.Strike - _cfg.WidthPoints.Min;
+        double targetLongCall = sc.Strike + _cfg.WidthPoints.Min;
+        
+        // Find closest available strikes EXCLUDING the short strikes
+        var lp = allPuts.Where(q => q.Strike != sp.Strike)
+                        .OrderBy(q => Math.Abs(q.Strike - targetLongPut))
+                        .FirstOrDefault();
+        var lc = allCalls.Where(q => q.Strike != sc.Strike)
+                         .OrderBy(q => Math.Abs(q.Strike - targetLongCall))
+                         .FirstOrDefault();
         
         if (lp is null || lc is null) 
         {

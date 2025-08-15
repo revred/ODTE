@@ -37,7 +37,7 @@ namespace ODTE.Backtest.Engine;
 /// - Gamma Risk: "Dynamic Hedging" by Nassim Taleb
 /// - Market Microstructure: "Trading and Exchanges" by Larry Harris
 /// </summary>
-public sealed class ExecutionEngine : IDisposable
+public sealed class ExecutionEngine : IExecutionEngine
 {
     private readonly SimConfig _cfg;
     private readonly TradeLogDatabase _tradeLogDb;

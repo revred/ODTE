@@ -12,20 +12,20 @@ public sealed class Backtester
     private readonly IMarketData _md; 
     private readonly IOptionsData _od; 
     private readonly IEconCalendar _cal;
-    private readonly RegimeScorer _scorer; 
-    private readonly SpreadBuilder _builder; 
-    private readonly ExecutionEngine _exec; 
-    private readonly RiskManager _risk;
+    private readonly IRegimeScorer _scorer; 
+    private readonly ISpreadBuilder _builder; 
+    private readonly IExecutionEngine _exec; 
+    private readonly IRiskManager _risk;
 
     public Backtester(
         SimConfig cfg, 
         IMarketData md, 
         IOptionsData od, 
         IEconCalendar cal, 
-        RegimeScorer scorer, 
-        SpreadBuilder builder, 
-        ExecutionEngine exec, 
-        RiskManager risk)
+        IRegimeScorer scorer, 
+        ISpreadBuilder builder, 
+        IExecutionEngine exec, 
+        IRiskManager risk)
     { 
         _cfg=cfg; _md=md; _od=od; _cal=cal; 
         _scorer=scorer; _builder=builder; _exec=exec; _risk=risk; 

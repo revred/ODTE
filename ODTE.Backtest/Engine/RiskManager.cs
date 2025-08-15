@@ -43,7 +43,7 @@ namespace ODTE.Backtest.Engine;
 /// - Position Sizing: "The Mathematics of Money Management" by Ralph Vince
 /// - Behavioral Finance: "Thinking, Fast and Slow" by Daniel Kahneman
 /// </summary>
-public sealed class RiskManager
+public sealed class RiskManager : IRiskManager
 {
     private readonly SimConfig _cfg;
     private double _dailyRealizedPnL;    // Running P&L for current day
@@ -88,12 +88,18 @@ public sealed class RiskManager
     {
         // === DAILY RESET LOGIC ===
         var today = DateOnly.FromDateTime(now);
-        if (today != _currentDay)
+        if (today != _currentDay && _currentDay != default(DateOnly))
         {
+            // Only reset if this is a genuine day change, not initial state
             _currentDay = today;
             _dailyRealizedPnL = 0;
             _activePerSidePut = 0;
             _activePerSideCall = 0;
+        }
+        else if (_currentDay == default(DateOnly))
+        {
+            // First time initialization - set current day but don't reset counters
+            _currentDay = today;
         }
         
         // === RISK GATE 1: DAILY LOSS LIMIT ===

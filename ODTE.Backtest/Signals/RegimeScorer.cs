@@ -40,7 +40,7 @@ namespace ODTE.Backtest.Signals;
 /// - ATR Volatility: https://www.investopedia.com/articles/trading/08/average-true-range.asp
 /// - Market Microstructure: "Trading and Exchanges" by Larry Harris
 /// </summary>
-public sealed class RegimeScorer
+public sealed class RegimeScorer : IRegimeScorer
 {
     private readonly SimConfig _cfg;
     
@@ -112,7 +112,7 @@ public sealed class RegimeScorer
         // === 3. VOLATILITY REGIME ANALYSIS ===
         double dayRange = bars.Count>0 ? (bars.Max(b=>b.H) - bars.Min(b=>b.L)) : 0;
         double atr = md.Atr20Minutes(now);
-        double rngVsAtr = atr>0 ? dayRange/atr : 0.5;
+        double rngVsAtr = atr>0 && dayRange > 0 ? dayRange/atr : 0.5;
 
         // === 4. EVENT PROXIMITY CHECK ===
         var nextEvt = cal.NextEventAfter(now);
@@ -130,9 +130,12 @@ public sealed class RegimeScorer
         // Signal alignment bonus
         if (vwapSlopeUp == orBreakUp) score += 1;  // VWAP slope confirms OR direction
         
-        // Volatility regime bonuses
-        score += (rngVsAtr <= 0.8 ? 2 : 0);  // Calm conditions favor premium selling
-        score += (rngVsAtr >= 1.0 ? 2 : 0);  // Expansion favors directional trades
+        // Volatility regime bonuses (only if we have meaningful data)
+        if (bars.Count > 0 || dayRange > 0)  // Skip only for completely empty scenarios
+        {
+            score += (rngVsAtr <= 0.8 ? 2 : 0);  // Calm conditions favor premium selling
+            score += (rngVsAtr >= 1.0 ? 2 : 0);  // Expansion favors directional trades
+        }
         
         // Risk gates (negative points)
         if (minsToEvent < _cfg.Signals.EventBlockMinutesBefore) score -= 2;  // Event proximity
@@ -141,7 +144,7 @@ public sealed class RegimeScorer
         if (minsToClose < _cfg.NoNewRiskMinutesToClose) score -= 3;  // Gamma hour
 
         // === 6. REGIME CLASSIFICATION ===
-        bool calmRange = rngVsAtr <= 0.8 && !orHolds;  // Quiet + no breakout = range
+        bool calmRange = (bars.Count > 0 && dayRange > 0) && rngVsAtr <= 0.8 && !orHolds;  // Quiet + no breakout = range
         bool trendUp = orBreakUp && sidePct>=0.6;       // Breakout up + VWAP persistence
         bool trendDn = orBreakDn && (1-sidePct)>=0.6;   // Breakout down + VWAP persistence
         

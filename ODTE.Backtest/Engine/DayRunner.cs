@@ -25,10 +25,10 @@ public static class DayRunner
         IMarketData market, 
         IOptionsData options, 
         IEconCalendar econ,
-        RegimeScorer scorer, 
-        SpreadBuilder builder, 
-        ExecutionEngine exec, 
-        RiskManager risk,
+        IRegimeScorer scorer, 
+        ISpreadBuilder builder, 
+        IExecutionEngine exec, 
+        IRiskManager risk,
         string? strategySubdir = null)
     {
         try

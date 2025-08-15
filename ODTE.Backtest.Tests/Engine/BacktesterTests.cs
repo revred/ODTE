@@ -19,10 +19,10 @@ public class BacktesterTests
     private readonly Mock<IMarketData> _mockMarketData;
     private readonly Mock<IOptionsData> _mockOptionsData;
     private readonly Mock<IEconCalendar> _mockCalendar;
-    private readonly Mock<RegimeScorer> _mockScorer;
-    private readonly Mock<SpreadBuilder> _mockBuilder;
-    private readonly Mock<ExecutionEngine> _mockExecution;
-    private readonly Mock<RiskManager> _mockRisk;
+    private readonly Mock<IRegimeScorer> _mockScorer;
+    private readonly Mock<ISpreadBuilder> _mockBuilder;
+    private readonly Mock<IExecutionEngine> _mockExecution;
+    private readonly Mock<IRiskManager> _mockRisk;
     private readonly SimConfig _config;
     private readonly Backtester _backtester;
 
@@ -48,10 +48,10 @@ public class BacktesterTests
             }
         };
 
-        _mockScorer = new Mock<RegimeScorer>(_config);
-        _mockBuilder = new Mock<SpreadBuilder>(_config);
-        _mockExecution = new Mock<ExecutionEngine>(_config);
-        _mockRisk = new Mock<RiskManager>(_config);
+        _mockScorer = new Mock<IRegimeScorer>();
+        _mockBuilder = new Mock<ISpreadBuilder>();
+        _mockExecution = new Mock<IExecutionEngine>();
+        _mockRisk = new Mock<IRiskManager>();
 
         _backtester = new Backtester(
             _config,
