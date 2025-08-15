@@ -160,6 +160,17 @@ class Program
                 await DatabaseInspector.InspectDatabaseAsync(dbPath);
                 return 0;
             }
+            else if (operation == "extend10y")
+            {
+                // Extend database to 10-year dataset
+                Console.WriteLine("🚀 Extending database to 10-year dataset...");
+                using var ingestionEngine = new DataIngestionEngine();
+                await ingestionEngine.InitializeAsync();
+                
+                var extendResult = await ingestionEngine.ExtendTo10YearDatasetAsync();
+                
+                return extendResult.Success ? 0 : 1;
+            }
             else
             {
                 Console.WriteLine("❌ Invalid operation. Use: import, gaps, fill, update, backfill, validate, or benchmark");

@@ -39,7 +39,11 @@
       "Bash(find:*)",
       "mcp__ide__executeCode",
       "Bash(csc:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(temp_inspect.exe)",
+      "Bash(dotnet:*)",
+      "Bash(pip install:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": [],

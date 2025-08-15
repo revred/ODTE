@@ -198,6 +198,48 @@ public class TimeSeriesDatabase : IDisposable
     }
 
     /// <summary>
+    /// Import a list of market data bars into the database
+    /// </summary>
+    public async Task ImportBarsAsync(List<MarketDataBar> bars, string symbol = "XSP")
+    {
+        if (bars == null || bars.Count == 0) return;
+        
+        var symbolId = await GetOrCreateSymbolAsync(symbol, symbol);
+        
+        using var transaction = _connection.BeginTransaction();
+        using var insertCmd = _connection.CreateCommand();
+        
+        insertCmd.CommandText = @"
+            INSERT OR REPLACE INTO market_data 
+            (timestamp, symbol_id, open_price, high_price, low_price, close_price, volume, vwap_price)
+            VALUES (@timestamp, @symbol_id, @open, @high, @low, @close, @volume, @vwap)";
+        
+        insertCmd.Parameters.Add("@timestamp", SqliteType.Integer);
+        insertCmd.Parameters.Add("@symbol_id", SqliteType.Integer, symbolId);
+        insertCmd.Parameters.Add("@open", SqliteType.Integer);
+        insertCmd.Parameters.Add("@high", SqliteType.Integer);
+        insertCmd.Parameters.Add("@low", SqliteType.Integer);
+        insertCmd.Parameters.Add("@close", SqliteType.Integer);
+        insertCmd.Parameters.Add("@volume", SqliteType.Integer);
+        insertCmd.Parameters.Add("@vwap", SqliteType.Integer);
+        
+        foreach (var bar in bars)
+        {
+            insertCmd.Parameters["@timestamp"].Value = ((DateTimeOffset)bar.Timestamp).ToUnixTimeSeconds();
+            insertCmd.Parameters["@open"].Value = (int)(bar.Open * 10000);
+            insertCmd.Parameters["@high"].Value = (int)(bar.High * 10000);
+            insertCmd.Parameters["@low"].Value = (int)(bar.Low * 10000);
+            insertCmd.Parameters["@close"].Value = (int)(bar.Close * 10000);
+            insertCmd.Parameters["@volume"].Value = bar.Volume;
+            insertCmd.Parameters["@vwap"].Value = (int)(bar.VWAP * 10000);
+            
+            await insertCmd.ExecuteNonQueryAsync();
+        }
+        
+        await transaction.CommitAsync();
+    }
+    
+    /// <summary>
     /// Fast range query with optional sampling
     /// </summary>
     public async Task<List<MarketDataBar>> GetRangeAsync(
