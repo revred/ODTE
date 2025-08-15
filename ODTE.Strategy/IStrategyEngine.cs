@@ -158,6 +158,26 @@ namespace ODTE.Strategy
         public int TotalPeriods { get; set; }
         public decimal MaxDrawdown { get; set; }
         public double SharpeRatio { get; set; }
+        
+        // Additional metrics for comprehensive analysis
+        public string StrategyName { get; set; } = "24-Day Regime Switching";
+        public decimal FinalCapital { get; set; }
+        public decimal ReturnPercentage { get; set; }
+        public int WinningPeriods { get; set; }
+        public int LosingPeriods { get; set; }
+        public int CalmPeriods { get; set; }
+        public int MixedPeriods { get; set; }
+        public int ConvexPeriods { get; set; }
+        public int MaxConsecutiveLosses { get; set; }
+        public decimal LargestLoss { get; set; }
+        public decimal LargestWin { get; set; }
+        public double ProfitFactor { get; set; }
+        public int MaxRecoveryDays { get; set; }
+        public double BWBWinRate { get; set; }
+        public double TailOverlayROI { get; set; }
+        public double RegimeAccuracy { get; set; }
+        public decimal AnnualizedReturn { get; set; }
+        public decimal RiskAdjustedReturn { get; set; }
     }
 
     /// <summary>

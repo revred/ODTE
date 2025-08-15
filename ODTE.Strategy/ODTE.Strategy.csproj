@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
+    <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
   </ItemGroup>
 
 </Project>
