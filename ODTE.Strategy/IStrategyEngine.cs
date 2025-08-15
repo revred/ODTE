@@ -109,10 +109,11 @@ namespace ODTE.Strategy
     }
 
     /// <summary>
-    /// Result of strategy execution
+    /// Result of strategy execution with enhanced risk metrics
     /// </summary>
     public class StrategyResult
     {
+        // Existing fields
         public string StrategyName { get; set; } = "";
         public DateTime ExecutionDate { get; set; }
         public decimal PnL { get; set; }
@@ -125,6 +126,57 @@ namespace ODTE.Strategy
         public List<OptionLeg> Legs { get; set; } = new();
         public string MarketRegime { get; set; } = "";
         public Dictionary<string, object> Metadata { get; set; } = new();
+
+        // New P0 fields for MaxPotentialLoss and risk management
+        /// <summary>
+        /// Maximum potential loss calculated at order entry (post-fees)
+        /// </summary>
+        public decimal MaxPotentialLoss { get; set; }
+
+        /// <summary>
+        /// Return on Capital: NetCredit / MaxPotentialLoss
+        /// </summary>
+        public decimal Roc { get; set; }
+
+        /// <summary>
+        /// Reverse Fibonacci utilization: (OpenRisk + MaxPotentialLoss) / DailyCap
+        /// </summary>
+        public decimal RfibUtilization { get; set; }
+
+        /// <summary>
+        /// Margin requirement at entry
+        /// </summary>
+        public decimal MarginAtEntry { get; set; }
+
+        /// <summary>
+        /// Delta of the strategy body/center at entry
+        /// </summary>
+        public decimal BodyDelta { get; set; }
+
+        /// <summary>
+        /// Gamma at the strategy body/center
+        /// </summary>
+        public decimal GammaAtBody { get; set; }
+
+        /// <summary>
+        /// Credit to width ratio for spread strategies
+        /// </summary>
+        public decimal CreditToWidth { get; set; }
+
+        /// <summary>
+        /// Liquidity assessment flags at entry
+        /// </summary>
+        public string LiquidityFlags { get; set; } = "";
+
+        /// <summary>
+        /// Reason codes for why this trade was allowed/denied by entry gates
+        /// </summary>
+        public string ReasonCodes { get; set; } = "";
+
+        /// <summary>
+        /// Time taken for entry decision in milliseconds
+        /// </summary>
+        public long DecisionTimeMs { get; set; }
     }
 
     /// <summary>
