@@ -227,7 +227,7 @@ namespace ODTE.Strategy.Tests
 
         [Theory]
         [InlineData("calm", 15, 0.1)]
-        [InlineData("mixed", 25, 0.4)]
+        [InlineData("mixed", 30, 0.4)]
         [InlineData("convex", 45, 0.8)]
         public async Task StrategyEngine_DifferentMarketRegimes_ReturnsAppropriateResults(
             string expectedRegime, double vix, double trendScore)

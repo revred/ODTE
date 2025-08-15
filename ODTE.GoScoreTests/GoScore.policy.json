@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "useGoScore": true,
+  "weights": {
+    "wPoE": 0.6,
+    "wPoT": -1.6,
+    "wEdge": 0.4,
+    "wLiq": 0.3,
+    "wReg": 0.4,
+    "wPin": 0.15,
+    "wRfib": -2.0
+  },
+  "thresholds": {
+    "full": 70.0,
+    "half": 55.0,
+    "minLiqScore": 0.5
+  },
+  "rfib": {
+    "softStart": 0.8,
+    "warn": 0.9,
+    "block": 1.0
+  },
+  "regime": {
+    "icAllowed": {
+      "Calm": true,
+      "Mixed": true,
+      "Convex": false
+    },
+    "bwbAllowed": {
+      "Calm": true,
+      "Mixed": true,
+      "Convex": true
+    }
+  },
+  "pin": {
+    "alphaPoints": 10.0
+  },
+  "pot": {
+    "deltaMultiplier": 2.0,
+    "max": 1.0
+  },
+  "iv": {
+    "ivrMinIC": 25.0,
+    "ivrMinBWB": 0.0
+  },
+  "vix": {
+    "halfSize": 30.0,
+    "quarterSize": 40.0
+  },
+  "sizing": {
+    "contractsMin": 1
+  },
+  "liquidity": {
+    "maxSpreadMid": 0.25
+  }
+}

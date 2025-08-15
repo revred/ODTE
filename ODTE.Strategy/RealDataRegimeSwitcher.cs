@@ -307,21 +307,55 @@ namespace ODTE.Strategy
         private void LoadRealMarketData()
         {
             var dataDirectory = @"C:\code\ODTE\data\real_historical";
-            var spyFile = Path.Combine(dataDirectory, "SPY_daily_2015_2020.csv");
-            var vixFile = Path.Combine(dataDirectory, "VIX_daily_2015_2020.csv");
             
-            Console.WriteLine("Loading real market data from downloaded files...");
+            Console.WriteLine("Loading 20-year real market data from downloaded files...");
             
-            // Load SPY data
-            var spyData = LoadSpyData(spyFile);
-            Console.WriteLine($"Loaded {spyData.Count} SPY records");
+            // Load 2005-2015 data
+            var spy2005File = Path.Combine(dataDirectory, "SPY_daily_2005_2015.csv");
+            var vix2005File = Path.Combine(dataDirectory, "VIX_daily_2005_2015.csv");
             
-            // Load VIX data
-            var vixData = LoadVixData(vixFile);
-            Console.WriteLine($"Loaded {vixData.Count} VIX records");
+            // Load 2015-2020 data
+            var spy2015File = Path.Combine(dataDirectory, "SPY_daily_2015_2020.csv");
+            var vix2015File = Path.Combine(dataDirectory, "VIX_daily_2015_2020.csv");
             
-            // Merge data by date
-            MergeMarketData(spyData, vixData);
+            // Load and combine SPY data from both periods
+            var spyData2005 = LoadSpyData(spy2005File);
+            var spyData2015 = LoadSpyData(spy2015File);
+            Console.WriteLine($"Loaded {spyData2005.Count} SPY records (2005-2015)");
+            Console.WriteLine($"Loaded {spyData2015.Count} SPY records (2015-2020)");
+            
+            // Combine SPY datasets
+            var combinedSpyData = new Dictionary<DateTime, SpyData>(spyData2005);
+            foreach (var kvp in spyData2015)
+            {
+                combinedSpyData[kvp.Key] = kvp.Value; // 2015-2020 overwrites any overlap
+            }
+            Console.WriteLine($"Combined SPY dataset: {combinedSpyData.Count} total records");
+            
+            // Load and combine VIX data from both periods
+            var vixData2005 = LoadVixData(vix2005File);
+            var vixData2015 = LoadVixData(vix2015File);
+            Console.WriteLine($"Loaded {vixData2005.Count} VIX records (2005-2015)");
+            Console.WriteLine($"Loaded {vixData2015.Count} VIX records (2015-2020)");
+            
+            // Combine VIX datasets
+            var combinedVixData = new Dictionary<DateTime, VixData>(vixData2005);
+            foreach (var kvp in vixData2015)
+            {
+                combinedVixData[kvp.Key] = kvp.Value; // 2015-2020 overwrites any overlap
+            }
+            Console.WriteLine($"Combined VIX dataset: {combinedVixData.Count} total records");
+            
+            // Merge combined data by date
+            MergeMarketData(combinedSpyData, combinedVixData);
+            
+            // Display final coverage
+            if (_realMarketData.Any())
+            {
+                var dataStart = _realMarketData.Keys.Min();
+                var dataEnd = _realMarketData.Keys.Max();
+                Console.WriteLine($"Final 20-year dataset coverage: {dataStart:yyyy-MM-dd} to {dataEnd:yyyy-MM-dd}");
+            }
         }
         
         private Dictionary<DateTime, SpyData> LoadSpyData(string filePath)

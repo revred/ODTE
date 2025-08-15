@@ -22,11 +22,19 @@ namespace ODTE.Strategy
         {
             await Task.Delay(1); // Simulate async operation
 
+            // Determine market regime if not provided
+            var marketRegime = conditions.MarketRegime;
+            if (string.IsNullOrEmpty(marketRegime))
+            {
+                var analyzer = new MarketRegimeAnalyzer();
+                marketRegime = await analyzer.ClassifyMarketRegimeAsync(conditions);
+            }
+
             var result = new StrategyResult
             {
                 StrategyName = "Convex Tail Overlay",
                 ExecutionDate = conditions.Date,
-                MarketRegime = conditions.MarketRegime
+                MarketRegime = marketRegime
             };
 
             // Determine overlay type based on conditions
