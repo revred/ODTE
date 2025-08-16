@@ -10,7 +10,7 @@ class ConsolidateParquetToSqlite
     static async Task Main(string[] args)
     {
         Console.WriteLine("🚀 CONSOLIDATING 2015-2016 PARQUET DATA TO SQLITE");
-        Console.WriteLine("=" * 60);
+        Console.WriteLine(new string('=', 60));
         
         try
         {
