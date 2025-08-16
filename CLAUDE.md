@@ -90,23 +90,25 @@ Paper Trading Requirements:
 ### Stage 5: 💰 **Live Trading (Battle Hardened)**
 Only strategies that pass ALL previous stages can trade real money.
 
-## 🛡️ Risk Management: Reverse Fibonacci Defense System
+## 🛡️ Risk Management: RevFibNotch System
 
-The crown jewel of ODTE's risk management - **adaptive position sizing** based on performance:
+The crown jewel of ODTE's risk management - **proportional position sizing** based on P&L magnitude:
 
 ```
-Daily Loss Limits (Reverse Fibonacci):
+RevFibNotch Limits Array: [1250, 800, 500, 300, 200, 100]
 ┌─────────────┬──────────┬─────────────────────────┐
-│ Consecutive │  Daily   │ Reset Condition         │
-│   Losses    │  Limit   │                         │
+│    RFib     │ Position │ Movement Condition      │
+│   Limit     │  Phase   │                         │
 ├─────────────┼──────────┼─────────────────────────┤
-│      0      │   $500   │ Starting/Reset level    │
-│      1      │   $300   │ After first loss day    │
-│      2      │   $200   │ After second loss day   │
-│      3+     │   $100   │ Maximum defense mode    │
+│   $1250     │ Maximum  │ Major profit (30%+)     │
+│    $800     │Aggressive│ 2 consecutive profit days│
+│    $500     │ Balanced │ Starting position       │
+│    $300     │Conserv.  │ Mild loss (10%+)        │
+│    $200     │Defensive │ Major loss (50%+)       │
+│    $100     │ Survival │ Catastrophic loss (80%+)│
 └─────────────┴──────────┴─────────────────────────┘
 
-Reset Trigger: ANY profitable day → Return to $500
+Movement: Immediate on losses, 2-day confirmation for upgrades
 ```
 
 **Why This Works:**
@@ -314,8 +316,8 @@ Project: 0DTE Options Trading Platform with Genetic Optimization
 Language: C# (.NET 9.0)
 Architecture: Modular (Backtest → Optimize → Paper → Live)
 Data: 5 years XSP options (1,294 days)
-Risk System: Reverse Fibonacci ($500→$300→$200→$100)
-Current Phase: ✅ PRODUCTION-READY DLL COMPLETED
+Risk System: RevFibNotch ([1250, 800, 500, 300, 200, 100] starting at $500)
+Current Phase: ✅ REVFIBNOTCH SYSTEM COMPLETED
 PM250 System: ✅ ORGANIZED with relative paths at Options.OPM/Options.PM250/
 ```
 
@@ -382,7 +384,7 @@ cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 
 ### Current Focus Areas
 1. **✅ Strategy Library**: Complete DLL with public APIs  
-2. **✅ Risk Management**: Reverse Fibonacci position sizing implemented
+2. **✅ Risk Management**: RevFibNotch proportional scaling implemented
 3. **✅ Testing Framework**: Comprehensive test coverage achieved
 4. **🔄 Paper Trading**: Ready for broker integration phase
 5. **📊 Performance Analytics**: Enhanced tracking and reporting
@@ -405,6 +407,6 @@ This is not about finding one perfect strategy - it's about building an **evolut
 
 *"In trading, as in nature, it's not the strongest that survive, but the most adaptable."*
 
-**Version**: 2.2 - Strategy Framework Complete  
+**Version**: 2.3 - RevFibNotch System Complete  
 **Updated**: August 16, 2025  
-**Status**: ✅ Strategy System Framework COMPLETE - Systematic Profitable Trading System Factory
+**Status**: ✅ REVFIBNOTCH SYSTEM COMPLETED - Proportional Risk Management Active

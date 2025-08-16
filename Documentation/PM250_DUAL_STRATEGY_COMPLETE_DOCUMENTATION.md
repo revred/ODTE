@@ -109,7 +109,7 @@ public class DualStrategyEngine : ITradeEngine
     private readonly IProbeStrategy _probeStrategy;
     private readonly IQualityStrategy _qualityStrategy;
     private readonly IRegimeDetector _regimeDetector;
-    private readonly IReverseFibonacciRiskManager _riskManager;
+    private readonly IRevFibNotchRiskManager _riskManager;
     
     public TradeDecision EvaluateTradeOpportunity(MarketData market)
     {
@@ -152,10 +152,10 @@ public class RegimeDetector : IRegimeDetector
 ```
 
 ### 3. Risk Integration
-**Seamless integration with ReverseFibonacci Risk Manager**
+**Seamless integration with RevFibNotch Risk Manager**
 
 ```csharp
-public class ReverseFibonacciIntegration
+public class RevFibNotchIntegration
 {
     // Daily loss limits adjust based on active strategy
     public decimal GetDailyLossLimit(MarketStrategy activeStrategy, int consecutiveLosses)
@@ -356,11 +356,11 @@ public class QualityStrategy : ITradeStrategy
 
 ## Integrated Risk Framework
 
-### 1. ReverseFibonacci Integration
-The dual-strategy system seamlessly integrates with the existing ReverseFibonacci risk manager:
+### 1. RevFibNotch Integration
+The dual-strategy system seamlessly integrates with the existing RevFibNotch risk manager:
 
 ```csharp
-public class DualStrategyRiskManager : IReverseFibonacciRiskManager
+public class DualStrategyRiskManager : IRevFibNotchRiskManager
 {
     public decimal GetDailyLossLimit(MarketStrategy activeStrategy, int consecutiveLosses)
     {
@@ -573,7 +573,7 @@ public class DualStrategyEngine : ITradeEngine
 }
 
 // Deliverable 5: Risk Integration
-public class DualStrategyRiskManager : IReverseFibonacciRiskManager
+public class DualStrategyRiskManager : IRevFibNotchRiskManager
 {
     // Seamless RFib integration with dual strategies
 }

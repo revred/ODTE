@@ -166,7 +166,7 @@ dotnet run
 ```
 **Features**:
 - Real-time strategy performance monitoring
-- Risk management dashboard (Reverse Fibonacci)
+- Risk management dashboard (RevFibNotch)
 - Strategy version history and comparison
 - Optimization progress tracking
 
@@ -179,23 +179,25 @@ dotnet run --scenario "flash_crash"
 
 ## 🛡️ Risk Management Innovation
 
-### Reverse Fibonacci Position Sizing
-ODTE's crown jewel - adaptive risk management based on performance:
+### RevFibNotch Proportional Scaling
+ODTE's crown jewel - proportional risk adjustment based on P&L magnitude:
 
-| Consecutive Losses | Daily Limit | Psychology |
-|-------------------|-------------|------------|
-| 0 (Reset)         | $500        | 🟢 Full confidence |
-| 1                 | $300        | 🟡 Slight caution |
-| 2                 | $200        | 🟠 Defensive mode |
-| 3+                | $100        | 🔴 Capital preservation |
+| RFib Limit | Phase | Movement Trigger |
+|------------|-------|------------------|
+| $1250 | Maximum | Major profit (30%+) |
+| $800 | Aggressive | 2 consecutive profit days |
+| $500 | Balanced | Starting position |
+| $300 | Conservative | Mild loss (10%+) |
+| $200 | Defensive | Major loss (50%+) |
+| $100 | Survival | Catastrophic loss (80%+) |
 
-**Reset Condition**: ANY profitable day returns to $500 limit.
+**Movement Logic**: Immediate on losses, sustained performance required for upgrades.
 
 **Why This Works**: 
-- Protects capital during losing streaks
-- Allows recovery with smaller positions  
-- Restores full sizing after proving profitability
-- Mathematically aligned with market retracements
+- Proportional response to loss magnitude
+- Prevents false signals from single lucky days
+- Faster to protect than to scale back up
+- Adapts position sizing to recent performance
 
 ## 📊 Real Performance Data
 
@@ -372,13 +374,13 @@ This software is provided **for educational and research purposes only**:
 
 ## 📊 Project Status
 
-### Current Version: 2.1 (Production DLL Complete)
+### Current Version: 2.3 (RevFibNotch System Complete)
 - ✅ **Strategy Library DLL** - 🆕 PRODUCTION READY with public APIs
 - ✅ **Comprehensive Testing** - 46 tests with 91.3% pass rate
 - ✅ **Genetic Optimization Engine** - Fully functional
 - ✅ **5-Year Historical Data** - Complete dataset
 - ✅ **Synthetic Market Generator** - Stress test scenarios
-- ✅ **Risk Management System** - Reverse Fibonacci implementation
+- ✅ **Risk Management System** - RevFibNotch proportional scaling
 - ✅ **Project Structure** - 🆕 Clean, organized architecture
 - ✅ **Blazor Dashboard** - Real-time monitoring
 - 🚧 **Broker Integration** - Ready for implementation
@@ -386,6 +388,7 @@ This software is provided **for educational and research purposes only**:
 - 📋 **Paper Trading Module** - Next major milestone
 
 ### Recent Accomplishments (August 2025)
+- ✅ **RevFibNotch System**: Proportional risk management with 6-level scaling array
 - ✅ **ODTE.Strategy.dll**: Complete class library with IStrategyEngine API
 - ✅ **24-Day Framework**: Full regime switching implementation  
 - ✅ **Code Quality**: Zero compilation errors, type safety improvements
@@ -393,7 +396,7 @@ This software is provided **for educational and research purposes only**:
 - ✅ **Project Cleanup**: Organized folder structure, archived legacy data
 
 ### Roadmap 2025-2026
-- **Q3 2025**: ✅ Complete strategy library (DONE!)
+- **Q3 2025**: ✅ RevFibNotch proportional scaling system (DONE!)
 - **Q4 2025**: Broker API integration with production DLL
 - **Q1 2026**: Launch paper trading platform
 - **Q2 2026**: Beta live trading release with ML enhancements

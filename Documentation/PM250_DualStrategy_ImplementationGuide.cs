@@ -44,9 +44,10 @@ namespace ODTE.Strategy
         RegimeSignals GetRegimeSignals(MarketConditions conditions);
     }
     
-    public interface IReverseFibonacciRiskManager
+    public interface IRevFibNotchRiskManager
     {
-        decimal GetDailyLossLimit(int consecutiveLosses);
+        decimal GetDailyLossLimit(int notchIndex);
+        decimal GetCurrentRFibLimit();
         decimal GetMonthlyLossLimit();
         bool ValidateTradeRisk(TradeDecision decision);
         RiskAssessment AssessCurrentRisk();
@@ -61,7 +62,7 @@ namespace ODTE.Strategy
         private readonly IProbeStrategy _probeStrategy;
         private readonly IQualityStrategy _qualityStrategy;
         private readonly IRegimeDetector _regimeDetector;
-        private readonly IReverseFibonacciRiskManager _riskManager;
+        private readonly IRevFibNotchRiskManager _riskManager;
         private readonly ILogger _logger;
         
         private MarketStrategy _currentStrategy = MarketStrategy.ProbeOnly;
@@ -71,7 +72,7 @@ namespace ODTE.Strategy
             IProbeStrategy probeStrategy,
             IQualityStrategy qualityStrategy, 
             IRegimeDetector regimeDetector,
-            IReverseFibonacciRiskManager riskManager,
+            IRevFibNotchRiskManager riskManager,
             ILogger logger)
         {
             _probeStrategy = probeStrategy ?? throw new ArgumentNullException(nameof(probeStrategy));
@@ -1107,7 +1108,7 @@ namespace ODTE.Strategy.Examples
             
             // Dependencies (would be injected in real implementation)
             var logger = new ConsoleLogger();
-            var riskManager = new ReverseFibonacciRiskManager();
+            var riskManager = new RevFibNotchRiskManager();
             
             // Create strategies
             var probeStrategy = new ProbeStrategy(probeConfig, logger);
@@ -1179,18 +1180,18 @@ namespace ODTE.Strategy.Examples
         public void LogDebug(string message) => Console.WriteLine($"DEBUG: {message}");
     }
     
-    // Placeholder risk manager for example
-    public class ReverseFibonacciRiskManager : IReverseFibonacciRiskManager
+    // Placeholder RevFibNotch risk manager for example
+    public class RevFibNotchRiskManager : IRevFibNotchRiskManager
     {
-        public decimal GetDailyLossLimit(int consecutiveLosses) => consecutiveLosses switch
-        {
-            0 => 500m,
-            1 => 300m,
-            2 => 200m,
-            _ => 100m
-        };
+        private readonly decimal[] _revFibNotchArray = { 1250m, 800m, 500m, 300m, 200m, 100m };
+        private int _currentNotchIndex = 2; // Start at $500 (balanced position)
         
-        public decimal GetMonthlyLossLimit() => 1000m;
+        public decimal GetDailyLossLimit(int notchIndex) => 
+            _revFibNotchArray[Math.Clamp(notchIndex, 0, _revFibNotchArray.Length - 1)];
+        
+        public decimal GetCurrentRFibLimit() => _revFibNotchArray[_currentNotchIndex];
+        
+        public decimal GetMonthlyLossLimit() => 2000m; // Conservative monthly limit
         public bool ValidateTradeRisk(TradeDecision decision) => true;
         public RiskAssessment AssessCurrentRisk() => new() { IsWithinLimits = true };
     }

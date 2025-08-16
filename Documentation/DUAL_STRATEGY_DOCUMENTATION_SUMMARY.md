@@ -17,7 +17,7 @@ This documentation package represents the complete technical specification and i
 - **Dual-Strategy Framework**: Complete strategy selection logic
 - **Technical Architecture**: Production-grade system design
 - **Strategy Specifications**: Detailed Probe and Quality strategy parameters
-- **Risk Management**: Integrated ReverseFibonacci framework
+- **Risk Management**: Integrated RevFibNotch framework
 - **Market Regime Detection**: Multi-factor classification algorithms
 - **Performance Analysis**: Historical validation and projected results
 - **Implementation Guide**: 5-phase production deployment plan
@@ -65,7 +65,7 @@ This documentation package represents the complete technical specification and i
 ### Technical Innovation
 - **Dual-Strategy Architecture**: Probe (crisis) + Quality (optimal) strategies
 - **Regime Detection**: 91.2% accuracy across 68 months of real data
-- **Risk Integration**: Seamless ReverseFibonacci integration
+- **Risk Integration**: Seamless RevFibNotch integration
 - **Production Ready**: Complete implementation with monitoring
 
 ### Clinical Validation
@@ -105,7 +105,7 @@ This documentation package represents the complete technical specification and i
 2. **ProbeStrategy**: Capital preservation (VIX >21, crisis conditions)
 3. **QualityStrategy**: Profit maximization (VIX <19, optimal conditions)
 4. **RegimeDetector**: Real-time market classification (91.2% accuracy)
-5. **RiskIntegration**: ReverseFibonacci-compatible risk management
+5. **RiskIntegration**: RevFibNotch-compatible risk management
 
 ### Strategy Parameters
 
@@ -192,15 +192,15 @@ Win Rate Target: 85%
 ## 🛡️ Risk Management Framework
 
 ### Integrated Risk Controls
-- **Daily Limits**: Fibonacci-based ($500→$300→$200→$100)
+- **Daily Limits**: RevFibNotch-based ([1250, 800, 500, 300, 200, 100] starting at $500)
 - **Strategy Limits**: Probe ($50/day), Quality ($475/day)
-- **Position Sizing**: Adaptive based on market conditions
+- **Position Sizing**: Proportional based on P&L magnitude
 - **Emergency Controls**: Automatic shutdown at 20% monthly drawdown
 
 ### Risk Validation
 - **Probe Strategy**: Tested against worst historical crises
 - **Quality Strategy**: Validates profit capture in optimal conditions
-- **System Integration**: Seamless ReverseFibonacci compatibility
+- **System Integration**: Seamless RevFibNotch compatibility
 - **Emergency Procedures**: Complete shutdown and recovery protocols
 
 ---
