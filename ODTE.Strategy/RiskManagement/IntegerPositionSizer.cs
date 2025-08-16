@@ -38,12 +38,34 @@ namespace ODTE.Strategy.RiskManagement
         /// <summary>Safety buffer for position sizing calculations (5%)</summary>
         public const decimal SAFETY_BUFFER = 0.05m;
 
+        /// <summary>Low cap threshold for dynamic fraction boost</summary>
+        public const decimal LOW_CAP_THRESHOLD = 150m;
+
+        /// <summary>Higher fraction for low cap scenarios</summary>
+        public const double LOW_CAP_FRACTION = 0.80;
+
+        /// <summary>Enable probe 1-lot rule when no positions open</summary>
+        public bool EnableProbeTradeRule { get; set; } = true;
+
+        /// <summary>Only probe when no positions are open</summary>
+        public bool ProbeOnlyWhenNoPositions { get; set; } = true;
+
+        /// <summary>Enable dynamic fraction boost at low caps</summary>
+        public bool EnableLowCapBoost { get; set; } = true;
+
+        /// <summary>Enable scale-to-fit narrow-once fallback</summary>
+        public bool EnableScaleToFit { get; set; } = true;
+
+        /// <summary>Minimum width for scale-to-fit fallback</summary>
+        public decimal MinWidthPoints { get; set; } = 1.0m;
+
         #endregion
 
         #region Dependencies
 
         private readonly PerTradeRiskManager _perTradeRiskManager;
         private readonly ReverseFibonacciRiskManager _rfibManager;
+        private readonly Dictionary<DateTime, int> _openPositionTracker;
 
         #endregion
 
@@ -55,6 +77,7 @@ namespace ODTE.Strategy.RiskManagement
         {
             _perTradeRiskManager = perTradeRiskManager ?? throw new ArgumentNullException(nameof(perTradeRiskManager));
             _rfibManager = rfibManager ?? throw new ArgumentNullException(nameof(rfibManager));
+            _openPositionTracker = new Dictionary<DateTime, int>();
         }
 
         #endregion
@@ -78,9 +101,16 @@ namespace ODTE.Strategy.RiskManagement
         {
             try
             {
-                // Step 1: Get loss allowance from Tier A-1 system
+                // Step 1: Get loss allowance from Tier A-1 system with dynamic fraction
                 var remainingBudget = _rfibManager.GetRemainingDailyBudget(tradingDay);
-                var maxLossAllowance = remainingBudget * (decimal)_perTradeRiskManager.MaxTradeRiskFraction;
+                var dailyCap = _rfibManager.GetDailyBudgetLimit(tradingDay);
+                
+                // H2: Dynamic fraction f based on daily cap size
+                var fraction = EnableLowCapBoost && dailyCap <= LOW_CAP_THRESHOLD 
+                    ? LOW_CAP_FRACTION 
+                    : _perTradeRiskManager.MaxTradeRiskFraction;
+                    
+                var maxLossAllowance = remainingBudget * (decimal)fraction;
 
                 if (maxLossAllowance <= 0)
                 {
@@ -124,6 +154,46 @@ namespace ODTE.Strategy.RiskManagement
                 var finalContracts = Math.Max(bufferAdjustedContracts, 
                     cappedContracts > 0 ? MIN_CONTRACTS : 0);
 
+                // H3: Scale-to-Fit - try narrower width once if zero contracts
+                var usedScaleToFit = false;
+                if (finalContracts < MIN_CONTRACTS && EnableScaleToFit && strategySpec.Width > MinWidthPoints)
+                {
+                    // Try with minimum width
+                    var narrowStrategySpec = CreateNarrowedStrategy(strategySpec);
+                    var narrowMaxLossPerContract = MaxLossCalculator.CalculateGenericMaxLoss(narrowStrategySpec, 1).MaxLossAmount;
+                    
+                    if (narrowMaxLossPerContract > 0 && narrowMaxLossPerContract < maxLossPerContract)
+                    {
+                        // Recalculate with narrower strategy
+                        var narrowDerivedMaxContracts = (int)Math.Floor((double)(maxLossAllowance / narrowMaxLossPerContract));
+                        var narrowCappedContracts = Math.Min(narrowDerivedMaxContracts, HARD_CAP_CONTRACTS);
+                        var narrowBufferAdjustedContracts = (int)Math.Floor(narrowCappedContracts * (double)(1.0m - SAFETY_BUFFER));
+                        var narrowFinalContracts = Math.Max(narrowBufferAdjustedContracts, narrowCappedContracts > 0 ? MIN_CONTRACTS : 0);
+                        
+                        if (narrowFinalContracts >= MIN_CONTRACTS)
+                        {
+                            finalContracts = narrowFinalContracts;
+                            maxLossPerContract = narrowMaxLossPerContract;
+                            derivedMaxContracts = narrowDerivedMaxContracts;
+                            cappedContracts = narrowCappedContracts;
+                            bufferAdjustedContracts = narrowBufferAdjustedContracts;
+                            usedScaleToFit = true;
+                        }
+                    }
+                }
+
+                // H1: Probe 1-Lot Rule - if still zero contracts but 1 fits in absolute budget
+                if (finalContracts < MIN_CONTRACTS && EnableProbeTradeRule)
+                {
+                    var hasOpenPositions = GetOpenPositionCount(tradingDay) > 0;
+                    var canProbe = !ProbeOnlyWhenNoPositions || !hasOpenPositions;
+                    
+                    if (canProbe && maxLossPerContract <= remainingBudget)
+                    {
+                        finalContracts = MIN_CONTRACTS;
+                    }
+                }
+
                 var isValid = finalContracts >= MIN_CONTRACTS;
 
                 return new IntegerPositionResult
@@ -137,9 +207,15 @@ namespace ODTE.Strategy.RiskManagement
                     DerivedMaxContracts = derivedMaxContracts,
                     HardCapApplied = derivedMaxContracts > HARD_CAP_CONTRACTS,
                     SafetyBufferApplied = bufferAdjustedContracts < cappedContracts,
-                    CalculationDetails = $"Budget: ${remainingBudget:F2} → Allowance: ${maxLossAllowance:F2} → " +
+                    UsedProbeTrade = EnableProbeTradeRule && finalContracts == MIN_CONTRACTS && derivedMaxContracts == 0 && !usedScaleToFit,
+                    UsedDynamicFraction = fraction != _perTradeRiskManager.MaxTradeRiskFraction,
+                    UsedScaleToFit = usedScaleToFit,
+                    AppliedFraction = fraction,
+                    CalculationDetails = $"Budget: ${remainingBudget:F2} → Fraction: {fraction:P0} → Allowance: ${maxLossAllowance:F2} → " +
                                        $"PerContract: ${maxLossPerContract:F2} → Derived: {derivedMaxContracts} → " +
-                                       $"Capped: {cappedContracts} → Final: {finalContracts}"
+                                       $"Capped: {cappedContracts} → Final: {finalContracts}" +
+                                       (usedScaleToFit ? " [SCALED]" : "") +
+                                       (finalContracts == MIN_CONTRACTS && derivedMaxContracts == 0 && !usedScaleToFit ? " [PROBE]" : "")
                 };
             }
             catch (Exception ex)
@@ -291,6 +367,71 @@ namespace ODTE.Strategy.RiskManagement
             }
         }
 
+        /// <summary>
+        /// Create a narrowed version of strategy specification for scale-to-fit
+        /// </summary>
+        private StrategySpecification CreateNarrowedStrategy(StrategySpecification original)
+        {
+            var narrowed = new StrategySpecification
+            {
+                StrategyType = original.StrategyType,
+                Width = MinWidthPoints,
+                NetCredit = original.NetCredit * (MinWidthPoints / original.Width) // Proportionally adjust credit
+            };
+
+            // Adjust type-specific parameters
+            switch (original.StrategyType)
+            {
+                case StrategyType.IronCondor:
+                    narrowed.PutWidth = MinWidthPoints;
+                    narrowed.CallWidth = MinWidthPoints;
+                    break;
+                case StrategyType.CreditBWB:
+                    narrowed.BodyWidth = MinWidthPoints * 0.7m;
+                    narrowed.WingWidth = MinWidthPoints * 0.3m;
+                    break;
+                case StrategyType.CreditSpread:
+                    // Width already set
+                    break;
+            }
+
+            return narrowed;
+        }
+
+        #endregion
+
+        #region Position Tracking
+
+        /// <summary>
+        /// Record that a position was opened
+        /// </summary>
+        public void RecordPositionOpened(DateTime tradingDay)
+        {
+            var day = tradingDay.Date;
+            if (!_openPositionTracker.ContainsKey(day))
+                _openPositionTracker[day] = 0;
+            _openPositionTracker[day]++;
+        }
+
+        /// <summary>
+        /// Record that a position was closed
+        /// </summary>
+        public void RecordPositionClosed(DateTime tradingDay)
+        {
+            var day = tradingDay.Date;
+            if (_openPositionTracker.ContainsKey(day) && _openPositionTracker[day] > 0)
+                _openPositionTracker[day]--;
+        }
+
+        /// <summary>
+        /// Get current count of open positions for a trading day
+        /// </summary>
+        private int GetOpenPositionCount(DateTime tradingDay)
+        {
+            var day = tradingDay.Date;
+            return _openPositionTracker.ContainsKey(day) ? _openPositionTracker[day] : 0;
+        }
+
         #endregion
 
         #region Status Methods
@@ -332,6 +473,10 @@ namespace ODTE.Strategy.RiskManagement
         public int DerivedMaxContracts { get; set; }
         public bool HardCapApplied { get; set; }
         public bool SafetyBufferApplied { get; set; }
+        public bool UsedProbeTrade { get; set; }
+        public bool UsedDynamicFraction { get; set; }
+        public bool UsedScaleToFit { get; set; }
+        public double AppliedFraction { get; set; }
         public string CalculationDetails { get; set; } = "";
     }
 

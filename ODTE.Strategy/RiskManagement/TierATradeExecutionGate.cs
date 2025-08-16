@@ -36,6 +36,7 @@ namespace ODTE.Strategy.RiskManagement
         private readonly IntegerPositionSizer _integerPositionSizer;
         private readonly ReverseFibonacciRiskManager _rfibManager;
         private readonly Dictionary<DateTime, List<TradeGateRecord>> _gateHistory;
+        private readonly List<ComprehensiveAuditRecord> _auditLog;
         
         #endregion
         
@@ -66,6 +67,7 @@ namespace ODTE.Strategy.RiskManagement
             _integerPositionSizer = integerPositionSizer ?? throw new ArgumentNullException(nameof(integerPositionSizer));
             _rfibManager = rfibManager ?? throw new ArgumentNullException(nameof(rfibManager));
             _gateHistory = new Dictionary<DateTime, List<TradeGateRecord>>();
+            _auditLog = new List<ComprehensiveAuditRecord>();
         }
         
         #endregion
@@ -223,7 +225,8 @@ namespace ODTE.Strategy.RiskManagement
                 Statistics.TotalValidations++;
                 Statistics.ApprovedTrades++;
                 
-                // Record for audit trail
+                // H4: Record comprehensive audit trail
+                RecordComprehensiveAudit(result);
                 RecordGateDecision(result);
                 
                 return result;
@@ -236,6 +239,7 @@ namespace ODTE.Strategy.RiskManagement
                 result.ValidationResults.Add(CreateValidationResult("SystemError", false, ex.Message));
                 
                 Statistics.SystemErrors++;
+                RecordComprehensiveAudit(result);
                 RecordGateDecision(result);
                 
                 return result;
@@ -418,6 +422,78 @@ namespace ODTE.Strategy.RiskManagement
             };
         }
         
+        /// <summary>
+        /// H4: Record comprehensive audit trail for all trade decisions
+        /// </summary>
+        private void RecordComprehensiveAudit(TierAValidationResult result)
+        {
+            var remainingBudget = _rfibManager.GetRemainingDailyBudget(result.TradingDay);
+            var dailyCap = _rfibManager.GetDailyBudgetLimit(result.TradingDay);
+            
+            var auditRecord = new ComprehensiveAuditRecord
+            {
+                Timestamp = result.ValidationTimestamp,
+                Symbol = "XSP", // Default underlying
+                Side = GetTradeDescription(result.TradeCandidate.StrategyType),
+                Width = result.TradeCandidate.Width,
+                ExpectedCredit = result.TradeCandidate.NetCredit,
+                MaxLossPerContract = result.MaxLossAtEntry / result.TradeCandidate.Contracts,
+                DailyCap = dailyCap,
+                RemainingBudget = remainingBudget,
+                PerTradeFraction = _perTradeRiskManager.MaxTradeRiskFraction,
+                PerTradeCap = remainingBudget * (decimal)_perTradeRiskManager.MaxTradeRiskFraction,
+                DerivedContracts = result.TradeCandidate.Contracts,
+                HardCap = IntegerPositionSizer.HARD_CAP_CONTRACTS,
+                Decision = result.IsApproved ? "ACCEPT" : "REJECT",
+                ReasonCode = result.PrimaryRejectReason,
+                DetailedReason = result.DetailedRejectReason,
+                ValidationCount = result.ValidationResults.Count,
+                PassedValidations = result.ValidationResults.Count(v => v.Passed)
+            };
+            
+            _auditLog.Add(auditRecord);
+            
+            // Keep audit log size manageable (last 1000 entries)
+            if (_auditLog.Count > 1000)
+            {
+                _auditLog.RemoveRange(0, _auditLog.Count - 1000);
+            }
+        }
+        
+        private string GetTradeDescription(StrategyType strategyType)
+        {
+            return strategyType switch
+            {
+                StrategyType.IronCondor => "iron_condor",
+                StrategyType.CreditBWB => "credit_bwb",
+                StrategyType.CreditSpread => "credit_spread",
+                _ => strategyType.ToString().ToLowerInvariant()
+            };
+        }
+        
+        /// <summary>
+        /// Get recent audit records for analysis
+        /// </summary>
+        public List<ComprehensiveAuditRecord> GetAuditRecords(int maxRecords = 100)
+        {
+            return _auditLog.TakeLast(maxRecords).ToList();
+        }
+        
+        /// <summary>
+        /// Export audit records as JSON for external analysis
+        /// </summary>
+        public string ExportAuditToJson(DateTime? fromDate = null)
+        {
+            var records = fromDate.HasValue 
+                ? _auditLog.Where(r => r.Timestamp >= fromDate.Value).ToList()
+                : _auditLog;
+                
+            return System.Text.Json.JsonSerializer.Serialize(records, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+        }
+
         #endregion
     }
     
@@ -556,6 +632,53 @@ namespace ODTE.Strategy.RiskManagement
         public double LiquidityScore { get; set; }
         public decimal BidAskSpread { get; set; }
         public DateTime ProposedExecutionTime { get; set; }
+    }
+    
+    /// <summary>
+    /// H4: Comprehensive audit record following roadmap specification
+    /// </summary>
+    public class ComprehensiveAuditRecord
+    {
+        public DateTime Timestamp { get; set; }
+        public string Symbol { get; set; } = "";
+        public string Side { get; set; } = "";
+        public decimal Width { get; set; }
+        public decimal ExpectedCredit { get; set; }
+        public decimal MaxLossPerContract { get; set; }
+        public decimal DailyCap { get; set; }
+        public decimal RemainingBudget { get; set; }
+        public double PerTradeFraction { get; set; }
+        public decimal PerTradeCap { get; set; }
+        public int DerivedContracts { get; set; }
+        public int HardCap { get; set; }
+        public string Decision { get; set; } = "";
+        public string ReasonCode { get; set; } = "";
+        public string DetailedReason { get; set; } = "";
+        public int ValidationCount { get; set; }
+        public int PassedValidations { get; set; }
+        
+        /// <summary>
+        /// Convert to JSON format as specified in roadmap
+        /// </summary>
+        public string ToJsonFormat()
+        {
+            return $@"{{
+  ""t"": ""{Timestamp:yyyy-MM-ddTHH:mm:ssZ}"",
+  ""sym"": ""{Symbol}"",
+  ""side"": ""{Side}"",
+  ""width"": {Width:F2},
+  ""expectedCredit"": {ExpectedCredit:F2},
+  ""maxLossPerContract"": {MaxLossPerContract:F0},
+  ""dailyCap"": {DailyCap:F0},
+  ""remainingBudget"": {RemainingBudget:F0},
+  ""perTradeFraction"": {PerTradeFraction:F2},
+  ""perTradeCap"": {PerTradeCap:F0},
+  ""derivedContracts"": {DerivedContracts},
+  ""hardCap"": {HardCap},
+  ""decision"": ""{Decision}"",
+  ""reasonCode"": ""{ReasonCode}""
+}}";
+        }
     }
     
     #endregion
