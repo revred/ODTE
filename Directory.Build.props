@@ -1,0 +1,27 @@
+<Project>
+  <!-- Global build properties for ODTE project -->
+  <!-- This file applies to all projects in subdirectories -->
+  
+  <PropertyGroup>
+    <!-- Suppress verbose build output -->
+    <RestoreVerbosity>minimal</RestoreVerbosity>
+    <MSBuildVerbosity>minimal</MSBuildVerbosity>
+    
+    <!-- Global warning suppressions -->
+    <NoWarn>$(NoWarn);CS8618;CS8625;CS1998;CS0168;CS8604;CS0219</NoWarn>
+    
+    <!-- Disable package restore logging -->
+    <RestoreNoCache>false</RestoreNoCache>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    
+    <!-- Performance optimizations -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+    <BuildInParallel>true</BuildInParallel>
+  </PropertyGroup>
+  
+  <!-- Only show errors and critical warnings -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <WarningLevel>1</WarningLevel>
+  </PropertyGroup>
+  
+</Project>

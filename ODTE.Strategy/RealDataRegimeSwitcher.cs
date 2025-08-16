@@ -600,7 +600,7 @@ namespace ODTE.Strategy
         public Regime DominantRegime { get; set; }
     }
     
-    public class DailyResult
+    public partial class DailyResult
     {
         public DateTime Date { get; set; }
         public RegimeSwitcher.MarketConditions Conditions { get; set; } = new();

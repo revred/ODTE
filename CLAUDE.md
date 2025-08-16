@@ -288,6 +288,26 @@ Risk Metrics:
 
 ## 🔧 For Claude Code Sessions
 
+### 🎯 Key System Discovery (IMPORTANT)
+
+**PM250 Trading System**:
+- **Location**: `Options.OPM/Options.PM250/`
+- **Quick Access**: Read `PM250_QUICK_ACCESS.md` in root for instant navigation
+- **Full Docs**: `Options.OPM/Options.PM250/README.md`
+- **Commands**: See "PM250 Trading System Commands" below
+
+**Historical Data Access**:
+- **Location**: `ODTE.Historical/`
+- **Quick Access**: Read `HISTORICAL_DATA_ACCESS.md` in root for instant access
+- **Interactive Demo**: `cd ODTE.Historical.Tests && dotnet run api-demo`
+- **Commands**: See "Historical Data Commands" below
+
+**Strategy System Framework**:
+- **Evolution Framework**: `STRATEGY_EVOLUTION_FRAMEWORK.md` - 8-stage strategy lifecycle
+- **Version Control**: `STRATEGY_VERSIONING_SYSTEM.md` - Complete version tracking
+- **Benchmarking**: `STRATEGY_BENCHMARKING_STANDARDS.md` - Performance measurement
+- **Implementation Plan**: `STRATEGY_SYSTEM_DOCUMENTATION_PLAN.md` - Complete roadmap
+
 ### Quick Context
 ```
 Project: 0DTE Options Trading Platform with Genetic Optimization
@@ -296,6 +316,7 @@ Architecture: Modular (Backtest → Optimize → Paper → Live)
 Data: 5 years XSP options (1,294 days)
 Risk System: Reverse Fibonacci ($500→$300→$200→$100)
 Current Phase: ✅ PRODUCTION-READY DLL COMPLETED
+PM250 System: ✅ ORGANIZED with relative paths at Options.OPM/Options.PM250/
 ```
 
 ### Key Commands
@@ -316,6 +337,17 @@ cd ODTE.Historical.Tests && dotnet run validate
 # Run comprehensive tests
 cd ODTE.Trading.Tests && dotnet test
 cd ODTE.Historical.Tests && dotnet test
+
+# PM250 Trading System Commands
+cd Options.OPM/Options.PM250/tests && dotnet test   # Run PM250 test suite
+cd Options.OPM/Options.PM250/src && dotnet build    # Build PM250 strategy
+cd ODTE.Strategy.Tests && dotnet test --filter "PM250*"  # PM250 validation tests
+
+# Historical Data Commands  
+cd ODTE.Historical.Tests && dotnet run api-demo     # Demo clean data acquisition APIs
+cd ODTE.Historical.Tests && dotnet run providers    # Test all data providers
+cd ODTE.Historical.Tests && dotnet run instruments  # Test multi-instrument support
+cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 ```
 
 ### ✅ Recent Major Accomplishments (August 2025)
@@ -339,6 +371,14 @@ cd ODTE.Historical.Tests && dotnet test
 - ✅ Type safety improvements across all projects
 - ✅ Enhanced testing framework with API validation
 - ✅ Proper DLL packaging with NuGet metadata
+
+**🎯 Strategy System Framework Documentation**
+- ✅ **Strategy Evolution Framework** - Complete 8-stage lifecycle from discovery to production
+- ✅ **Strategy Versioning System** - Comprehensive version control with rollback capabilities
+- ✅ **Strategy Benchmarking Standards** - Objective performance measurement framework
+- ✅ **Cold Start Discovery** - All framework documentation discoverable from root directory
+- ✅ **Production Ready** - Complete systematic approach to building profitable strategies
+- ✅ **Documentation Integration** - Updated README.md and CLAUDE.md with framework references
 
 ### Current Focus Areas
 1. **✅ Strategy Library**: Complete DLL with public APIs  
@@ -365,6 +405,6 @@ This is not about finding one perfect strategy - it's about building an **evolut
 
 *"In trading, as in nature, it's not the strongest that survive, but the most adaptable."*
 
-**Version**: 2.1 - Production DLL Complete  
-**Updated**: August 15, 2025  
-**Status**: ✅ Strategy Library PRODUCTION-READY - Ready for Broker Integration
+**Version**: 2.2 - Strategy Framework Complete  
+**Updated**: August 16, 2025  
+**Status**: ✅ Strategy System Framework COMPLETE - Systematic Profitable Trading System Factory

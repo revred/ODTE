@@ -9,7 +9,7 @@ namespace ODTE.Strategy
     /// Maximizes returns in each 24-day period through adaptive regime-based strategy selection
     /// After 24 days: rules reset, drawdown reset, allocation reset → fresh program starts
     /// </summary>
-    public class RegimeSwitcher
+    public partial class RegimeSwitcher
     {
         public enum Regime
         {
@@ -55,7 +55,7 @@ namespace ODTE.Strategy
             public bool IsComplete => (EndDate - StartDate).TotalDays >= 24;
         }
 
-        public class DailyResult
+        public partial class DailyResult
         {
             public DateTime Date { get; set; }
             public Regime DetectedRegime { get; set; }
@@ -206,7 +206,7 @@ namespace ODTE.Strategy
         /// Classify market regime using multi-factor analysis
         /// Implementation of the pseudo-code classification logic
         /// </summary>
-        private Regime ClassifyRegime(MarketConditions conditions)
+        protected virtual Regime ClassifyRegime(MarketConditions conditions)
         {
             // Primary classification based on VIX and trend
             if (conditions.VIX > 40 || Math.Abs(conditions.TrendScore) >= 0.8)
@@ -227,7 +227,7 @@ namespace ODTE.Strategy
         /// Get strategy parameters based on detected regime
         /// Implementation of the pseudo-code strategy selection
         /// </summary>
-        private StrategyParameters GetStrategyParameters(Regime regime, MarketConditions conditions)
+        protected virtual StrategyParameters GetStrategyParameters(Regime regime, MarketConditions conditions)
         {
             var parameters = new StrategyParameters();
 
@@ -264,7 +264,7 @@ namespace ODTE.Strategy
         /// <summary>
         /// Simulate strategy execution and return daily P&L
         /// </summary>
-        private double SimulateStrategyExecution(StrategyParameters strategy, MarketConditions conditions, TwentyFourDayPeriod period)
+        protected virtual double SimulateStrategyExecution(StrategyParameters strategy, MarketConditions conditions, TwentyFourDayPeriod period)
         {
             var pnl = 0.0;
 

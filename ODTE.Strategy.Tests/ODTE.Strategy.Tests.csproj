@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Suppress verbose restore and build messages -->
+    <RestoreVerbosity>minimal</RestoreVerbosity>
+    <MSBuildVerbosity>minimal</MSBuildVerbosity>
+    <!-- Suppress common warnings -->
+    <NoWarn>$(NoWarn);CS8618;CS8625;CS1998</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

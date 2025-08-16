@@ -1,0 +1,170 @@
+{
+  "Calm": {
+    "version": "1.0",
+    "useGoScore": true,
+    "weights": {
+      "wPoE": 0.8,
+      "wPoT": -2.2,
+      "wEdge": 0.6,
+      "wLiq": 0.5,
+      "wReg": 0.6,
+      "wPin": 0.2,
+      "wRfib": -2
+    },
+    "thresholds": {
+      "full": 68,
+      "half": 48,
+      "minLiqScore": 0.5
+    },
+    "rfib": {
+      "softStart": 0.8,
+      "warn": 0.9,
+      "block": 1
+    },
+    "regime": {
+      "icAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": false
+      },
+      "bwbAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": true
+      }
+    },
+    "pin": {
+      "alphaPoints": 10
+    },
+    "pot": {
+      "deltaMultiplier": 2,
+      "max": 1
+    },
+    "iv": {
+      "ivrMinIC": 25,
+      "ivrMinBWB": 0
+    },
+    "vix": {
+      "halfSize": 30,
+      "quarterSize": 40
+    },
+    "sizing": {
+      "contractsMin": 1
+    },
+    "liquidity": {
+      "maxSpreadMid": 0.25
+    }
+  },
+  "Mixed": {
+    "version": "1.0",
+    "useGoScore": true,
+    "weights": {
+      "wPoE": 0.9,
+      "wPoT": -1.8,
+      "wEdge": 0.8,
+      "wLiq": 0.3,
+      "wReg": 1.2,
+      "wPin": 0.2,
+      "wRfib": -2
+    },
+    "thresholds": {
+      "full": 70,
+      "half": 50,
+      "minLiqScore": 0.5
+    },
+    "rfib": {
+      "softStart": 0.8,
+      "warn": 0.9,
+      "block": 1
+    },
+    "regime": {
+      "icAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": false
+      },
+      "bwbAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": true
+      }
+    },
+    "pin": {
+      "alphaPoints": 10
+    },
+    "pot": {
+      "deltaMultiplier": 2,
+      "max": 1
+    },
+    "iv": {
+      "ivrMinIC": 25,
+      "ivrMinBWB": 0
+    },
+    "vix": {
+      "halfSize": 30,
+      "quarterSize": 40
+    },
+    "sizing": {
+      "contractsMin": 1
+    },
+    "liquidity": {
+      "maxSpreadMid": 0.25
+    }
+  },
+  "Convex": {
+    "version": "1.0",
+    "useGoScore": true,
+    "weights": {
+      "wPoE": 0.7,
+      "wPoT": -2.5,
+      "wEdge": 0.5,
+      "wLiq": 0.4,
+      "wReg": 0.9,
+      "wPin": 0.2,
+      "wRfib": -2.5
+    },
+    "thresholds": {
+      "full": 75,
+      "half": 55,
+      "minLiqScore": 0.5
+    },
+    "rfib": {
+      "softStart": 0.8,
+      "warn": 0.9,
+      "block": 1
+    },
+    "regime": {
+      "icAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": false
+      },
+      "bwbAllowed": {
+        "calm": true,
+        "mixed": true,
+        "convex": true
+      }
+    },
+    "pin": {
+      "alphaPoints": 10
+    },
+    "pot": {
+      "deltaMultiplier": 2,
+      "max": 1
+    },
+    "iv": {
+      "ivrMinIC": 25,
+      "ivrMinBWB": 0
+    },
+    "vix": {
+      "halfSize": 30,
+      "quarterSize": 40
+    },
+    "sizing": {
+      "contractsMin": 1
+    },
+    "liquidity": {
+      "maxSpreadMid": 0.25
+    }
+  }
+}

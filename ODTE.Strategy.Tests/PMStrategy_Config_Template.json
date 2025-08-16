@@ -1,0 +1,17 @@
+{
+  "strategyName": "PM250",
+  "version": "PM250_v2.1_ConfigurableRFib", 
+  "createdDate": "2025-08-16T12:00:00Z",
+  "lastModified": "2025-08-16T12:00:00Z",
+  "description": "Default PM250 configuration with configurable RFib risk management",
+  "strategyParameters": {
+    "maxPositionSize": 250,
+    "riskPerTrade": 75.0,
+    "deltaTarget": 0.15,
+    "widthPoints": 2,
+    "creditRatio": 0.20,
+    "stopMultiple": 2.2,
+    "enableRFibRiskManagement": true,
+    "rFibResetThreshold": 16.0
+  }
+}
