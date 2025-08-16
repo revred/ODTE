@@ -288,6 +288,25 @@ Risk Metrics:
 
 ## 🔧 For Claude Code Sessions
 
+### 🎯 Key System Discovery (IMPORTANT)
+
+**PM250 Trading System**:
+- **Location**: `Options.OPM/Options.PM250/`
+- **Quick Access**: Read `PM250_QUICK_ACCESS.md` in root for instant navigation
+- **Full Docs**: `Options.OPM/Options.PM250/README.md`
+- **Commands**: See "PM250 Trading System Commands" below
+
+**Historical Data Access**:
+- **Location**: `ODTE.Historical/`
+- **Quick Access**: Read `HISTORICAL_DATA_ACCESS.md` in root for instant access
+- **Interactive Demo**: `cd ODTE.Historical.Tests && dotnet run api-demo`
+- **Commands**: See "Historical Data Commands" below
+
+**Strategy System Documentation**:
+- **Planning Document**: `STRATEGY_SYSTEM_DOCUMENTATION_PLAN.md` in root
+- **Focus**: Building many profitable trading systems systematically
+- **Framework**: Strategy evolution, versioning, benchmarking, selection
+
 ### Quick Context
 ```
 Project: 0DTE Options Trading Platform with Genetic Optimization
@@ -296,6 +315,7 @@ Architecture: Modular (Backtest → Optimize → Paper → Live)
 Data: 5 years XSP options (1,294 days)
 Risk System: Reverse Fibonacci ($500→$300→$200→$100)
 Current Phase: ✅ PRODUCTION-READY DLL COMPLETED
+PM250 System: ✅ ORGANIZED with relative paths at Options.OPM/Options.PM250/
 ```
 
 ### Key Commands
@@ -316,6 +336,17 @@ cd ODTE.Historical.Tests && dotnet run validate
 # Run comprehensive tests
 cd ODTE.Trading.Tests && dotnet test
 cd ODTE.Historical.Tests && dotnet test
+
+# PM250 Trading System Commands
+cd Options.OPM/Options.PM250/tests && dotnet test   # Run PM250 test suite
+cd Options.OPM/Options.PM250/src && dotnet build    # Build PM250 strategy
+cd ODTE.Strategy.Tests && dotnet test --filter "PM250*"  # PM250 validation tests
+
+# Historical Data Commands  
+cd ODTE.Historical.Tests && dotnet run api-demo     # Demo clean data acquisition APIs
+cd ODTE.Historical.Tests && dotnet run providers    # Test all data providers
+cd ODTE.Historical.Tests && dotnet run instruments  # Test multi-instrument support
+cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 ```
 
 ### ✅ Recent Major Accomplishments (August 2025)
@@ -339,6 +370,14 @@ cd ODTE.Historical.Tests && dotnet test
 - ✅ Type safety improvements across all projects
 - ✅ Enhanced testing framework with API validation
 - ✅ Proper DLL packaging with NuGet metadata
+
+**🚀 PM250 Trading System Organization**
+- ✅ **Organized PM250 files** into dedicated `Options.OPM/Options.PM250/` folder structure
+- ✅ **Clean relative paths** for all configuration and documentation files
+- ✅ **Comprehensive reports** moved to `Options.OPM/Options.PM250/reports/`
+- ✅ **Optimal weights** organized in `Options.OPM/Options.PM250/config/`
+- ✅ **Production-ready** with discoverable relative path structure
+- ✅ **Documentation updated** with proper relative path references
 
 ### Current Focus Areas
 1. **✅ Strategy Library**: Complete DLL with public APIs  
