@@ -5,7 +5,7 @@ using System.Linq;
 namespace ODTE.Strategy
 {
     /// <summary>
-    /// Reverse Fibonacci Risk Management System
+    /// Enhanced Reverse Fibonacci Risk Management System (Tier A-1.3 Enhancement)
     /// 
     /// INTELLIGENT CURTAILMENT STRATEGY:
     /// - Progressive position reduction after consecutive losses
@@ -13,19 +13,30 @@ namespace ODTE.Strategy
     /// - Immediate reset on profitable day
     /// - Maximum drawdown protection
     /// - Volume-optimized risk scaling for high-frequency trading
+    /// 
+    /// NEW TIER A ENHANCEMENTS:
+    /// - RemainingDailyRFibBudget tracking for per-trade risk validation
+    /// - Dynamic daily budget limits based on consecutive loss count
+    /// - Real-time budget consumption monitoring
+    /// - Integration with PerTradeRiskManager for budget validation
     /// </summary>
     public class ReverseFibonacciRiskManager
     {
         private readonly List<decimal> _fibonacciLevels;
         private readonly Dictionary<DateTime, decimal> _dailyPnL;
+        private readonly Dictionary<DateTime, decimal> _dailyBudgetUsed;
         private readonly List<TradeExecution> _consecutiveLossTracker;
         
-        // Risk management configuration
+        // Enhanced risk management configuration
         private const decimal BASE_POSITION_SIZE = 1.0m;
         private const decimal MIN_POSITION_SIZE = 0.15m; // 15% minimum
         private const decimal MAX_DAILY_DRAWDOWN = 75.0m;
         private const decimal MAX_WEEKLY_DRAWDOWN = 300.0m;
         private const int MAX_CONSECUTIVE_LOSSES = 5;
+        
+        // NEW: Dynamic daily budget limits (Tier A enhancement)
+        private readonly decimal[] DAILY_BUDGET_LIMITS = { 625.0m, 385.0m, 240.0m, 150.0m };
+        private int _consecutiveLossDays = 0;
 
         public ReverseFibonacciRiskManager()
         {
@@ -40,8 +51,153 @@ namespace ODTE.Strategy
             };
             
             _dailyPnL = new Dictionary<DateTime, decimal>();
+            _dailyBudgetUsed = new Dictionary<DateTime, decimal>();
             _consecutiveLossTracker = new List<TradeExecution>();
         }
+        
+        #region Tier A Enhancement Methods - Budget Tracking
+        
+        /// <summary>
+        /// Get remaining daily budget for risk validation (Tier A-1.3)
+        /// </summary>
+        /// <param name="tradingDay">Trading day to check</param>
+        /// <returns>Remaining budget amount available for new trades</returns>
+        public decimal GetRemainingDailyBudget(DateTime tradingDay)
+        {
+            var dayKey = tradingDay.Date;
+            var dailyLimit = GetDailyBudgetLimit(tradingDay);
+            var usedBudget = _dailyBudgetUsed.ContainsKey(dayKey) ? _dailyBudgetUsed[dayKey] : 0m;
+            
+            return Math.Max(0m, dailyLimit - usedBudget);
+        }
+        
+        /// <summary>
+        /// Get current daily budget limit based on consecutive loss streak
+        /// </summary>
+        /// <param name="tradingDay">Trading day to check</param>
+        /// <returns>Daily budget limit in dollars</returns>
+        public decimal GetDailyBudgetLimit(DateTime tradingDay)
+        {
+            var levelIndex = Math.Min(_consecutiveLossDays, DAILY_BUDGET_LIMITS.Length - 1);
+            return DAILY_BUDGET_LIMITS[levelIndex];
+        }
+        
+        /// <summary>
+        /// Record actual trade loss for budget tracking
+        /// </summary>
+        /// <param name="tradingDay">Trading day</param>
+        /// <param name="lossAmount">Actual loss amount (positive number)</param>
+        public void RecordTradeLoss(DateTime tradingDay, decimal lossAmount)
+        {
+            var dayKey = tradingDay.Date;
+            
+            if (!_dailyBudgetUsed.ContainsKey(dayKey))
+            {
+                _dailyBudgetUsed[dayKey] = 0m;
+            }
+            
+            _dailyBudgetUsed[dayKey] += Math.Abs(lossAmount);
+            
+            // Update daily P&L tracking
+            if (!_dailyPnL.ContainsKey(dayKey))
+            {
+                _dailyPnL[dayKey] = 0m;
+            }
+            _dailyPnL[dayKey] -= Math.Abs(lossAmount);
+        }
+        
+        /// <summary>
+        /// Record profitable trade for budget and streak tracking
+        /// </summary>
+        /// <param name="tradingDay">Trading day</param>
+        /// <param name="profitAmount">Profit amount (positive number)</param>
+        public void RecordTradeProfit(DateTime tradingDay, decimal profitAmount)
+        {
+            var dayKey = tradingDay.Date;
+            
+            // Update daily P&L tracking
+            if (!_dailyPnL.ContainsKey(dayKey))
+            {
+                _dailyPnL[dayKey] = 0m;
+            }
+            _dailyPnL[dayKey] += Math.Abs(profitAmount);
+            
+            // Check if this makes the day profitable and reset streak
+            if (_dailyPnL[dayKey] > 0m)
+            {
+                _consecutiveLossDays = 0; // Reset on profitable day
+            }
+        }
+        
+        /// <summary>
+        /// Check if trading is allowed based on budget and limits
+        /// </summary>
+        /// <param name="tradingDay">Trading day to check</param>
+        /// <returns>True if trading is allowed</returns>
+        public bool CanTrade(DateTime tradingDay)
+        {
+            var remainingBudget = GetRemainingDailyBudget(tradingDay);
+            return remainingBudget > 10m; // Minimum $10 buffer for micro trades
+        }
+        
+        /// <summary>
+        /// Update consecutive loss day count (called at end of day)
+        /// </summary>
+        /// <param name="tradingDay">Trading day that ended</param>
+        public void UpdateDayEndStatus(DateTime tradingDay)
+        {
+            var dayKey = tradingDay.Date;
+            var dayPnL = _dailyPnL.ContainsKey(dayKey) ? _dailyPnL[dayKey] : 0m;
+            
+            if (dayPnL < 0m)
+            {
+                _consecutiveLossDays++;
+            }
+            else if (dayPnL > 0m)
+            {
+                _consecutiveLossDays = 0; // Reset on profitable day
+            }
+            
+            // Cap at maximum levels
+            _consecutiveLossDays = Math.Min(_consecutiveLossDays, DAILY_BUDGET_LIMITS.Length - 1);
+        }
+        
+        /// <summary>
+        /// Get current risk management status
+        /// </summary>
+        /// <param name="tradingDay">Trading day to analyze</param>
+        /// <returns>Risk status summary</returns>
+        public RiskStatus GetRiskStatus(DateTime tradingDay)
+        {
+            var dailyLimit = GetDailyBudgetLimit(tradingDay);
+            var remainingBudget = GetRemainingDailyBudget(tradingDay);
+            var budgetUtilization = dailyLimit > 0 ? (double)((dailyLimit - remainingBudget) / dailyLimit) : 0;
+            
+            return new RiskStatus
+            {
+                TradingDay = tradingDay,
+                ConsecutiveLossDays = _consecutiveLossDays,
+                DailyBudgetLimit = dailyLimit,
+                RemainingBudget = remainingBudget,
+                BudgetUtilization = budgetUtilization,
+                CanTrade = CanTrade(tradingDay),
+                RiskLevel = GetRiskLevel(budgetUtilization, _consecutiveLossDays)
+            };
+        }
+        
+        private RiskLevel GetRiskLevel(double budgetUtilization, int consecutiveLossDays)
+        {
+            if (consecutiveLossDays >= 3 || budgetUtilization > 0.8)
+                return RiskLevel.High;
+            else if (consecutiveLossDays >= 2 || budgetUtilization > 0.6)
+                return RiskLevel.Medium;
+            else if (consecutiveLossDays >= 1 || budgetUtilization > 0.3)
+                return RiskLevel.Low;
+            else
+                return RiskLevel.Minimal;
+        }
+        
+        #endregion
 
         public decimal CalculatePositionSize(decimal baseSize, List<TradeExecution> recentTrades)
         {
@@ -317,5 +473,39 @@ namespace ODTE.Strategy
         public decimal DailyDrawdownUsed { get; set; }
         public decimal WeeklyDrawdownUsed { get; set; }
         public decimal CurrentPositionScale { get; set; }
+    }
+    
+    /// <summary>
+    /// Risk management status for Tier A enhancements
+    /// </summary>
+    public class RiskStatus
+    {
+        public DateTime TradingDay { get; set; }
+        public int ConsecutiveLossDays { get; set; }
+        public decimal DailyBudgetLimit { get; set; }
+        public decimal RemainingBudget { get; set; }
+        public double BudgetUtilization { get; set; }
+        public bool CanTrade { get; set; }
+        public RiskLevel RiskLevel { get; set; }
+        
+        public string GetSummary()
+        {
+            return $"Day {TradingDay:MM/dd}: Risk Level {RiskLevel}, " +
+                   $"Budget: ${RemainingBudget:F0}/${DailyBudgetLimit:F0} " +
+                   $"({BudgetUtilization:P1} used), " +
+                   $"Loss Streak: {ConsecutiveLossDays} days, " +
+                   $"Trading: {(CanTrade ? "ALLOWED" : "BLOCKED")}";
+        }
+    }
+    
+    /// <summary>
+    /// Risk level classification
+    /// </summary>
+    public enum RiskLevel
+    {
+        Minimal,    // 0 loss days, <30% budget used
+        Low,        // 1 loss day, 30-60% budget used
+        Medium,     // 2 loss days, 60-80% budget used
+        High        // 3+ loss days, >80% budget used
     }
 }

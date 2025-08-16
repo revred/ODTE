@@ -69,7 +69,9 @@ namespace ODTE.Strategy.Tests
             {
                 if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
                 {
-                    var dayTrades = await GenerateDayTrades(currentDate, "March_2021", riskManager, ref tradeId, ref runningPnL);
+                    var dayTrades = await GenerateDayTrades(currentDate, "March_2021", riskManager, tradeId, runningPnL);
+                    tradeId = dayTrades.newTradeId;
+                    runningPnL = dayTrades.newRunningPnL;
                     ledger.ExecutedTrades.AddRange(dayTrades.executed);
                     ledger.NonExecutedEvaluations.AddRange(dayTrades.nonExecuted);
                     ledger.RiskManagementEvents.AddRange(dayTrades.riskEvents);
@@ -156,7 +158,9 @@ namespace ODTE.Strategy.Tests
             {
                 if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
                 {
-                    var dayTrades = await GenerateJune2025DayTrades(currentDate, riskManager, ref tradeId, ref runningPnL);
+                    var dayTrades = await GenerateJune2025DayTrades(currentDate, riskManager, tradeId, runningPnL);
+                    tradeId = dayTrades.newTradeId;
+                    runningPnL = dayTrades.newRunningPnL;
                     ledger.ExecutedTrades.AddRange(dayTrades.executed);
                     ledger.NonExecutedEvaluations.AddRange(dayTrades.nonExecuted);
                     
@@ -186,8 +190,8 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"   ✅ June 2025: {ledger.ExecutedTrades.Count} trades, {ledger.NonExecutedEvaluations.Count} non-executions");
         }
 
-        private async Task<(List<DetailedTradeRecord> executed, List<NonExecutionRecord> nonExecuted, List<RiskEvent> riskEvents)> 
-            GenerateDayTrades(DateTime date, string period, SimulatedRiskManager riskManager, ref int tradeId, ref decimal runningPnL)
+        private async Task<(List<DetailedTradeRecord> executed, List<NonExecutionRecord> nonExecuted, List<RiskEvent> riskEvents, int newTradeId, decimal newRunningPnL)> 
+            GenerateDayTrades(DateTime date, string period, SimulatedRiskManager riskManager, int tradeId, decimal runningPnL)
         {
             var executed = new List<DetailedTradeRecord>();
             var nonExecuted = new List<NonExecutionRecord>();
@@ -246,7 +250,7 @@ namespace ODTE.Strategy.Tests
                 currentTime = currentTime.AddMinutes(10);
             }
 
-            return (executed, nonExecuted, riskEvents);
+            return (executed, nonExecuted, riskEvents, tradeId, runningPnL);
         }
 
         private TradeDecision MakeTradeDecision(DateTime time, MarketConditions conditions, SimulatedRiskManager riskManager, string period)
@@ -402,8 +406,8 @@ namespace ODTE.Strategy.Tests
             return evaluations;
         }
 
-        private async Task<(List<DetailedTradeRecord> executed, List<NonExecutionRecord> nonExecuted)> 
-            GenerateJune2025DayTrades(DateTime date, SimulatedRiskManager riskManager, ref int tradeId, ref decimal runningPnL)
+        private async Task<(List<DetailedTradeRecord> executed, List<NonExecutionRecord> nonExecuted, int newTradeId, decimal newRunningPnL)> 
+            GenerateJune2025DayTrades(DateTime date, SimulatedRiskManager riskManager, int tradeId, decimal runningPnL)
         {
             var executed = new List<DetailedTradeRecord>();
             var nonExecuted = new List<NonExecutionRecord>();
@@ -458,7 +462,7 @@ namespace ODTE.Strategy.Tests
                 currentTime = currentTime.AddMinutes(10);
             }
 
-            return (executed, nonExecuted);
+            return (executed, nonExecuted, tradeId, runningPnL);
         }
 
         private DetailedTradeRecord GenerateJune2025SpecificTrade(DateTime time, MarketConditions conditions, int tradeId, int positionSize)
