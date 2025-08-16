@@ -14,9 +14,25 @@ namespace ODTE.Strategy;
 public class VolatilityExpansionStrategy : IStrategy
 {
     public string Name => "Volatility Expansion";
-    public double ExpectedEdge => 0.55;
-    public double ExpectedWinRate => 0.65;
-    public double RewardToRiskRatio => 2.0;
+    public string Description => "Strategy for volatile market conditions";
+    private double ExpectedEdge => 0.55;
+    private double ExpectedWinRate => 0.65;
+    private double RewardToRiskRatio => 2.0;
+    
+    public decimal Execute(MarketConditions conditions, decimal positionSize)
+    {
+        return 0m;
+    }
+    
+    public bool ShouldExecute(MarketConditions conditions)
+    {
+        return conditions.VIX > 25;
+    }
+    
+    public void UpdatePerformance(decimal result)
+    {
+        // Update performance tracking
+    }
     
     public async Task<List<Trade>> ExecuteTrading(MarketConditions conditions, decimal positionSize, MarketRegime regime)
     {

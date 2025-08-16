@@ -45,7 +45,8 @@
       "Bash(pip install:*)",
       "Bash(sed:*)",
       "Bash(OptimizationDemo.exe)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(generate_honest_excel_report.exe)"
     ],
     "deny": [],
     "ask": [],

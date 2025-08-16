@@ -27,11 +27,28 @@ namespace ODTE.Strategy;
 public class BlackSwanStrategy : IStrategy
 {
     public string Name => "Black Swan Crisis Response";
-    public double ExpectedEdge => 0.65; // 65% edge during extreme stress
+    public string Description => "Extreme market stress trading for crisis periods";
+    private double ExpectedEdge => 0.65; // 65% edge during extreme stress
     public double ExpectedWinRate => 0.60; // 60% win rate in crisis
     public double RewardToRiskRatio => 2.5; // 2.5:1 reward/risk
     
     private readonly CrisisDetector _crisisDetector;
+    
+    public decimal Execute(MarketConditions conditions, decimal positionSize)
+    {
+        // Implementation for IStrategy interface
+        return 0m;
+    }
+    
+    public bool ShouldExecute(MarketConditions conditions)
+    {
+        return conditions.VIX > 80;
+    }
+    
+    public void UpdatePerformance(decimal result)
+    {
+        // Update performance tracking
+    }
     
     public BlackSwanStrategy()
     {
