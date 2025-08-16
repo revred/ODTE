@@ -302,10 +302,11 @@ Risk Metrics:
 - **Interactive Demo**: `cd ODTE.Historical.Tests && dotnet run api-demo`
 - **Commands**: See "Historical Data Commands" below
 
-**Strategy System Documentation**:
-- **Planning Document**: `STRATEGY_SYSTEM_DOCUMENTATION_PLAN.md` in root
-- **Focus**: Building many profitable trading systems systematically
-- **Framework**: Strategy evolution, versioning, benchmarking, selection
+**Strategy System Framework**:
+- **Evolution Framework**: `STRATEGY_EVOLUTION_FRAMEWORK.md` - 8-stage strategy lifecycle
+- **Version Control**: `STRATEGY_VERSIONING_SYSTEM.md` - Complete version tracking
+- **Benchmarking**: `STRATEGY_BENCHMARKING_STANDARDS.md` - Performance measurement
+- **Implementation Plan**: `STRATEGY_SYSTEM_DOCUMENTATION_PLAN.md` - Complete roadmap
 
 ### Quick Context
 ```
@@ -371,13 +372,13 @@ cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 - ✅ Enhanced testing framework with API validation
 - ✅ Proper DLL packaging with NuGet metadata
 
-**🚀 PM250 Trading System Organization**
-- ✅ **Organized PM250 files** into dedicated `Options.OPM/Options.PM250/` folder structure
-- ✅ **Clean relative paths** for all configuration and documentation files
-- ✅ **Comprehensive reports** moved to `Options.OPM/Options.PM250/reports/`
-- ✅ **Optimal weights** organized in `Options.OPM/Options.PM250/config/`
-- ✅ **Production-ready** with discoverable relative path structure
-- ✅ **Documentation updated** with proper relative path references
+**🎯 Strategy System Framework Documentation**
+- ✅ **Strategy Evolution Framework** - Complete 8-stage lifecycle from discovery to production
+- ✅ **Strategy Versioning System** - Comprehensive version control with rollback capabilities
+- ✅ **Strategy Benchmarking Standards** - Objective performance measurement framework
+- ✅ **Cold Start Discovery** - All framework documentation discoverable from root directory
+- ✅ **Production Ready** - Complete systematic approach to building profitable strategies
+- ✅ **Documentation Integration** - Updated README.md and CLAUDE.md with framework references
 
 ### Current Focus Areas
 1. **✅ Strategy Library**: Complete DLL with public APIs  
@@ -404,6 +405,6 @@ This is not about finding one perfect strategy - it's about building an **evolut
 
 *"In trading, as in nature, it's not the strongest that survive, but the most adaptable."*
 
-**Version**: 2.1 - Production DLL Complete  
-**Updated**: August 15, 2025  
-**Status**: ✅ Strategy Library PRODUCTION-READY - Ready for Broker Integration
+**Version**: 2.2 - Strategy Framework Complete  
+**Updated**: August 16, 2025  
+**Status**: ✅ Strategy System Framework COMPLETE - Systematic Profitable Trading System Factory

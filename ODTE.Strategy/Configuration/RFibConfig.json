@@ -1,0 +1,19 @@
+{
+  "ReverseFibonacciRiskManagement": {
+    "DailyLimits": [500, 300, 200, 100],
+    "ResetProfitThreshold": 16.0,
+    "Description": "Configurable Reverse Fibonacci Defense System settings",
+    "LastUpdated": "2025-08-16",
+    "Notes": {
+      "ResetProfitThreshold": "Daily profit amount required to reset consecutive loss counter back to base limit. Set to $16 for more frequent resets and faster recovery.",
+      "DailyLimits": "Risk limits for consecutive loss days: [Day 0, Day 1, Day 2, Day 3+]",
+      "Usage": "Lower threshold allows quicker recovery from losing streaks while maintaining capital preservation"
+    }
+  },
+  "AdvancedSettings": {
+    "MaxConsecutiveLossDays": 10,
+    "WarningThreshold": 0.90,
+    "EnableDynamicScaling": true,
+    "LoggingLevel": "Info"
+  }
+}
