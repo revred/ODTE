@@ -62,7 +62,7 @@ public class DataProviderTests
     }
 
     [Fact]
-    public Task DataCache_ShouldExpireItems()
+    public async Task DataCache_ShouldExpireItems()
     {
         // Arrange
         using var cache = new DataCache(TimeSpan.FromMilliseconds(50));
@@ -73,13 +73,12 @@ public class DataProviderTests
         cache.Set(key, testData);
 
         // Wait for expiration
-        Task.Delay(100);
+        await Task.Delay(100);
 
         var retrieved = cache.Get<string>(key);
 
         // Assert
         Assert.Null(retrieved);
-        return Task.CompletedTask;
     }
 
     [Fact]

@@ -17,12 +17,17 @@ public class RealisticFillEngine : IFillEngine
     public ExecutionProfile CurrentProfile { get; private set; }
 
     public RealisticFillEngine(ExecutionProfile profile, ILogger<RealisticFillEngine>? logger = null)
+        : this(profile, null, logger)
+    {
+    }
+
+    public RealisticFillEngine(ExecutionProfile profile, int? seed, ILogger<RealisticFillEngine>? logger = null)
     {
         CurrentProfile = profile;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RealisticFillEngine>.Instance;
 
         // Use cryptographically secure random for deterministic testing with seeds
-        _random = new Random();
+        _random = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
     /// <summary>
@@ -100,11 +105,12 @@ public class RealisticFillEngine : IFillEngine
                                    profile.SlippageFloor.PctOfSpread * spread);
         var adverseSelection = (decimal)profile.AdverseSelectionBps / 10000m * spread;
         var sizePenalty = (decimal)profile.SizePenalty.BpPerExtraTobMultiple / 10000m * spread;
+        var eventRisk = 0.0025m * spread; // Assume worst case includes event risk
 
         // Worst case: all penalties apply
         var worstCase = order.Side == OrderSide.Buy
-            ? basePrice + slippageFloor + adverseSelection + sizePenalty
-            : basePrice - slippageFloor - adverseSelection - sizePenalty;
+            ? basePrice + slippageFloor + adverseSelection + sizePenalty + eventRisk
+            : basePrice - slippageFloor - adverseSelection - sizePenalty - eventRisk;
 
         return Math.Max(0.01m, worstCase); // Minimum tick size
     }
@@ -213,15 +219,25 @@ public class RealisticFillEngine : IFillEngine
             sizePenaltyCost = extraMultiples * (decimal)profile.SizePenalty.BpPerExtraTobMultiple / 10000m * spread;
         }
 
+        // Step 3.7: Apply event risk penalty
+        var eventRiskCost = 0m;
+        if (marketState.IsEventRisk)
+        {
+            eventRiskCost = 0.0025m * spread; // 25bps additional cost during events
+        }
+
         // Apply all costs (only if not mid-accepted)
         if (!wasMidAccepted)
         {
             var direction = childOrder.Side == OrderSide.Buy ? 1m : -1m;
-            fillPrice += direction * (slippageFloor + adverseSelectionCost + sizePenaltyCost);
+            fillPrice += direction * (slippageFloor + adverseSelectionCost + sizePenaltyCost + eventRiskCost);
         }
 
         // Ensure minimum tick size
         fillPrice = Math.Max(0.01m, fillPrice);
+        
+        // Clamp to NBBO range (with $0.01 tolerance)
+        fillPrice = Math.Max(newQuote.Bid - 0.01m, Math.Min(newQuote.Ask + 0.01m, fillPrice));
 
         return new ChildFill
         {
