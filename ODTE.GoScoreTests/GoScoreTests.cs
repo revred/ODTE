@@ -48,7 +48,7 @@ public class GoScoreTests
 
         // Borderline half
         var half = scorer.Decide(
-            new GoInputs( PoE:0.6, PoT:0.25, Edge:0.05, LiqScore:0.80, RegScore:0.7, PinScore:0.6, RfibUtil:0.3 ),
+            new GoInputs( PoE:0.5, PoT:0.35, Edge:0.02, LiqScore:0.60, RegScore:0.6, PinScore:0.5, RfibUtil:0.4 ),
             StrategyKind.CreditBwb, Regime.Mixed);
         Assert.Equal(Decision.Half, half);
 

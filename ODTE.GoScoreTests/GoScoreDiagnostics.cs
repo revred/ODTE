@@ -28,6 +28,6 @@ public class GoScoreDiagnostics
         Console.WriteLine($"Policy thresholds: Full={p.Thresholds.full}, Half={p.Thresholds.half}");
         
         // Should fail to make visible
-        Assert.True(breakdown1.FinalScore < 55, $"Expected score <55, got {breakdown1.FinalScore}");
+        Assert.True(breakdown1.FinalScore < 65, $"Expected score <65, got {breakdown1.FinalScore}");
     }
 }

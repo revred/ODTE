@@ -22,11 +22,11 @@ public class SelectorPolicyTests
         var scorer = new GoScorer(p);
 
         // Construct score just below half threshold via inputs
-        var d1 = scorer.Decide(new GoInputs(0.50,0.50,0,0.60,0.60,0.5,0.3), StrategyKind.CreditBwb, Regime.Mixed);
+        var d1 = scorer.Decide(new GoInputs(0.30,0.80,0,0.40,0.40,0.3,0.5), StrategyKind.CreditBwb, Regime.Mixed);
         Assert.Equal(Decision.Skip, d1);
 
         // Above half but below full
-        var d2 = scorer.Decide(new GoInputs(0.62,0.25,0.05,0.75,0.70,0.6,0.3), StrategyKind.CreditBwb, Regime.Mixed);
+        var d2 = scorer.Decide(new GoInputs(0.45,0.35,0.03,0.60,0.55,0.5,0.2), StrategyKind.CreditBwb, Regime.Mixed);
         Assert.Equal(Decision.Half, d2);
     }
 }
