@@ -56,7 +56,9 @@
       "Bash(for dir in PM250Analysis PM250ConvergenceOptimizer PM250HighReturnPnL PM250MonthlyPnL PM250ProfitMaximizer PM250RadicalOptimizer PM250RealDataBacktest PM250Realistic PnLAnalysis)",
       "Bash(do mv \"C:/code/ODTE/$dir\" \"C:/code/ODTE/Options.OPM/PM250Tools/\")",
       "Bash(done)",
-      "Bash(where sqlite3)"
+      "Bash(where sqlite3)",
+      "Bash(git log:*)",
+      "Bash(if exist obj rd /s /q obj)"
     ],
     "deny": [],
     "ask": [],
