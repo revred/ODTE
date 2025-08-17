@@ -1,10 +1,6 @@
 // BenchmarkSyntheticData.cs — Command-line tool for testing synthetic data generator
 // Tests OptionsDataGenerator against real SQLite market data as benchmark
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ODTE.Historical.Validation;
 
@@ -55,7 +51,7 @@ namespace ODTE.Historical.Tests
                 Console.WriteLine($"    • Historical Mean: {result.StatisticalTests.HistoricalMean:F6}");
                 Console.WriteLine($"    • Synthetic Mean: {result.StatisticalTests.SyntheticMean:F6}");
                 Console.WriteLine();
-                
+
                 Console.WriteLine($"  Volatility Match Score: {result.StatisticalTests.VolatilityMatchScore:F1}/100");
                 Console.WriteLine($"    • Historical Std: {result.StatisticalTests.HistoricalStdDev:F6}");
                 Console.WriteLine($"    • Synthetic Std: {result.StatisticalTests.SyntheticStdDev:F6}");
@@ -128,22 +124,22 @@ namespace ODTE.Historical.Tests
 
                 Console.WriteLine();
                 Console.WriteLine("💡 RECOMMENDATIONS:");
-                
+
                 if (result.StatisticalTests.VolatilityMatchScore < 70)
                 {
                     Console.WriteLine("  • Adjust volatility surface calibration parameters");
                 }
-                
+
                 if (result.DistributionTests.TailRiskScore < 70)
                 {
                     Console.WriteLine("  • Enhance jump-diffusion model for tail events");
                 }
-                
+
                 if (result.RegimeTests.VolatilityRegimeScore < 70)
                 {
                     Console.WriteLine("  • Improve market regime detection sensitivity");
                 }
-                
+
                 if (result.VolatilityAnalysis.VolClusteringScore < 70)
                 {
                     Console.WriteLine("  • Implement GARCH-style volatility clustering");
@@ -174,7 +170,7 @@ namespace ODTE.Historical.Tests
             var factory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Information)
-                       .AddConsole(options => 
+                       .AddConsole(options =>
                        {
                            options.LogToStandardErrorThreshold = LogLevel.Warning;
                        });

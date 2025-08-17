@@ -1,6 +1,6 @@
+using Dapper;
 using System.Data.SQLite;
 using System.Globalization;
-using Dapper;
 
 namespace ODTE.Historical;
 
@@ -21,7 +21,7 @@ public static class StooqImporter
         {
             var symbol = Path.GetFileNameWithoutExtension(file).ToUpperInvariant(); // e.g., AAPL.US
             var cleanSymbol = CleanSymbol(symbol);
-            
+
             // Ensure underlying exists in new schema
             EnsureUnderlyingExists(conn, cleanSymbol);
             var underlyingId = GetUnderlyingId(conn, cleanSymbol);
@@ -48,7 +48,7 @@ public static class StooqImporter
 
                     // Insert into new underlying_quotes table
                     var timestamp = ((DateTimeOffset)dt).ToUnixTimeMilliseconds() * 1000; // Microseconds
-                    
+
                     conn.Execute(@"
                         INSERT OR REPLACE INTO underlying_quotes 
                         (underlying_id, timestamp, open, high, low, close, volume, last, bid, ask)
@@ -76,7 +76,7 @@ public static class StooqImporter
         tx.Commit();
         Console.WriteLine($"Stooq import completed for directory: {rootDir}");
     }
-    
+
     /// <summary>
     /// Import single Stooq file with enhanced error handling
     /// </summary>
@@ -84,16 +84,16 @@ public static class StooqImporter
     {
         using var conn = new SQLiteConnection($"Data Source={sqlitePath}");
         conn.Open();
-        
+
         var symbol = Path.GetFileNameWithoutExtension(filePath).ToUpperInvariant();
         var cleanSymbol = CleanSymbol(symbol);
-        
+
         EnsureUnderlyingExists(conn, cleanSymbol);
         var underlyingId = GetUnderlyingId(conn, cleanSymbol);
-        
+
         var recordCount = 0;
         using var tx = conn.BeginTransaction();
-        
+
         foreach (var line in File.ReadLines(filePath).Skip(1)) // skip header
         {
             var parts = line.Split(',');
@@ -117,7 +117,7 @@ public static class StooqImporter
                 if (high < Math.Max(open, close) || low > Math.Min(open, close)) continue;
 
                 var timestamp = ((DateTimeOffset)dt).ToUnixTimeMilliseconds() * 1000;
-                
+
                 conn.Execute(@"
                     INSERT OR REPLACE INTO underlying_quotes 
                     (underlying_id, timestamp, open, high, low, close, volume, last, bid, ask)
@@ -134,7 +134,7 @@ public static class StooqImporter
                         Bid = close - 0.01,
                         Ask = close + 0.01
                     }, tx);
-                
+
                 recordCount++;
             }
             catch (Exception ex)
@@ -142,14 +142,14 @@ public static class StooqImporter
                 Console.WriteLine($"Error parsing line: {line} - {ex.Message}");
             }
         }
-        
+
         tx.Commit();
         // Run random validation checks on imported data
         RunRandomValidationChecks(conn, underlyingId, cleanSymbol, recordCount);
-        
+
         Console.WriteLine($"Imported {recordCount} records for {cleanSymbol} from {filePath}");
     }
-    
+
     private static void EnsureUnderlyingExists(SQLiteConnection conn, string symbol)
     {
         conn.Execute(@"
@@ -162,20 +162,20 @@ public static class StooqImporter
             TickSize = GetSymbolTickSize(symbol)
         });
     }
-    
+
     private static int GetUnderlyingId(SQLiteConnection conn, string symbol)
     {
         return conn.QuerySingle<int>(
-            "SELECT id FROM underlyings WHERE symbol = @Symbol", 
+            "SELECT id FROM underlyings WHERE symbol = @Symbol",
             new { Symbol = symbol });
     }
-    
+
     private static string CleanSymbol(string symbol)
     {
         // Remove Stooq suffixes (.US, .CC, etc.) and clean up
         return symbol.Split('.')[0].Replace("^", "").ToUpperInvariant();
     }
-    
+
     private static string GetSymbolName(string symbol) => symbol switch
     {
         "SPY" => "SPDR S&P 500 ETF",
@@ -187,7 +187,7 @@ public static class StooqImporter
         "RUT" => "Russell 2000 Index",
         _ => $"{symbol} (Stooq Import)"
     };
-    
+
     private static decimal GetSymbolMultiplier(string symbol) => symbol switch
     {
         "SPY" or "QQQ" or "IWM" => 100m, // ETFs
@@ -195,14 +195,14 @@ public static class StooqImporter
         _ when symbol.Contains("USD") => 1m, // FX
         _ => 100m // Default to 100
     };
-    
+
     private static decimal GetSymbolTickSize(string symbol) => symbol switch
     {
         _ when symbol.Contains("USD") => 0.0001m, // FX pairs
         "VIX" => 0.01m, // VIX
         _ => 0.01m // Default
     };
-    
+
     /// <summary>
     /// Run random validation checks on imported data to ensure quality
     /// </summary>
@@ -211,24 +211,24 @@ public static class StooqImporter
         try
         {
             if (recordCount < 10) return; // Need minimum data for validation
-            
+
             // Random sampling validation (check 5% of records or max 100)
             var sampleSize = Math.Min(100, Math.Max(5, recordCount / 20));
-            
+
             var validationResults = conn.Query<ValidationSample>(@"
                 SELECT open, high, low, close, volume, timestamp
                 FROM underlying_quotes 
                 WHERE underlying_id = @UnderlyingId
                 ORDER BY RANDOM()
                 LIMIT @SampleSize", new { UnderlyingId = underlyingId, SampleSize = sampleSize });
-            
+
             var issues = new List<string>();
             var validRecords = 0;
-            
+
             foreach (var sample in validationResults)
             {
                 var isValid = true;
-                
+
                 // OHLC relationship validation
                 if (sample.High < Math.Max(sample.Open, sample.Close) ||
                     sample.Low > Math.Min(sample.Open, sample.Close))
@@ -236,14 +236,14 @@ public static class StooqImporter
                     issues.Add($"Invalid OHLC relationship at {sample.Timestamp}");
                     isValid = false;
                 }
-                
+
                 // Positive price validation
                 if (sample.Open <= 0 || sample.High <= 0 || sample.Low <= 0 || sample.Close <= 0)
                 {
                     issues.Add($"Non-positive price at {sample.Timestamp}");
                     isValid = false;
                 }
-                
+
                 // Reasonable price validation for known symbols
                 if (symbol == "SPY" && (sample.Close < 10 || sample.Close > 1000))
                 {
@@ -255,19 +255,19 @@ public static class StooqImporter
                     issues.Add($"Unreasonable VIX level {sample.Close:F2} at {sample.Timestamp}");
                     isValid = false;
                 }
-                
+
                 // Volume validation (allow zero but not negative)
                 if (sample.Volume < 0)
                 {
                     issues.Add($"Negative volume {sample.Volume} at {sample.Timestamp}");
                     isValid = false;
                 }
-                
+
                 if (isValid) validRecords++;
             }
-            
+
             var validityRate = validRecords / (double)validationResults.Count();
-            
+
             if (validityRate < 0.95) // 95% validity threshold
             {
                 Console.WriteLine($"⚠️  Data quality warning for {symbol}: {validityRate:P1} validity rate");
@@ -280,7 +280,7 @@ public static class StooqImporter
             {
                 Console.WriteLine($"✅ Data quality check passed for {symbol}: {validityRate:P1} validity ({sampleSize} samples)");
             }
-            
+
             // Performance check: measure query time for recent data
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var recentData = conn.Query(@"
@@ -290,19 +290,19 @@ public static class StooqImporter
                 ORDER BY timestamp DESC 
                 LIMIT 100", new { UnderlyingId = underlyingId });
             sw.Stop();
-            
+
             if (sw.ElapsedMilliseconds > 500) // Warn if query takes >500ms
             {
                 Console.WriteLine($"⚠️  Performance warning: Query took {sw.ElapsedMilliseconds}ms for {symbol}");
             }
-            
+
         }
         catch (Exception ex)
         {
             Console.WriteLine($"⚠️  Validation check failed for {symbol}: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Data structure for validation sampling
     /// </summary>

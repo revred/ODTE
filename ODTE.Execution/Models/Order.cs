@@ -16,17 +16,17 @@ public record Order
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
     public OrderType OrderType { get; init; } = OrderType.Market;
     public TimeInForce TimeInForce { get; init; } = TimeInForce.Day;
-    
+
     /// <summary>
     /// Estimated notional value for market impact calculations
     /// </summary>
     public decimal NotionalValue { get; init; }
-    
+
     /// <summary>
     /// Strategy context for execution optimization
     /// </summary>
     public string StrategyId { get; init; } = "";
-    
+
     /// <summary>
     /// Parent strategy type (e.g., IronCondor, CreditSpread)
     /// </summary>

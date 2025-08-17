@@ -1,7 +1,7 @@
 
-using System.Data.SQLite;
 using Dapper;
 using Microsoft.Extensions.Logging;
+using System.Data.SQLite;
 
 namespace ODTE.Historical.Validation
 {
@@ -107,7 +107,7 @@ namespace ODTE.Historical.Validation
         public async Task<BenchmarkResult> RunBenchmarkAsync()
         {
             _logger.LogInformation("🎯 Starting Synthetic Data Benchmark Validation");
-            
+
             var result = new BenchmarkResult
             {
                 BenchmarkId = Guid.NewGuid().ToString("N")[..8],
@@ -126,25 +126,25 @@ namespace ODTE.Historical.Validation
 
                 // 3. Statistical comparison tests
                 result.StatisticalTests = await RunStatisticalTestsAsync(historicalData, syntheticData);
-                
+
                 // 4. Volatility analysis
                 result.VolatilityAnalysis = await RunVolatilityAnalysisAsync(historicalData, syntheticData);
-                
+
                 // 5. Distribution comparison
                 result.DistributionTests = await RunDistributionTestsAsync(historicalData, syntheticData);
-                
+
                 // 6. Market regime detection
                 result.RegimeTests = await RunRegimeTestsAsync(historicalData, syntheticData);
-                
+
                 // 7. Calculate overall quality score
                 result.OverallScore = CalculateOverallScore(result);
                 result.IsAcceptable = result.OverallScore >= 75.0; // 75% threshold for production use
-                
+
                 result.EndTime = DateTime.UtcNow;
                 result.Duration = result.EndTime - result.StartTime;
-                
+
                 _logger.LogInformation($"✅ Benchmark completed: {result.OverallScore:F1}/100 score");
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -182,7 +182,7 @@ namespace ODTE.Historical.Validation
         private async Task<List<MarketDataPoint>> LoadHistoricalDataAsync()
         {
             using var conn = new SQLiteConnection($"Data Source={_databasePath}");
-            
+
             // Load market data as benchmark (all available data)
             var data = await conn.QueryAsync(@"
                 SELECT 
@@ -243,12 +243,12 @@ namespace ODTE.Historical.Validation
         {
             var syntheticData = new List<MarketDataPoint>();
             var startDate = DateTime.Today.AddDays(-30);
-            
+
             // Generate synthetic data for last 30 trading days
             for (int day = 0; day < 30; day++)
             {
                 var tradingDay = startDate.AddDays(day);
-                
+
                 // Skip weekends
                 if (tradingDay.DayOfWeek == DayOfWeek.Saturday || tradingDay.DayOfWeek == DayOfWeek.Sunday)
                     continue;
@@ -256,7 +256,7 @@ namespace ODTE.Historical.Validation
                 try
                 {
                     var dayData = await _syntheticGenerator.GenerateTradingDayAsync(tradingDay, "SPY");
-                    
+
                     foreach (var bar in dayData.Take(Math.Min(200, dayData.Count))) // Limit to avoid over-generation
                     {
                         syntheticData.Add(new MarketDataPoint
@@ -275,7 +275,7 @@ namespace ODTE.Historical.Validation
                 {
                     _logger.LogWarning($"Failed to generate data for {tradingDay:yyyy-MM-dd}: {ex.Message}");
                 }
-                
+
                 if (syntheticData.Count >= targetCount) break;
             }
 
@@ -316,7 +316,7 @@ namespace ODTE.Historical.Validation
         /// - Overall statistical fidelity assessment
         /// </returns>
         private async Task<StatisticalTestResults> RunStatisticalTestsAsync(
-            List<MarketDataPoint> historical, 
+            List<MarketDataPoint> historical,
             List<MarketDataPoint> synthetic)
         {
             // Calculate returns for both datasets
@@ -333,13 +333,13 @@ namespace ODTE.Historical.Validation
                 SyntheticMean = synthReturns.Average(),
                 HistoricalStdDev = CalculateStandardDeviation(histReturns),
                 SyntheticStdDev = CalculateStandardDeviation(synthReturns),
-                
+
                 // Skewness and kurtosis
                 HistoricalSkewness = CalculateSkewness(histReturns),
                 SyntheticSkewness = CalculateSkewness(synthReturns),
                 HistoricalKurtosis = CalculateKurtosis(histReturns),
                 SyntheticKurtosis = CalculateKurtosis(synthReturns),
-                
+
                 // Quality scores (100 = perfect match)
                 MeanDifferenceScore = CalculateScore(histReturns.Average(), synthReturns.Average(), 0.001),
                 VolatilityMatchScore = CalculateScore(CalculateStandardDeviation(histReturns), CalculateStandardDeviation(synthReturns), 0.01),
@@ -383,7 +383,7 @@ namespace ODTE.Historical.Validation
         /// - Mean reversion characteristic scores
         /// </returns>
         private async Task<VolatilityAnalysisResults> RunVolatilityAnalysisAsync(
-            List<MarketDataPoint> historical, 
+            List<MarketDataPoint> historical,
             List<MarketDataPoint> synthetic)
         {
             var histVols = CalculateRollingVolatility(historical, 20); // 20-period rolling vol
@@ -434,7 +434,7 @@ namespace ODTE.Historical.Validation
         /// - Normality test comparisons
         /// </returns>
         private async Task<DistributionTestResults> RunDistributionTestsAsync(
-            List<MarketDataPoint> historical, 
+            List<MarketDataPoint> historical,
             List<MarketDataPoint> synthetic)
         {
             var histReturns = historical.Select(h => h.Returns).Where(r => !double.IsNaN(r)).ToList();
@@ -489,7 +489,7 @@ namespace ODTE.Historical.Validation
         /// - Mean reversion behavior comparison scores
         /// </returns>
         private async Task<RegimeTestResults> RunRegimeTestsAsync(
-            List<MarketDataPoint> historical, 
+            List<MarketDataPoint> historical,
             List<MarketDataPoint> synthetic)
         {
             await Task.Delay(0); // Simulate async delay for testing purposes
@@ -506,9 +506,9 @@ namespace ODTE.Historical.Validation
         {
             for (int i = 1; i < data.Count; i++)
             {
-                if (data[i-1].Close > 0)
+                if (data[i - 1].Close > 0)
                 {
-                    data[i].Returns = Math.Log(data[i].Close / data[i-1].Close);
+                    data[i].Returns = Math.Log(data[i].Close / data[i - 1].Close);
                 }
             }
         }
@@ -527,7 +527,7 @@ namespace ODTE.Historical.Validation
             var mean = values.Average();
             var stdDev = CalculateStandardDeviation(values);
             if (stdDev == 0) return 0;
-            
+
             var skew = values.Sum(v => Math.Pow((v - mean) / stdDev, 3)) / values.Count;
             return skew;
         }
@@ -538,7 +538,7 @@ namespace ODTE.Historical.Validation
             var mean = values.Average();
             var stdDev = CalculateStandardDeviation(values);
             if (stdDev == 0) return 0;
-            
+
             var kurt = values.Sum(v => Math.Pow((v - mean) / stdDev, 4)) / values.Count - 3;
             return kurt;
         }
@@ -553,26 +553,26 @@ namespace ODTE.Historical.Validation
         private List<double> CalculateRollingVolatility(List<MarketDataPoint> data, int window)
         {
             var volatilities = new List<double>();
-            
+
             for (int i = window; i < data.Count; i++)
             {
                 var returns = data.Skip(i - window).Take(window).Select(d => d.Returns).ToList();
                 volatilities.Add(CalculateStandardDeviation(returns) * Math.Sqrt(252)); // Annualized
             }
-            
+
             return volatilities;
         }
 
         private double CalculateCorrelation(List<double> x, List<double> y)
         {
             if (x.Count != y.Count || x.Count < 2) return 0;
-            
+
             var meanX = x.Average();
             var meanY = y.Average();
-            
+
             var numerator = x.Zip(y, (xi, yi) => (xi - meanX) * (yi - meanY)).Sum();
             var denominator = Math.Sqrt(x.Sum(xi => Math.Pow(xi - meanX, 2)) * y.Sum(yi => Math.Pow(yi - meanY, 2)));
-            
+
             return denominator == 0 ? 0 : numerator / denominator;
         }
 
@@ -618,7 +618,7 @@ namespace ODTE.Historical.Validation
         }
 
         #region Private Data Models
-        
+
         /// <summary>
         /// Internal data structure for market data points used in benchmark validation.
         /// Contains both price/volume data and calculated metrics like returns.
@@ -637,7 +637,7 @@ namespace ODTE.Historical.Validation
             /// </summary>
             public long UnixTimestamp { get; set; }
         }
-        
+
         #endregion
     }
 
@@ -651,7 +651,7 @@ namespace ODTE.Historical.Validation
         public double OverallScore { get; set; }
         public bool IsAcceptable { get; set; }
         public string ErrorMessage { get; set; } = "";
-        
+
         public StatisticalTestResults StatisticalTests { get; set; } = new();
         public VolatilityAnalysisResults VolatilityAnalysis { get; set; } = new();
         public DistributionTestResults DistributionTests { get; set; } = new();
@@ -668,7 +668,7 @@ namespace ODTE.Historical.Validation
         public double SyntheticSkewness { get; set; }
         public double HistoricalKurtosis { get; set; }
         public double SyntheticKurtosis { get; set; }
-        
+
         public double MeanDifferenceScore { get; set; }
         public double VolatilityMatchScore { get; set; }
         public double SkewnessMatchScore { get; set; }

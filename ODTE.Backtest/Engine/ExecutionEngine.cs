@@ -41,9 +41,9 @@ public sealed class ExecutionEngine : IExecutionEngine
 {
     private readonly SimConfig _cfg;
     private readonly TradeLogDatabase _tradeLogDb;
-    
-    public ExecutionEngine(SimConfig cfg, string logBasePath = "./TradeLogs") 
-    { 
+
+    public ExecutionEngine(SimConfig cfg, string logBasePath = "./TradeLogs")
+    {
         _cfg = cfg;
         _tradeLogDb = new TradeLogDatabase(logBasePath);
     }
@@ -107,25 +107,25 @@ public sealed class ExecutionEngine : IExecutionEngine
     /// - Risk-based position sizing adjustments
     /// </summary>
     public (bool exit, double exitPrice, string reason) ShouldExit(
-        OpenPosition pos, 
-        double currentSpreadValue, 
-        double shortStrikeDelta, 
+        OpenPosition pos,
+        double currentSpreadValue,
+        double shortStrikeDelta,
         DateTime now)
     {
         double stopVal = pos.EntryPrice * _cfg.Stops.CreditMultiple;
-        
+
         // Price-based stop: Spread has moved against us
-        if (currentSpreadValue >= stopVal) 
-            return (true, 
-                    currentSpreadValue + _cfg.Slippage.ExitHalfSpreadTicks * _cfg.Slippage.TickValue, 
+        if (currentSpreadValue >= stopVal)
+            return (true,
+                    currentSpreadValue + _cfg.Slippage.ExitHalfSpreadTicks * _cfg.Slippage.TickValue,
                     $"Stop credit x{_cfg.Stops.CreditMultiple}");
-        
+
         // Delta-based stop: Gamma protection for 0DTE
-        if (Math.Abs(shortStrikeDelta) >= _cfg.Stops.DeltaBreach) 
-            return (true, 
-                    currentSpreadValue + _cfg.Slippage.ExitHalfSpreadTicks * _cfg.Slippage.TickValue, 
+        if (Math.Abs(shortStrikeDelta) >= _cfg.Stops.DeltaBreach)
+            return (true,
+                    currentSpreadValue + _cfg.Slippage.ExitHalfSpreadTicks * _cfg.Slippage.TickValue,
                     $"Delta>{_cfg.Stops.DeltaBreach}");
-        
+
         // No exit conditions met
         return (false, 0, "");
     }
@@ -170,7 +170,7 @@ public sealed class ExecutionEngine : IExecutionEngine
 
             // Log to SQLite database for analytics and forensics
             await _tradeLogDb.LogTradeAsync(tradeLog);
-            
+
             // Also log to console for immediate feedback
             Console.WriteLine($"TRADE_LOG: {tradeLog.ToJson()}");
         }
@@ -187,9 +187,9 @@ public sealed class ExecutionEngine : IExecutionEngine
     /// </summary>
     private decimal CalculateMaxLoss(SpreadOrder order) => order.Type switch
     {
-        Decision.SingleSidePut or Decision.SingleSideCall => 
+        Decision.SingleSidePut or Decision.SingleSideCall =>
             (decimal)(order.Width - order.Credit) * 100m, // Credit spread
-        Decision.Condor => 
+        Decision.Condor =>
             (decimal)order.Width * 100m - (decimal)order.Credit, // Iron condor
         _ => 0m
     };

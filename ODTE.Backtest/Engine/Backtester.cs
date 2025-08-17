@@ -8,27 +8,27 @@ namespace ODTE.Backtest.Engine;
 
 public sealed class Backtester
 {
-    private readonly SimConfig _cfg; 
-    private readonly IMarketData _md; 
-    private readonly IOptionsData _od; 
+    private readonly SimConfig _cfg;
+    private readonly IMarketData _md;
+    private readonly IOptionsData _od;
     private readonly IEconCalendar _cal;
-    private readonly IRegimeScorer _scorer; 
-    private readonly ISpreadBuilder _builder; 
-    private readonly IExecutionEngine _exec; 
+    private readonly IRegimeScorer _scorer;
+    private readonly ISpreadBuilder _builder;
+    private readonly IExecutionEngine _exec;
     private readonly IRiskManager _risk;
 
     public Backtester(
-        SimConfig cfg, 
-        IMarketData md, 
-        IOptionsData od, 
-        IEconCalendar cal, 
-        IRegimeScorer scorer, 
-        ISpreadBuilder builder, 
-        IExecutionEngine exec, 
+        SimConfig cfg,
+        IMarketData md,
+        IOptionsData od,
+        IEconCalendar cal,
+        IRegimeScorer scorer,
+        ISpreadBuilder builder,
+        IExecutionEngine exec,
         IRiskManager risk)
-    { 
-        _cfg=cfg; _md=md; _od=od; _cal=cal; 
-        _scorer=scorer; _builder=builder; _exec=exec; _risk=risk; 
+    {
+        _cfg = cfg; _md = md; _od = od; _cal = cal;
+        _scorer = scorer; _builder = builder; _exec = exec; _risk = risk;
     }
 
     public Task<RunReport> RunAsync()
@@ -41,49 +41,49 @@ public sealed class Backtester
         foreach (var bar in bars.Where(b => InSession(b.Ts)))
         {
             // 1) Update open positions
-            for (int i=active.Count-1; i>=0; i--)
+            for (int i = active.Count - 1; i >= 0; i--)
             {
                 var pos = active[i];
                 var quotes = _od.GetQuotesAt(bar.Ts)
                     .Where(q => q.Expiry == _od.TodayExpiry(bar.Ts))
                     .ToList();
-                
+
                 double shortMid = quotes
-                    .Where(q => q.Right==pos.Order.Short.Right && 
+                    .Where(q => q.Right == pos.Order.Short.Right &&
                            Math.Abs(q.Strike - pos.Order.Short.Strike) < 1e-6)
-                    .Select(q=>q.Mid)
+                    .Select(q => q.Mid)
                     .FirstOrDefault();
-                
+
                 double longMid = quotes
-                    .Where(q => q.Right==pos.Order.Long.Right && 
+                    .Where(q => q.Right == pos.Order.Long.Right &&
                            Math.Abs(q.Strike - pos.Order.Long.Strike) < 1e-6)
-                    .Select(q=>q.Mid)
+                    .Select(q => q.Mid)
                     .FirstOrDefault();
-                
+
                 double spreadVal = Math.Max(0, shortMid - longMid);
-                
+
                 double shortDelta = quotes
-                    .Where(q => q.Right==pos.Order.Short.Right && 
+                    .Where(q => q.Right == pos.Order.Short.Right &&
                            Math.Abs(q.Strike - pos.Order.Short.Strike) < 1e-6)
-                    .Select(q=>q.Delta)
+                    .Select(q => q.Delta)
                     .FirstOrDefault();
 
                 var (exit, price, reason) = _exec.ShouldExit(pos, spreadVal, shortDelta, bar.Ts);
                 if (exit)
                 {
-                    pos.Closed = true; 
-                    pos.ExitPrice = price; 
-                    pos.ExitTs = bar.Ts; 
+                    pos.Closed = true;
+                    pos.ExitPrice = price;
+                    pos.ExitTs = bar.Ts;
                     pos.ExitReason = reason;
-                    
-                    double fees = 2 * (_cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract); 
-                    double pnl = (pos.EntryPrice - price) * 100 - fees; 
-                    
+
+                    double fees = 2 * (_cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract);
+                    double pnl = (pos.EntryPrice - price) * 100 - fees;
+
                     report.Trades.Add(new TradeResult(
-                        pos, pnl, fees, 
-                        spreadVal - pos.EntryPrice, 
+                        pos, pnl, fees,
+                        spreadVal - pos.EntryPrice,
                         pos.EntryPrice - spreadVal));
-                    
+
                     _risk.RegisterClose(pos.Order.Type, pnl);
                     active.RemoveAt(i);
                 }
@@ -92,21 +92,21 @@ public sealed class Backtester
             // 2) Expiry cash settlement for safe positions
             if (IsPmClose(bar.Ts))
             {
-                for (int i=active.Count-1; i>=0; i--)
+                for (int i = active.Count - 1; i >= 0; i--)
                 {
                     var pos = active[i];
-                    double price = 0.0; 
-                    pos.Closed = true; 
-                    pos.ExitPrice = price; 
-                    pos.ExitTs = bar.Ts; 
+                    double price = 0.0;
+                    pos.Closed = true;
+                    pos.ExitPrice = price;
+                    pos.ExitTs = bar.Ts;
                     pos.ExitReason = "PM cash settlement";
-                    
-                    double fees = _cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract; 
+
+                    double fees = _cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract;
                     double pnl = (pos.EntryPrice - price) * 100 - fees;
-                    
+
                     report.Trades.Add(new TradeResult(
                         pos, pnl, fees, 0, pos.EntryPrice));
-                    
+
                     _risk.RegisterClose(pos.Order.Type, pnl);
                     active.RemoveAt(i);
                 }
@@ -117,27 +117,27 @@ public sealed class Backtester
             {
                 lastDecision = bar.Ts;
                 var (score, calm, up, dn) = _scorer.Score(bar.Ts, _md, _cal);
-                
+
                 // DEBUG: Log regime scoring
                 Console.WriteLine($"🎯 {bar.Ts:yyyy-MM-dd HH:mm} | Score: {score}, Calm: {calm}, Up: {up}, Dn: {dn}");
-                
+
                 Decision d = Decision.NoGo;
-                if (score <= -1) 
+                if (score <= -1)
                 {
                     d = Decision.NoGo;
                     Console.WriteLine($"   ❌ NoGo - Score too low: {score}");
                 }
-                else if (calm && score >= 0) 
+                else if (calm && score >= 0)
                 {
                     d = Decision.Condor;
                     Console.WriteLine($"   🎪 Condor - Calm market, score: {score}");
                 }
-                else if (up && score >= 2) 
+                else if (up && score >= 2)
                 {
                     d = Decision.SingleSideCall;
                     Console.WriteLine($"   📈 Call spread - Uptrend, score: {score}");
                 }
-                else if (dn && score >= 2) 
+                else if (dn && score >= 2)
                 {
                     d = Decision.SingleSidePut;
                     Console.WriteLine($"   📉 Put spread - Downtrend, score: {score}");
@@ -178,12 +178,12 @@ public sealed class Backtester
                 }
             }
         }
-        
+
         // Force-close any remaining active positions at end of simulation (0DTE expiry)
         if (active.Count > 0)
         {
             DateTime finalTime = bars.LastOrDefault()?.Ts ?? _cfg.End.ToDateTime(new TimeOnly(21, 0, 0));
-            
+
             foreach (var pos in active.Where(p => !p.Closed))
             {
                 // For 0DTE options, assume they expire worthless if not closed
@@ -191,19 +191,19 @@ public sealed class Backtester
                 pos.ExitPrice = 0.01; // Minimal value - options expire worthless 
                 pos.ExitTs = finalTime;
                 pos.ExitReason = "Expiry - 0DTE options expire worthless";
-                
+
                 double fees = 2.0 * ((double)_cfg.Fees.CommissionPerContract + (double)_cfg.Fees.ExchangeFeesPerContract);
                 double pnl = (pos.EntryPrice - pos.ExitPrice.Value) * 100 - fees;
-                
+
                 report.Trades.Add(new TradeResult(
                     pos, pnl, fees,
                     0.01 - pos.EntryPrice,  // MAE - assume minimum adverse movement
                     pos.EntryPrice - 0.01   // MFE - maximum favorable was entry price
                 ));
-                
+
                 // Register position closure with risk manager to free up position slots
                 _risk.RegisterClose(pos.Order.Type, pnl);
-                
+
                 Console.WriteLine($"   📅 Position force-closed at expiry: P&L ${pnl:F2}");
             }
         }
@@ -215,8 +215,8 @@ public sealed class Backtester
     private bool InSession(DateTime ts)
     {
         var t = ts.TimeOfDay;
-        var sessionStart = new TimeSpan(14, 30, 0); 
-        var sessionEnd = new TimeSpan(21, 0, 0);   
+        var sessionStart = new TimeSpan(14, 30, 0);
+        var sessionEnd = new TimeSpan(21, 0, 0);
         return t >= sessionStart && t <= sessionEnd;
     }
 

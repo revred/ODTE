@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace ODTE.Historical
@@ -36,9 +32,9 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Market data bars for the specified range</returns>
         Task<List<MarketDataBar>> GetMarketDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -48,7 +44,7 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Current market data bar</returns>
         Task<MarketDataBar?> GetCurrentDataAsync(
-            string symbol, 
+            string symbol,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -94,22 +90,22 @@ namespace ODTE.Historical
         /// Retrieves market data for the specified symbol and time range.
         /// </summary>
         public abstract Task<List<MarketDataBar>> GetMarketDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets current market data for the specified symbol.
         /// </summary>
         public virtual async Task<MarketDataBar?> GetCurrentDataAsync(
-            string symbol, 
+            string symbol,
             CancellationToken cancellationToken = default)
         {
             // Default implementation: get the most recent historical data
             var endDate = DateTime.Now;
             var startDate = endDate.AddDays(-1);
-            
+
             var data = await GetMarketDataAsync(symbol, startDate, endDate, cancellationToken);
             return data.Count > 0 ? data[^1] : null;
         }
@@ -187,16 +183,16 @@ namespace ODTE.Historical
         /// Retrieves market data for the specified symbol and time range.
         /// </summary>
         public override async Task<List<MarketDataBar>> GetMarketDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default)
         {
             ValidateParameters(symbol, startDate, endDate);
 
             try
             {
-                _logger.LogDebug("Retrieving historical data for {Symbol} from {StartDate} to {EndDate}", 
+                _logger.LogDebug("Retrieving historical data for {Symbol} from {StartDate} to {EndDate}",
                     symbol, startDate, endDate);
 
                 await _database.InitializeAsync();
@@ -221,10 +217,10 @@ namespace ODTE.Historical
             {
                 await _database.InitializeAsync();
                 var stats = await _database.GetStatsAsync();
-                
-                _logger.LogDebug("Database health check: {Records} records, {Size} MB", 
+
+                _logger.LogDebug("Database health check: {Records} records, {Size} MB",
                     stats.TotalRecords, stats.DatabaseSizeMB);
-                
+
                 return stats.TotalRecords > 0;
             }
             catch (Exception ex)
@@ -271,16 +267,16 @@ namespace ODTE.Historical
         /// Retrieves market data for the specified symbol and time range.
         /// </summary>
         public override async Task<List<MarketDataBar>> GetMarketDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default)
         {
             ValidateParameters(symbol, startDate, endDate);
 
             try
             {
-                _logger.LogDebug("Generating synthetic data for {Symbol} from {StartDate} to {EndDate}", 
+                _logger.LogDebug("Generating synthetic data for {Symbol} from {StartDate} to {EndDate}",
                     symbol, startDate, endDate);
 
                 var allData = new List<MarketDataBar>();
@@ -289,7 +285,7 @@ namespace ODTE.Historical
                 while (currentDate <= endDate.Date)
                 {
                     // Skip weekends
-                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && 
+                    if (currentDate.DayOfWeek != DayOfWeek.Saturday &&
                         currentDate.DayOfWeek != DayOfWeek.Sunday)
                     {
                         var dayData = await _generator.GenerateTradingDayAsync(currentDate, symbol);
@@ -299,7 +295,7 @@ namespace ODTE.Historical
                     currentDate = currentDate.AddDays(1);
                 }
 
-                _logger.LogInformation("Generated {Count} synthetic data points for {Symbol}", 
+                _logger.LogInformation("Generated {Count} synthetic data points for {Symbol}",
                     allData.Count, symbol);
 
                 return allData;
@@ -328,7 +324,7 @@ namespace ODTE.Historical
             : base(logger)
         {
             _sources = sources ?? throw new ArgumentNullException(nameof(sources));
-            
+
             if (_sources.Count == 0)
                 throw new ArgumentException("At least one data source must be provided", nameof(sources));
         }
@@ -352,9 +348,9 @@ namespace ODTE.Historical
         /// Retrieves market data for the specified symbol and time range.
         /// </summary>
         public override async Task<List<MarketDataBar>> GetMarketDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default)
         {
             ValidateParameters(symbol, startDate, endDate);
@@ -364,12 +360,12 @@ namespace ODTE.Historical
                 try
                 {
                     _logger.LogDebug("Trying data source: {SourceName}", source.SourceName);
-                    
+
                     var data = await source.GetMarketDataAsync(symbol, startDate, endDate, cancellationToken);
-                    
+
                     if (data.Count > 0)
                     {
-                        _logger.LogInformation("Successfully retrieved {Count} data points from {SourceName}", 
+                        _logger.LogInformation("Successfully retrieved {Count} data points from {SourceName}",
                             data.Count, source.SourceName);
                         return data;
                     }
@@ -387,7 +383,7 @@ namespace ODTE.Historical
         /// Gets current market data for the specified symbol.
         /// </summary>
         public override async Task<MarketDataBar?> GetCurrentDataAsync(
-            string symbol, 
+            string symbol,
             CancellationToken cancellationToken = default)
         {
             // Try real-time sources first
@@ -418,7 +414,7 @@ namespace ODTE.Historical
         public override async Task<bool> HealthCheckAsync(CancellationToken cancellationToken = default)
         {
             var healthyCount = 0;
-            
+
             foreach (var source in _sources)
             {
                 try
@@ -435,7 +431,7 @@ namespace ODTE.Historical
             }
 
             var isHealthy = healthyCount > 0;
-            _logger.LogInformation("Composite health check: {Healthy}/{Total} sources healthy", 
+            _logger.LogInformation("Composite health check: {Healthy}/{Total} sources healthy",
                 healthyCount, _sources.Count);
 
             return isHealthy;

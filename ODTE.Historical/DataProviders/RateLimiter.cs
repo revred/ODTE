@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace ODTE.Historical.DataProviders;
 
 /// <summary>
@@ -16,7 +11,7 @@ public class RateLimiter
     private readonly TimeSpan _timeWindow;
     private DateTime? _throttledUntil;
     private readonly object _lock = new();
-    
+
     public RateLimiter(int maxRequestsPerMinute, TimeSpan? timeWindow = null)
     {
         _maxRequests = maxRequestsPerMinute;
@@ -24,11 +19,11 @@ public class RateLimiter
         _semaphore = new SemaphoreSlim(1, 1);
         _requestTimes = new Queue<DateTime>();
     }
-    
+
     public async Task WaitAsync(CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
-        
+
         try
         {
             // Check if we're throttled
@@ -41,24 +36,24 @@ public class RateLimiter
                     _throttledUntil = null;
                 }
             }
-            
+
             // Clean up old request times
             var cutoff = DateTime.UtcNow - _timeWindow;
             while (_requestTimes.Count > 0 && _requestTimes.Peek() < cutoff)
             {
                 _requestTimes.Dequeue();
             }
-            
+
             // Check if we need to wait
             if (_requestTimes.Count >= _maxRequests)
             {
                 var oldestRequest = _requestTimes.Peek();
                 var waitTime = oldestRequest + _timeWindow - DateTime.UtcNow;
-                
+
                 if (waitTime > TimeSpan.Zero)
                 {
                     await Task.Delay(waitTime, cancellationToken);
-                    
+
                     // Clean up again after waiting
                     cutoff = DateTime.UtcNow - _timeWindow;
                     while (_requestTimes.Count > 0 && _requestTimes.Peek() < cutoff)
@@ -67,7 +62,7 @@ public class RateLimiter
                     }
                 }
             }
-            
+
             // Record this request
             _requestTimes.Enqueue(DateTime.UtcNow);
         }
@@ -76,7 +71,7 @@ public class RateLimiter
             _semaphore.Release();
         }
     }
-    
+
     public void SetThrottled(TimeSpan duration)
     {
         lock (_lock)
@@ -84,7 +79,7 @@ public class RateLimiter
             _throttledUntil = DateTime.UtcNow + duration;
         }
     }
-    
+
     public RateLimitStatus GetStatus()
     {
         lock (_lock)
@@ -95,24 +90,24 @@ public class RateLimiter
             {
                 _requestTimes.Dequeue();
             }
-            
+
             var isThrottled = _throttledUntil.HasValue && DateTime.UtcNow < _throttledUntil.Value;
-            
+
             return new RateLimitStatus
             {
                 RequestsRemaining = Math.Max(0, _maxRequests - _requestTimes.Count),
                 RequestsPerMinute = _maxRequests,
-                ResetTime = _requestTimes.Count > 0 
-                    ? _requestTimes.Peek() + _timeWindow 
+                ResetTime = _requestTimes.Count > 0
+                    ? _requestTimes.Peek() + _timeWindow
                     : DateTime.UtcNow,
                 IsThrottled = isThrottled,
-                RetryAfter = isThrottled 
-                    ? _throttledUntil!.Value - DateTime.UtcNow 
+                RetryAfter = isThrottled
+                    ? _throttledUntil!.Value - DateTime.UtcNow
                     : null
             };
         }
     }
-    
+
     public void Reset()
     {
         lock (_lock)

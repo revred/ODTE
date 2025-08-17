@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -42,7 +39,7 @@ namespace ODTE.Strategy
 
             // GENETIC ALGORITHM TARGET: Core regime classification thresholds
             // These values control which strategies are allowed and position sizing
-            
+
             // CONVEX REGIME: High volatility or strong momentum
             // ML OPTIMIZATION: VIX_HIGH=40, TREND_HIGH=0.8
             if (conditions.VIX > 40 ||                              // VIX_HIGH_THRESHOLD [GENETIC RANGE: 35-45]

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using ODTE.Historical.Validation;
 
@@ -36,15 +31,15 @@ namespace ODTE.Historical
         public ODTEDataGateway(string databasePath, ILogger<ODTEDataGateway> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            
+
             if (string.IsNullOrEmpty(databasePath))
                 throw new ArgumentException("Database path cannot be null or empty", nameof(databasePath));
 
             _database = new TimeSeriesDatabase(databasePath);
             _historicalManager = new HistoricalDataManager(databasePath);
             _syntheticGenerator = new OptionsDataGenerator();
-            _validator = new SyntheticDataBenchmark(databasePath, 
-                logger as ILogger<SyntheticDataBenchmark> ?? 
+            _validator = new SyntheticDataBenchmark(databasePath,
+                logger as ILogger<SyntheticDataBenchmark> ??
                 LoggerFactory.Create(b => b.AddConsole()).CreateLogger<SyntheticDataBenchmark>());
 
             _logger.LogInformation("ODTE Data Gateway initialized with database: {DatabasePath}", databasePath);
@@ -78,22 +73,22 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Historical market data points</returns>
         public async Task<IEnumerable<MarketDataPoint>> GetHistoricalDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default)
         {
             ValidateSymbol(symbol);
             ValidateDateRange(startDate, endDate);
 
-            _logger.LogDebug("Retrieving historical data for {Symbol} from {StartDate} to {EndDate}", 
+            _logger.LogDebug("Retrieving historical data for {Symbol} from {StartDate} to {EndDate}",
                 symbol, startDate, endDate);
 
             try
             {
                 await _historicalManager.InitializeAsync();
                 var data = await _historicalManager.GetMarketDataAsync(symbol, startDate, endDate);
-                
+
                 var dataPoints = data.Select(d => new MarketDataPoint
                 {
                     Timestamp = d.Timestamp,
@@ -108,7 +103,7 @@ namespace ODTE.Historical
                     QualityScore = 100.0 // Historical data assumed high quality
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} historical data points for {Symbol}", 
+                _logger.LogInformation("Retrieved {Count} historical data points for {Symbol}",
                     dataPoints.Count, symbol);
 
                 return dataPoints;
@@ -132,16 +127,16 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Synthetic market data points</returns>
         public async Task<IEnumerable<MarketDataPoint>> GenerateSyntheticDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             string scenario = "normal",
             CancellationToken cancellationToken = default)
         {
             ValidateSymbol(symbol);
             ValidateDateRange(startDate, endDate);
 
-            _logger.LogDebug("Generating synthetic data for {Symbol} from {StartDate} to {EndDate}, scenario: {Scenario}", 
+            _logger.LogDebug("Generating synthetic data for {Symbol} from {StartDate} to {EndDate}, scenario: {Scenario}",
                 symbol, startDate, endDate, scenario);
 
             try
@@ -152,11 +147,11 @@ namespace ODTE.Historical
                 while (currentDate <= endDate.Date)
                 {
                     // Skip weekends for equity data
-                    if (currentDate.DayOfWeek != DayOfWeek.Saturday && 
+                    if (currentDate.DayOfWeek != DayOfWeek.Saturday &&
                         currentDate.DayOfWeek != DayOfWeek.Sunday)
                     {
                         var dayData = await _syntheticGenerator.GenerateTradingDayAsync(currentDate, symbol);
-                        
+
                         foreach (var bar in dayData)
                         {
                             syntheticData.Add(new MarketDataPoint
@@ -184,7 +179,7 @@ namespace ODTE.Historical
                     currentDate = currentDate.AddDays(1);
                 }
 
-                _logger.LogInformation("Generated {Count} synthetic data points for {Symbol} (scenario: {Scenario})", 
+                _logger.LogInformation("Generated {Count} synthetic data points for {Symbol} (scenario: {Scenario})",
                     syntheticData.Count, symbol, scenario);
 
                 return syntheticData;
@@ -205,7 +200,7 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Current market data point or null if not available</returns>
         public async Task<MarketDataPoint?> GetCurrentDataAsync(
-            string symbol, 
+            string symbol,
             CancellationToken cancellationToken = default)
         {
             ValidateSymbol(symbol);
@@ -228,7 +223,7 @@ namespace ODTE.Historical
                     latestPoint.Metadata["RetrievedAt"] = DateTime.UtcNow;
                 }
 
-                _logger.LogDebug("Retrieved current data for {Symbol}: {Timestamp}", 
+                _logger.LogDebug("Retrieved current data for {Symbol}: {Timestamp}",
                     symbol, latestPoint?.Timestamp);
 
                 return latestPoint;
@@ -254,7 +249,7 @@ namespace ODTE.Historical
             {
                 await _historicalManager.InitializeAsync();
                 var symbols = await _historicalManager.GetAvailableSymbolsAsync();
-                
+
                 // Add commonly supported synthetic symbols
                 var syntheticSymbols = new[] { "SPY", "QQQ", "IWM", "VIX" };
                 var allSymbols = symbols.Union(syntheticSymbols).Distinct().ToList();
@@ -281,15 +276,15 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Detailed validation results</returns>
         public async Task<DataValidationResult> ValidateDataQualityAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default)
         {
             ValidateSymbol(symbol);
             ValidateDateRange(startDate, endDate);
 
-            _logger.LogInformation("Starting data quality validation for {Symbol} from {StartDate} to {EndDate}", 
+            _logger.LogInformation("Starting data quality validation for {Symbol} from {StartDate} to {EndDate}",
                 symbol, startDate, endDate);
 
             var result = new DataValidationResult
@@ -343,7 +338,7 @@ namespace ODTE.Historical
                 {
                     var avgReturn = returns.Average();
                     var stdDev = Math.Sqrt(returns.Sum(r => Math.Pow(r - avgReturn, 2)) / returns.Count);
-                    
+
                     result.MetricsByCategory["Statistical_Quality"] = CalculateStatisticalScore(avgReturn, stdDev);
                 }
 
@@ -376,7 +371,7 @@ namespace ODTE.Historical
                 stopwatch.Stop();
                 result.ValidationDuration = stopwatch.Elapsed;
 
-                _logger.LogInformation("Data validation completed for {Symbol}: Score {Score:F1}/100, Valid: {IsValid}", 
+                _logger.LogInformation("Data validation completed for {Symbol}: Score {Score:F1}/100, Valid: {IsValid}",
                     symbol, result.OverallScore, result.IsValid);
 
                 return result;
@@ -385,12 +380,12 @@ namespace ODTE.Historical
             {
                 _logger.LogError(ex, "Data validation failed for {Symbol}", symbol);
                 stopwatch.Stop();
-                
+
                 result.ValidationDuration = stopwatch.Elapsed;
                 result.Issues.Add($"Validation error: {ex.Message}");
                 result.OverallScore = 0;
                 result.IsValid = false;
-                
+
                 return result;
             }
         }
@@ -407,10 +402,10 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Export operation result</returns>
         public async Task<ExportResult> ExportDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
-            string format, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
+            string format,
             string outputPath,
             CancellationToken cancellationToken = default)
         {
@@ -423,7 +418,7 @@ namespace ODTE.Historical
             if (string.IsNullOrEmpty(outputPath))
                 throw new ArgumentException("Output path cannot be null or empty", nameof(outputPath));
 
-            _logger.LogInformation("Exporting {Symbol} data to {Format} format: {OutputPath}", 
+            _logger.LogInformation("Exporting {Symbol} data to {Format} format: {OutputPath}",
                 symbol, format, outputPath);
 
             var result = new ExportResult { OutputPath = outputPath };
@@ -458,11 +453,11 @@ namespace ODTE.Historical
                 result.Success = true;
                 result.RecordsExported = dataPoints.Count;
                 result.FileSizeBytes = fileInfo.Length;
-                
+
                 stopwatch.Stop();
                 result.ExportDuration = stopwatch.Elapsed;
 
-                _logger.LogInformation("Successfully exported {Count} records to {OutputPath} ({Size} bytes)", 
+                _logger.LogInformation("Successfully exported {Count} records to {OutputPath} ({Size} bytes)",
                     result.RecordsExported, outputPath, result.FileSizeBytes);
 
                 return result;
@@ -471,11 +466,11 @@ namespace ODTE.Historical
             {
                 _logger.LogError(ex, "Export failed for {Symbol} to {OutputPath}", symbol, outputPath);
                 stopwatch.Stop();
-                
+
                 result.Success = false;
                 result.ErrorMessage = ex.Message;
                 result.ExportDuration = stopwatch.Elapsed;
-                
+
                 return result;
             }
         }
@@ -513,10 +508,10 @@ namespace ODTE.Historical
         private static async Task ExportToCsvAsync(List<MarketDataPoint> dataPoints, string outputPath)
         {
             using var writer = new System.IO.StreamWriter(outputPath);
-            
+
             // Write header
             await writer.WriteLineAsync("Timestamp,Symbol,Open,High,Low,Close,Volume,VWAP,IsSynthetic,QualityScore");
-            
+
             // Write data
             foreach (var point in dataPoints)
             {
@@ -533,7 +528,7 @@ namespace ODTE.Historical
                 WriteIndented = true,
                 PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
             });
-            
+
             await System.IO.File.WriteAllTextAsync(outputPath, json);
         }
 
@@ -562,7 +557,7 @@ namespace ODTE.Historical
                 _validator?.Dispose();
                 _database?.Dispose();
                 _disposed = true;
-                
+
                 _logger.LogInformation("ODTE Data Gateway disposed");
             }
         }

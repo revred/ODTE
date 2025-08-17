@@ -52,8 +52,8 @@ public sealed class RiskManager : IRiskManager
     private DateOnly _currentDay;        // Track day boundaries for resets
 
     public RiskManager(SimConfig cfg)
-    { 
-        _cfg = cfg; 
+    {
+        _cfg = cfg;
     }
 
     /// <summary>
@@ -101,20 +101,20 @@ public sealed class RiskManager : IRiskManager
             // First time initialization - set current day but don't reset counters
             _currentDay = today;
         }
-        
+
         // === RISK GATE 1: DAILY LOSS LIMIT ===
         if (_dailyRealizedPnL <= -_cfg.Risk.DailyLossStop) return false;
-        
+
         // === RISK GATE 2: TIME WINDOW (GAMMA HOUR) ===
         var minsToClose = (now.SessionEnd() - now).TotalMinutes;
         if (minsToClose < _cfg.NoNewRiskMinutesToClose) return false;
-        
+
         // === RISK GATE 3: POSITION LIMITS ===
         if (d == Decision.SingleSidePut && _activePerSidePut >= _cfg.Risk.MaxConcurrentPerSide) return false;
         if (d == Decision.SingleSideCall && _activePerSideCall >= _cfg.Risk.MaxConcurrentPerSide) return false;
         // Condors use both put and call sides, check if either side would exceed limits
         if (d == Decision.Condor && (_activePerSidePut >= _cfg.Risk.MaxConcurrentPerSide || _activePerSideCall >= _cfg.Risk.MaxConcurrentPerSide)) return false;
-        
+
         // All gates passed - position approved
         return true;
     }
@@ -128,7 +128,7 @@ public sealed class RiskManager : IRiskManager
     {
         if (d == Decision.SingleSidePut) _activePerSidePut++;
         if (d == Decision.SingleSideCall) _activePerSideCall++;
-        if (d == Decision.Condor) 
+        if (d == Decision.Condor)
         {
             // Condors use both put and call sides
             _activePerSidePut++;
@@ -204,11 +204,11 @@ public sealed class RiskManager : IRiskManager
     {
         // Update daily P&L tracker
         _dailyRealizedPnL += pnl;
-        
+
         // Decrement position counters (with bounds checking)
         if (d == Decision.SingleSidePut && _activePerSidePut > 0) _activePerSidePut--;
         if (d == Decision.SingleSideCall && _activePerSideCall > 0) _activePerSideCall--;
-        if (d == Decision.Condor) 
+        if (d == Decision.Condor)
         {
             // Condors use both put and call sides
             if (_activePerSidePut > 0) _activePerSidePut--;

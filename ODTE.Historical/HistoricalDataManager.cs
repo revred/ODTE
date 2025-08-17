@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
-
 namespace ODTE.Historical;
 
 /// <summary>
@@ -25,7 +20,7 @@ public class HistoricalDataManager : IDisposable
     public async Task InitializeAsync()
     {
         await _database.InitializeAsync();
-        
+
         // Create the database if it doesn't exist
         if (!File.Exists(_databasePath))
         {
@@ -46,7 +41,7 @@ public class HistoricalDataManager : IDisposable
         string sourceDirectory = @"C:\code\ODTE\Data\Historical\XSP")
     {
         Console.WriteLine("🔄 Consolidating Parquet files into time series database...");
-        
+
         var progress = new Progress<ImportProgress>(p =>
         {
             Console.WriteLine($"📈 [{p.FilesProcessed}/{p.TotalFiles}] " +
@@ -55,7 +50,7 @@ public class HistoricalDataManager : IDisposable
         });
 
         var result = await _database.ImportFromParquetAsync(sourceDirectory, progress);
-        
+
         if (result.Success)
         {
             var stats = await _database.GetStatsAsync();
@@ -87,10 +82,10 @@ public class HistoricalDataManager : IDisposable
         ExportOptions? options = null)
     {
         options ??= new ExportOptions();
-        
+
         Console.WriteLine($"📤 Exporting {symbol} data from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
         Console.WriteLine($"   Format: {format}, Output: {outputPath}");
-        
+
         if (options.SampleToInterval.HasValue)
         {
             Console.WriteLine($"   Downsampling to: {options.SampleToInterval.Value.TotalMinutes} minute intervals");
@@ -98,7 +93,7 @@ public class HistoricalDataManager : IDisposable
 
         var result = await _database.ExportRangeAsync(
             startDate, endDate, outputPath, format, symbol, options.SampleToInterval);
-        
+
         if (result.Success)
         {
             var fileSizeMB = result.FileSizeBytes / (1024.0 * 1024.0);
@@ -117,7 +112,7 @@ public class HistoricalDataManager : IDisposable
     /// </summary>
     public async Task<List<MarketDataBar>> GetBacktestDataAsync(
         DateTime startDate,
-        DateTime endDate, 
+        DateTime endDate,
         string symbol = "XSP")
     {
         return await _database.GetRangeAsync(startDate, endDate, symbol);
@@ -147,16 +142,16 @@ public class HistoricalDataManager : IDisposable
     /// Get market data for a specific symbol and date range
     /// </summary>
     public async Task<List<MarketDataBar>> GetMarketDataAsync(
-        string symbol, 
-        DateTime startDate, 
+        string symbol,
+        DateTime startDate,
         DateTime endDate)
     {
         return await _database.GetRangeAsync(startDate, endDate, symbol);
     }
-    
 
 
-        // TODO: Query actual symbols from database
+
+    // TODO: Query actual symbols from database
     static List<string> _symbols = new List<string> { "XSP", "SPY", "QQQ", "IWM" };
 
     /// <summary>
@@ -233,10 +228,10 @@ public class ExportOptions
 {
     /// <summary>Downsample to specified interval (e.g., hourly, daily)</summary>
     public TimeSpan? SampleToInterval { get; set; }
-    
+
     /// <summary>Include trading calendar metadata</summary>
     public bool IncludeMetadata { get; set; } = true;
-    
+
     /// <summary>Compress output file</summary>
     public bool Compress { get; set; } = false;
 }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -17,7 +13,7 @@ namespace ODTE.Strategy
         private int _currentNotchIndex;
         private readonly List<RevFibNotchDailyResult> _recentDays;
         private readonly RevFibNotchConfiguration _config;
-        
+
         // Notch movement thresholds
         private readonly Dictionary<int, decimal> _lossNotchThresholds;
         private readonly Dictionary<int, decimal> _profitNotchThresholds;
@@ -27,7 +23,7 @@ namespace ODTE.Strategy
             _config = config ?? new RevFibNotchConfiguration();
             _currentNotchIndex = 2; // Start at $300 (middle position)
             _recentDays = new List<RevFibNotchDailyResult>();
-            
+
             // Initialize thresholds based on current RFib level
             _lossNotchThresholds = InitializeLossThresholds();
             _profitNotchThresholds = InitializeProfitThresholds();
@@ -56,7 +52,7 @@ namespace ODTE.Strategy
                 };
                 ApplyNotchMovement(protectiveAdjustment);
             }
-            
+
             // OPTIMIZED: Check win rate threshold
             if (dailyWinRate > 0 && dailyWinRate < _config.WinRateThreshold)
             {
@@ -67,20 +63,20 @@ namespace ODTE.Strategy
                 };
                 ApplyNotchMovement(winRateAdjustment);
             }
-            
+
             // Calculate normal notch movement based on P&L
             var adjustment = CalculateNotchMovement(dailyPnL);
-            
+
             // Apply movement
             var oldIndex = _currentNotchIndex;
             var oldLimit = _rFibLimits[_currentNotchIndex];
-            
+
             ApplyNotchMovement(adjustment);
-            
+
             dailyResult.RFibLevelAfter = _currentNotchIndex;
             dailyResult.NotchMovement = adjustment.NotchMovement;
             dailyResult.MovementReason = adjustment.Reason;
-            
+
             // Update recent days history
             _recentDays.Add(dailyResult);
             if (_recentDays.Count > _config.MaxHistoryDays)
@@ -142,7 +138,7 @@ namespace ODTE.Strategy
 
             // OPTIMIZED: More sensitive loss thresholds with scaling sensitivity
             decimal adjustedLossPercentage = lossPercentage * _config.ScalingSensitivity;
-            
+
             int notchMovement = adjustedLossPercentage switch
             {
                 >= 0.60m => 3, // OPTIMIZED: Catastrophic loss (was 0.80m)
@@ -156,7 +152,7 @@ namespace ODTE.Strategy
             {
                 >= 0.60m => "CATASTROPHIC_LOSS_OPTIMIZED",
                 >= 0.35m => "MAJOR_LOSS_OPTIMIZED",
-                >= 0.15m => "SIGNIFICANT_LOSS_OPTIMIZED", 
+                >= 0.15m => "SIGNIFICANT_LOSS_OPTIMIZED",
                 >= 0.06m => "MILD_LOSS_OPTIMIZED",
                 _ => "MINIMAL_LOSS"
             };
@@ -188,7 +184,7 @@ namespace ODTE.Strategy
             }
 
             // Sustained mild profit: Requires consecutive days
-            if (profitPercentage >= _config.MildProfitThreshold && 
+            if (profitPercentage >= _config.MildProfitThreshold &&
                 consecutiveProfitDays >= _config.RequiredConsecutiveProfitDays)
             {
                 return new RevFibNotchMovementDecision
@@ -214,10 +210,10 @@ namespace ODTE.Strategy
             if (decision.NotchMovement == 0) return;
 
             var newIndex = _currentNotchIndex + decision.NotchMovement;
-            
+
             // Enforce boundaries
             newIndex = Math.Max(0, Math.Min(_rFibLimits.Length - 1, newIndex));
-            
+
             _currentNotchIndex = newIndex;
         }
 

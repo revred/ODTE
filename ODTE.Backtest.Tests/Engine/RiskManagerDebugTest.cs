@@ -22,7 +22,7 @@ public class RiskManagerDebugTest
             },
             NoNewRiskMinutesToClose = 40
         };
-        
+
         var riskManager = new RiskManager(config);
         var testTime = new DateTime(2024, 2, 1, 11, 0, 0);
 
@@ -40,7 +40,7 @@ public class RiskManagerDebugTest
         Console.WriteLine($"After -250 loss (total -550):");
         var canAddAfterSecond = riskManager.CanAdd(testTime, Decision.SingleSidePut);
         Console.WriteLine($"CanAdd after second loss: {canAddAfterSecond}");
-        
+
         Console.WriteLine($"Expected: false (should block), Actual: {canAddAfterSecond}");
 
         // Assert

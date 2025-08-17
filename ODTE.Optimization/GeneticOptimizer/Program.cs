@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -18,7 +13,7 @@ namespace ODTE.Strategy.Tests
         private const decimal MUTATION_RATE = 0.15m;
         private const decimal ELITE_RATIO = 0.10m;
         private const decimal CROSSOVER_RATE = 0.85m;
-        
+
         private readonly Random _random = new Random(42);
         private readonly List<HistoricalTradingDay> _marketData;
         private List<ComprehensiveChromosome> _population;
@@ -49,41 +44,41 @@ namespace ODTE.Strategy.Tests
         public void RunComprehensiveOptimization()
         {
             Console.WriteLine("📊 Initializing comprehensive genetic algorithm...");
-            
+
             InitializePopulation();
-            
+
             for (int generation = 1; generation <= MAX_GENERATIONS; generation++)
             {
                 Console.WriteLine($"\n🧬 GENERATION {generation}/{MAX_GENERATIONS}");
                 Console.WriteLine("=".PadRight(40, '='));
-                
+
                 // Evaluate fitness for entire population
                 EvaluatePopulation();
-                
+
                 // Track generation statistics
                 var generationStats = AnalyzeGeneration(generation);
                 _evolutionHistory.Add(generationStats);
-                
+
                 // Print generation summary
                 PrintGenerationSummary(generationStats);
-                
+
                 // Check for convergence or early stopping
                 if (CheckConvergence(generation))
                 {
                     Console.WriteLine($"\n✅ Converged at generation {generation}");
                     break;
                 }
-                
+
                 // Evolve to next generation
                 EvolvePopulation();
-                
+
                 // Export intermediate results every 25 generations
                 if (generation % 25 == 0)
                 {
                     ExportIntermediateResults(generation);
                 }
             }
-            
+
             // Final analysis and results
             var finalResults = AnalyzeFinalResults();
             ExportComprehensiveResults(finalResults);
@@ -96,18 +91,18 @@ namespace ODTE.Strategy.Tests
         private void InitializePopulation()
         {
             Console.WriteLine("🔄 Creating initial population...");
-            
+
             _population.Clear();
-            
+
             for (int i = 0; i < POPULATION_SIZE; i++)
             {
                 var chromosome = CreateRandomChromosome();
                 _population.Add(chromosome);
             }
-            
+
             // Seed with known good configurations
             SeedWithKnownConfigurations();
-            
+
             Console.WriteLine($"✓ Generated {_population.Count} diverse chromosomes");
         }
 
@@ -125,36 +120,36 @@ namespace ODTE.Strategy.Tests
                 RFibLimit4 = RandomDecimal(200m, 400m),      // Low limit
                 RFibLimit5 = RandomDecimal(100m, 250m),      // Defense limit
                 RFibLimit6 = RandomDecimal(50m, 150m),       // Survival limit
-                
+
                 // Scaling Sensitivity & Reaction Speeds
                 ScalingSensitivity = RandomDecimal(0.8m, 2.5m),
                 LossReactionSpeed = RandomDecimal(1.0m, 3.0m),
                 ProfitReactionSpeed = RandomDecimal(0.5m, 1.8m),
-                
+
                 // Win Rate Management
                 WinRateThreshold = RandomDecimal(0.60m, 0.75m),
                 WinRateWeight = RandomDecimal(0.1m, 0.5m),
-                
+
                 // Protection Triggers
                 ImmediateProtectionTrigger = RandomDecimal(-120m, -40m),
                 GradualProtectionTrigger = RandomDecimal(-80m, -20m),
-                
+
                 // Movement Agility & Thresholds
                 NotchMovementAgility = RandomDecimal(0.5m, 2.0m),
                 MinorLossThreshold = RandomDecimal(0.05m, 0.20m),
                 MajorLossThreshold = RandomDecimal(0.25m, 0.60m),
                 CatastrophicLossThreshold = RandomDecimal(0.60m, 1.20m),
-                
+
                 // Profit Scaling
                 MildProfitThreshold = RandomDecimal(0.05m, 0.15m),
                 MajorProfitThreshold = RandomDecimal(0.20m, 0.40m),
                 RequiredProfitDays = RandomInt(1, 4),
-                
+
                 // Market Regime Adaptations
                 VolatileMarketMultiplier = RandomDecimal(0.6m, 1.2m),
                 CrisisMarketMultiplier = RandomDecimal(0.3m, 0.8m),
                 BullMarketMultiplier = RandomDecimal(1.0m, 1.6m),
-                
+
                 // Risk Weights
                 DrawdownWeight = RandomDecimal(0.1m, 0.4m),
                 SharpeWeight = RandomDecimal(0.2m, 0.6m),
@@ -170,45 +165,81 @@ namespace ODTE.Strategy.Tests
             // Current BALANCED_OPTIMAL configuration
             var balancedOptimal = new ComprehensiveChromosome
             {
-                RFibLimit1 = 1100m, RFibLimit2 = 700m, RFibLimit3 = 450m,
-                RFibLimit4 = 275m, RFibLimit5 = 175m, RFibLimit6 = 85m,
-                ScalingSensitivity = 1.5m, WinRateThreshold = 0.68m,
-                ImmediateProtectionTrigger = -60m, NotchMovementAgility = 1.2m,
-                LossReactionSpeed = 2.0m, ProfitReactionSpeed = 1.0m,
-                MildProfitThreshold = 0.08m, MajorProfitThreshold = 0.25m,
-                RequiredProfitDays = 1, VolatileMarketMultiplier = 0.8m,
-                CrisisMarketMultiplier = 0.5m, BullMarketMultiplier = 1.2m,
-                DrawdownWeight = 0.3m, SharpeWeight = 0.4m, StabilityWeight = 0.2m
+                RFibLimit1 = 1100m,
+                RFibLimit2 = 700m,
+                RFibLimit3 = 450m,
+                RFibLimit4 = 275m,
+                RFibLimit5 = 175m,
+                RFibLimit6 = 85m,
+                ScalingSensitivity = 1.5m,
+                WinRateThreshold = 0.68m,
+                ImmediateProtectionTrigger = -60m,
+                NotchMovementAgility = 1.2m,
+                LossReactionSpeed = 2.0m,
+                ProfitReactionSpeed = 1.0m,
+                MildProfitThreshold = 0.08m,
+                MajorProfitThreshold = 0.25m,
+                RequiredProfitDays = 1,
+                VolatileMarketMultiplier = 0.8m,
+                CrisisMarketMultiplier = 0.5m,
+                BullMarketMultiplier = 1.2m,
+                DrawdownWeight = 0.3m,
+                SharpeWeight = 0.4m,
+                StabilityWeight = 0.2m
             };
-            
+
             // Ultra-Conservative configuration for crisis protection
             var ultraConservative = new ComprehensiveChromosome
             {
-                RFibLimit1 = 800m, RFibLimit2 = 500m, RFibLimit3 = 300m,
-                RFibLimit4 = 200m, RFibLimit5 = 125m, RFibLimit6 = 60m,
-                ScalingSensitivity = 2.2m, WinRateThreshold = 0.72m,
-                ImmediateProtectionTrigger = -40m, NotchMovementAgility = 1.8m,
-                LossReactionSpeed = 2.8m, ProfitReactionSpeed = 0.7m,
-                MildProfitThreshold = 0.12m, MajorProfitThreshold = 0.30m,
-                RequiredProfitDays = 2, VolatileMarketMultiplier = 0.6m,
-                CrisisMarketMultiplier = 0.3m, BullMarketMultiplier = 1.0m,
-                DrawdownWeight = 0.5m, SharpeWeight = 0.3m, StabilityWeight = 0.4m
+                RFibLimit1 = 800m,
+                RFibLimit2 = 500m,
+                RFibLimit3 = 300m,
+                RFibLimit4 = 200m,
+                RFibLimit5 = 125m,
+                RFibLimit6 = 60m,
+                ScalingSensitivity = 2.2m,
+                WinRateThreshold = 0.72m,
+                ImmediateProtectionTrigger = -40m,
+                NotchMovementAgility = 1.8m,
+                LossReactionSpeed = 2.8m,
+                ProfitReactionSpeed = 0.7m,
+                MildProfitThreshold = 0.12m,
+                MajorProfitThreshold = 0.30m,
+                RequiredProfitDays = 2,
+                VolatileMarketMultiplier = 0.6m,
+                CrisisMarketMultiplier = 0.3m,
+                BullMarketMultiplier = 1.0m,
+                DrawdownWeight = 0.5m,
+                SharpeWeight = 0.3m,
+                StabilityWeight = 0.4m
             };
-            
+
             // Aggressive Growth configuration for bull markets
             var aggressiveGrowth = new ComprehensiveChromosome
             {
-                RFibLimit1 = 1300m, RFibLimit2 = 850m, RFibLimit3 = 550m,
-                RFibLimit4 = 350m, RFibLimit5 = 225m, RFibLimit6 = 120m,
-                ScalingSensitivity = 1.0m, WinRateThreshold = 0.63m,
-                ImmediateProtectionTrigger = -90m, NotchMovementAgility = 0.8m,
-                LossReactionSpeed = 1.3m, ProfitReactionSpeed = 1.5m,
-                MildProfitThreshold = 0.06m, MajorProfitThreshold = 0.20m,
-                RequiredProfitDays = 1, VolatileMarketMultiplier = 1.1m,
-                CrisisMarketMultiplier = 0.7m, BullMarketMultiplier = 1.5m,
-                DrawdownWeight = 0.2m, SharpeWeight = 0.5m, StabilityWeight = 0.1m
+                RFibLimit1 = 1300m,
+                RFibLimit2 = 850m,
+                RFibLimit3 = 550m,
+                RFibLimit4 = 350m,
+                RFibLimit5 = 225m,
+                RFibLimit6 = 120m,
+                ScalingSensitivity = 1.0m,
+                WinRateThreshold = 0.63m,
+                ImmediateProtectionTrigger = -90m,
+                NotchMovementAgility = 0.8m,
+                LossReactionSpeed = 1.3m,
+                ProfitReactionSpeed = 1.5m,
+                MildProfitThreshold = 0.06m,
+                MajorProfitThreshold = 0.20m,
+                RequiredProfitDays = 1,
+                VolatileMarketMultiplier = 1.1m,
+                CrisisMarketMultiplier = 0.7m,
+                BullMarketMultiplier = 1.5m,
+                DrawdownWeight = 0.2m,
+                SharpeWeight = 0.5m,
+                StabilityWeight = 0.1m
             };
-            
+
             // Replace random chromosomes with seeded ones
             if (_population.Count >= 3)
             {
@@ -224,27 +255,27 @@ namespace ODTE.Strategy.Tests
         private void EvaluatePopulation()
         {
             Console.WriteLine("📈 Evaluating population fitness...");
-            
+
             var evaluatedCount = 0;
             var totalPopulation = _population.Count;
-            
+
             foreach (var chromosome in _population)
             {
                 if (chromosome.Fitness == 0) // Only evaluate if not already done
                 {
                     chromosome.Fitness = CalculateComprehensiveFitness(chromosome);
                     evaluatedCount++;
-                    
+
                     if (evaluatedCount % 25 == 0)
                     {
                         Console.WriteLine($"  Progress: {evaluatedCount}/{totalPopulation} chromosomes evaluated");
                     }
                 }
             }
-            
+
             // Sort population by fitness (descending)
             _population = _population.OrderByDescending(c => c.Fitness).ToList();
-            
+
             Console.WriteLine($"✓ Population evaluated. Best fitness: {_population[0].Fitness:F2}");
         }
 
@@ -254,22 +285,22 @@ namespace ODTE.Strategy.Tests
         private decimal CalculateComprehensiveFitness(ComprehensiveChromosome chromosome)
         {
             var results = RunComprehensiveBacktest(chromosome);
-            
+
             // Multi-objective fitness function
             var profitabilityScore = CalculateProfitabilityScore(results);
             var stabilityScore = CalculateStabilityScore(results);
             var riskScore = CalculateRiskScore(results);
             var consistencyScore = CalculateConsistencyScore(results);
             var crisisScore = CalculateCrisisPerformanceScore(results);
-            
+
             // Weighted combination
-            var fitness = 
+            var fitness =
                 (profitabilityScore * 0.25m) +
                 (stabilityScore * chromosome.StabilityWeight) +
                 (riskScore * chromosome.DrawdownWeight) +
                 (consistencyScore * 0.20m) +
                 (crisisScore * 0.25m);
-            
+
             return Math.Max(0, fitness);
         }
 
@@ -279,24 +310,24 @@ namespace ODTE.Strategy.Tests
         private BacktestResults RunComprehensiveBacktest(ComprehensiveChromosome chromosome)
         {
             var results = new BacktestResults();
-            var rFibLimits = new[] { 
+            var rFibLimits = new[] {
                 chromosome.RFibLimit1, chromosome.RFibLimit2, chromosome.RFibLimit3,
-                chromosome.RFibLimit4, chromosome.RFibLimit5, chromosome.RFibLimit6 
+                chromosome.RFibLimit4, chromosome.RFibLimit5, chromosome.RFibLimit6
             };
-            
+
             decimal runningCapital = 25000m;
             int currentNotchIndex = 2; // Start at middle position
             var monthlyResults = new List<MonthlyBacktestResult>();
-            
+
             // Group trading days by month for monthly P&L calculation
             var monthlyGroups = _marketData.GroupBy(d => new { d.Date.Year, d.Date.Month });
-            
+
             foreach (var monthGroup in monthlyGroups)
             {
                 var monthlyPnL = 0m;
                 var monthlyTrades = 0;
                 var monthlyWins = 0;
-                
+
                 foreach (var day in monthGroup)
                 {
                     // Apply chromosome parameters to calculate daily performance
@@ -305,15 +336,15 @@ namespace ODTE.Strategy.Tests
                     monthlyTrades += dailyResult.Trades;
                     monthlyWins += dailyResult.WinningTrades;
                 }
-                
+
                 var monthWinRate = monthlyTrades > 0 ? (decimal)monthlyWins / monthlyTrades : 0;
-                
+
                 // Apply RevFibNotch adjustments at month end
                 var notchAdjustment = CalculateNotchMovement(monthlyPnL, monthWinRate, chromosome, rFibLimits[currentNotchIndex]);
                 currentNotchIndex = Math.Max(0, Math.Min(rFibLimits.Length - 1, currentNotchIndex + notchAdjustment));
-                
+
                 runningCapital += monthlyPnL;
-                
+
                 monthlyResults.Add(new MonthlyBacktestResult
                 {
                     Date = new DateTime(monthGroup.Key.Year, monthGroup.Key.Month, 1),
@@ -324,7 +355,7 @@ namespace ODTE.Strategy.Tests
                     MarketRegime = DetermineMarketRegime(monthGroup.First().VIX)
                 });
             }
-            
+
             results.MonthlyResults = monthlyResults;
             results.FinalCapital = runningCapital;
             results.TotalReturn = ((runningCapital - 25000m) / 25000m) * 100;
@@ -332,7 +363,7 @@ namespace ODTE.Strategy.Tests
             results.SharpeRatio = CalculateSharpeRatio(monthlyResults);
             results.WinRate = monthlyResults.Count(m => m.PnL > 0) / (decimal)monthlyResults.Count;
             results.ProtectionTriggers = monthlyResults.Count(m => m.NotchIndex > 2);
-            
+
             return results;
         }
 
@@ -351,16 +382,16 @@ namespace ODTE.Strategy.Tests
                 regimeMultiplier = chromosome.BullMarketMultiplier;
             else
                 regimeMultiplier = 1.0m;
-            
+
             // Calculate position sizing based on current RFib limit and regime
             var basePositionSize = currentRFibLimit / 500m; // Normalize to base $500
             var adjustedPositionSize = basePositionSize * regimeMultiplier;
-            
+
             // Simulate trading based on market conditions
             var expectedTrades = CalculateExpectedTrades(day);
             var expectedWinRate = CalculateExpectedWinRate(day, chromosome);
             var expectedPnL = CalculateExpectedDailyPnL(day, expectedTrades, expectedWinRate, adjustedPositionSize);
-            
+
             return new DailyTradingResult
             {
                 Date = day.Date,
@@ -377,25 +408,25 @@ namespace ODTE.Strategy.Tests
         private int CalculateNotchMovement(decimal monthlyPnL, decimal winRate, ComprehensiveChromosome chromosome, decimal currentLimit)
         {
             var movement = 0;
-            
+
             // Immediate protection trigger
             if (monthlyPnL <= chromosome.ImmediateProtectionTrigger)
             {
                 movement = 2;
             }
-            
+
             // Win rate protection
             if (winRate < chromosome.WinRateThreshold)
             {
                 movement = Math.Max(movement, 1);
             }
-            
+
             // Loss-based scaling
             if (monthlyPnL < 0 && movement == 0)
             {
                 var lossPercentage = Math.Abs(monthlyPnL) / currentLimit;
                 var adjustedLoss = lossPercentage * chromosome.ScalingSensitivity * chromosome.NotchMovementAgility;
-                
+
                 if (adjustedLoss >= chromosome.CatastrophicLossThreshold)
                     movement = 3;
                 else if (adjustedLoss >= chromosome.MajorLossThreshold)
@@ -405,12 +436,12 @@ namespace ODTE.Strategy.Tests
                 else
                     movement = 0;
             }
-            
+
             // Profit scaling
             else if (monthlyPnL > 0)
             {
                 var profitPercentage = monthlyPnL / currentLimit;
-                
+
                 if (profitPercentage >= chromosome.MajorProfitThreshold)
                 {
                     movement = -1;
@@ -420,7 +451,7 @@ namespace ODTE.Strategy.Tests
                     movement = -1; // Simplified for monthly calculation
                 }
             }
-            
+
             return movement;
         }
 
@@ -440,11 +471,11 @@ namespace ODTE.Strategy.Tests
                 baseTrades = 10;   // Reduced activity
             else
                 baseTrades = 12;
-            
+
             // Add VIX-based adjustment
             var vixAdjustment = (day.VIX - 20m) / 10m; // -1 to +6 range typically
             var adjustedTrades = baseTrades + (int)(vixAdjustment * 2);
-            
+
             return Math.Max(5, Math.Min(25, adjustedTrades));
         }
 
@@ -454,7 +485,7 @@ namespace ODTE.Strategy.Tests
         private decimal CalculateExpectedWinRate(HistoricalTradingDay day, ComprehensiveChromosome chromosome)
         {
             var baseWinRate = 0.72m;
-            
+
             // Market regime impact
             decimal regimeAdjustment;
             if (day.MarketRegime == "CRISIS")
@@ -467,10 +498,10 @@ namespace ODTE.Strategy.Tests
                 regimeAdjustment = -0.05m;
             else
                 regimeAdjustment = 0m;
-            
+
             // VIX impact (higher VIX = lower win rate)
             var vixAdjustment = -(day.VIX - 20m) * 0.008m;
-            
+
             var adjustedWinRate = baseWinRate + regimeAdjustment + vixAdjustment;
             return Math.Max(0.45m, Math.Min(0.90m, adjustedWinRate));
         }
@@ -483,20 +514,20 @@ namespace ODTE.Strategy.Tests
             var avgCredit = 1.25m;
             var avgWidth = 5m;
             var maxLoss = avgWidth - avgCredit;
-            
+
             var winningTrades = (int)(trades * winRate);
             var losingTrades = trades - winningTrades;
-            
+
             var avgWinAmount = (avgCredit * 0.50m - 2.60m) * positionSize;
             var avgLossAmount = (maxLoss * 0.80m + 2.60m) * positionSize;
-            
+
             // Market stress increases losses
             if (day.MarketRegime == "CRISIS" || day.VIX > 35m)
             {
                 avgLossAmount *= 1.5m;
                 avgWinAmount *= 0.7m;
             }
-            
+
             return (winningTrades * avgWinAmount) - (losingTrades * avgLossAmount);
         }
 
@@ -506,32 +537,32 @@ namespace ODTE.Strategy.Tests
         private void EvolvePopulation()
         {
             var newPopulation = new List<ComprehensiveChromosome>();
-            
+
             // Elite selection (top performers carry over)
             var eliteCount = (int)(POPULATION_SIZE * ELITE_RATIO);
             for (int i = 0; i < eliteCount; i++)
             {
                 newPopulation.Add(_population[i].Clone());
             }
-            
+
             // Generate offspring through crossover and mutation
             while (newPopulation.Count < POPULATION_SIZE)
             {
                 var parent1 = TournamentSelection();
                 var parent2 = TournamentSelection();
-                
+
                 var (child1, child2) = Crossover(parent1, parent2);
-                
+
                 child1 = Mutate(child1);
                 child2 = Mutate(child2);
-                
+
                 newPopulation.Add(child1);
                 if (newPopulation.Count < POPULATION_SIZE)
                 {
                     newPopulation.Add(child2);
                 }
             }
-            
+
             _population = newPopulation;
         }
 
@@ -542,13 +573,13 @@ namespace ODTE.Strategy.Tests
         {
             var tournamentSize = 5;
             var tournament = new List<ComprehensiveChromosome>();
-            
+
             for (int i = 0; i < tournamentSize; i++)
             {
                 var randomIndex = _random.Next(_population.Count);
                 tournament.Add(_population[randomIndex]);
             }
-            
+
             return tournament.OrderByDescending(c => c.Fitness).First();
         }
 
@@ -561,90 +592,90 @@ namespace ODTE.Strategy.Tests
             {
                 return (parent1.Clone(), parent2.Clone());
             }
-            
+
             var child1 = new ComprehensiveChromosome();
             var child2 = new ComprehensiveChromosome();
-            
+
             // Uniform crossover for each parameter
             child1.RFibLimit1 = _random.NextDouble() < 0.5 ? parent1.RFibLimit1 : parent2.RFibLimit1;
             child2.RFibLimit1 = _random.NextDouble() < 0.5 ? parent1.RFibLimit1 : parent2.RFibLimit1;
-            
+
             child1.RFibLimit2 = _random.NextDouble() < 0.5 ? parent1.RFibLimit2 : parent2.RFibLimit2;
             child2.RFibLimit2 = _random.NextDouble() < 0.5 ? parent1.RFibLimit2 : parent2.RFibLimit2;
-            
+
             child1.RFibLimit3 = _random.NextDouble() < 0.5 ? parent1.RFibLimit3 : parent2.RFibLimit3;
             child2.RFibLimit3 = _random.NextDouble() < 0.5 ? parent1.RFibLimit3 : parent2.RFibLimit3;
-            
+
             child1.RFibLimit4 = _random.NextDouble() < 0.5 ? parent1.RFibLimit4 : parent2.RFibLimit4;
             child2.RFibLimit4 = _random.NextDouble() < 0.5 ? parent1.RFibLimit4 : parent2.RFibLimit4;
-            
+
             child1.RFibLimit5 = _random.NextDouble() < 0.5 ? parent1.RFibLimit5 : parent2.RFibLimit5;
             child2.RFibLimit5 = _random.NextDouble() < 0.5 ? parent1.RFibLimit5 : parent2.RFibLimit5;
-            
+
             child1.RFibLimit6 = _random.NextDouble() < 0.5 ? parent1.RFibLimit6 : parent2.RFibLimit6;
             child2.RFibLimit6 = _random.NextDouble() < 0.5 ? parent1.RFibLimit6 : parent2.RFibLimit6;
-            
+
             // Continue for all other parameters...
             child1.ScalingSensitivity = _random.NextDouble() < 0.5 ? parent1.ScalingSensitivity : parent2.ScalingSensitivity;
             child2.ScalingSensitivity = _random.NextDouble() < 0.5 ? parent1.ScalingSensitivity : parent2.ScalingSensitivity;
-            
+
             child1.LossReactionSpeed = _random.NextDouble() < 0.5 ? parent1.LossReactionSpeed : parent2.LossReactionSpeed;
             child2.LossReactionSpeed = _random.NextDouble() < 0.5 ? parent1.LossReactionSpeed : parent2.LossReactionSpeed;
-            
+
             child1.ProfitReactionSpeed = _random.NextDouble() < 0.5 ? parent1.ProfitReactionSpeed : parent2.ProfitReactionSpeed;
             child2.ProfitReactionSpeed = _random.NextDouble() < 0.5 ? parent1.ProfitReactionSpeed : parent2.ProfitReactionSpeed;
-            
+
             child1.WinRateThreshold = _random.NextDouble() < 0.5 ? parent1.WinRateThreshold : parent2.WinRateThreshold;
             child2.WinRateThreshold = _random.NextDouble() < 0.5 ? parent1.WinRateThreshold : parent2.WinRateThreshold;
-            
+
             child1.WinRateWeight = _random.NextDouble() < 0.5 ? parent1.WinRateWeight : parent2.WinRateWeight;
             child2.WinRateWeight = _random.NextDouble() < 0.5 ? parent1.WinRateWeight : parent2.WinRateWeight;
-            
+
             child1.ImmediateProtectionTrigger = _random.NextDouble() < 0.5 ? parent1.ImmediateProtectionTrigger : parent2.ImmediateProtectionTrigger;
             child2.ImmediateProtectionTrigger = _random.NextDouble() < 0.5 ? parent1.ImmediateProtectionTrigger : parent2.ImmediateProtectionTrigger;
-            
+
             child1.GradualProtectionTrigger = _random.NextDouble() < 0.5 ? parent1.GradualProtectionTrigger : parent2.GradualProtectionTrigger;
             child2.GradualProtectionTrigger = _random.NextDouble() < 0.5 ? parent1.GradualProtectionTrigger : parent2.GradualProtectionTrigger;
-            
+
             child1.NotchMovementAgility = _random.NextDouble() < 0.5 ? parent1.NotchMovementAgility : parent2.NotchMovementAgility;
             child2.NotchMovementAgility = _random.NextDouble() < 0.5 ? parent1.NotchMovementAgility : parent2.NotchMovementAgility;
-            
+
             child1.MinorLossThreshold = _random.NextDouble() < 0.5 ? parent1.MinorLossThreshold : parent2.MinorLossThreshold;
             child2.MinorLossThreshold = _random.NextDouble() < 0.5 ? parent1.MinorLossThreshold : parent2.MinorLossThreshold;
-            
+
             child1.MajorLossThreshold = _random.NextDouble() < 0.5 ? parent1.MajorLossThreshold : parent2.MajorLossThreshold;
             child2.MajorLossThreshold = _random.NextDouble() < 0.5 ? parent1.MajorLossThreshold : parent2.MajorLossThreshold;
-            
+
             child1.CatastrophicLossThreshold = _random.NextDouble() < 0.5 ? parent1.CatastrophicLossThreshold : parent2.CatastrophicLossThreshold;
             child2.CatastrophicLossThreshold = _random.NextDouble() < 0.5 ? parent1.CatastrophicLossThreshold : parent2.CatastrophicLossThreshold;
-            
+
             child1.MildProfitThreshold = _random.NextDouble() < 0.5 ? parent1.MildProfitThreshold : parent2.MildProfitThreshold;
             child2.MildProfitThreshold = _random.NextDouble() < 0.5 ? parent1.MildProfitThreshold : parent2.MildProfitThreshold;
-            
+
             child1.MajorProfitThreshold = _random.NextDouble() < 0.5 ? parent1.MajorProfitThreshold : parent2.MajorProfitThreshold;
             child2.MajorProfitThreshold = _random.NextDouble() < 0.5 ? parent1.MajorProfitThreshold : parent2.MajorProfitThreshold;
-            
+
             child1.RequiredProfitDays = _random.NextDouble() < 0.5 ? parent1.RequiredProfitDays : parent2.RequiredProfitDays;
             child2.RequiredProfitDays = _random.NextDouble() < 0.5 ? parent1.RequiredProfitDays : parent2.RequiredProfitDays;
-            
+
             child1.VolatileMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.VolatileMarketMultiplier : parent2.VolatileMarketMultiplier;
             child2.VolatileMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.VolatileMarketMultiplier : parent2.VolatileMarketMultiplier;
-            
+
             child1.CrisisMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.CrisisMarketMultiplier : parent2.CrisisMarketMultiplier;
             child2.CrisisMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.CrisisMarketMultiplier : parent2.CrisisMarketMultiplier;
-            
+
             child1.BullMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.BullMarketMultiplier : parent2.BullMarketMultiplier;
             child2.BullMarketMultiplier = _random.NextDouble() < 0.5 ? parent1.BullMarketMultiplier : parent2.BullMarketMultiplier;
-            
+
             child1.DrawdownWeight = _random.NextDouble() < 0.5 ? parent1.DrawdownWeight : parent2.DrawdownWeight;
             child2.DrawdownWeight = _random.NextDouble() < 0.5 ? parent1.DrawdownWeight : parent2.DrawdownWeight;
-            
+
             child1.SharpeWeight = _random.NextDouble() < 0.5 ? parent1.SharpeWeight : parent2.SharpeWeight;
             child2.SharpeWeight = _random.NextDouble() < 0.5 ? parent1.SharpeWeight : parent2.SharpeWeight;
-            
+
             child1.StabilityWeight = _random.NextDouble() < 0.5 ? parent1.StabilityWeight : parent2.StabilityWeight;
             child2.StabilityWeight = _random.NextDouble() < 0.5 ? parent1.StabilityWeight : parent2.StabilityWeight;
-            
+
             return (child1, child2);
         }
 
@@ -657,9 +688,9 @@ namespace ODTE.Strategy.Tests
             {
                 return chromosome;
             }
-            
+
             var mutated = chromosome.Clone();
-            
+
             // Mutate each parameter with small probability
             if (_random.NextDouble() < 0.1) mutated.RFibLimit1 = MutateDecimal(mutated.RFibLimit1, 800m, 1400m, 50m);
             if (_random.NextDouble() < 0.1) mutated.RFibLimit2 = MutateDecimal(mutated.RFibLimit2, 500m, 900m, 30m);
@@ -667,7 +698,7 @@ namespace ODTE.Strategy.Tests
             if (_random.NextDouble() < 0.1) mutated.RFibLimit4 = MutateDecimal(mutated.RFibLimit4, 200m, 400m, 15m);
             if (_random.NextDouble() < 0.1) mutated.RFibLimit5 = MutateDecimal(mutated.RFibLimit5, 100m, 250m, 10m);
             if (_random.NextDouble() < 0.1) mutated.RFibLimit6 = MutateDecimal(mutated.RFibLimit6, 50m, 150m, 8m);
-            
+
             if (_random.NextDouble() < 0.1) mutated.ScalingSensitivity = MutateDecimal(mutated.ScalingSensitivity, 0.8m, 2.5m, 0.1m);
             if (_random.NextDouble() < 0.1) mutated.LossReactionSpeed = MutateDecimal(mutated.LossReactionSpeed, 1.0m, 3.0m, 0.1m);
             if (_random.NextDouble() < 0.1) mutated.ProfitReactionSpeed = MutateDecimal(mutated.ProfitReactionSpeed, 0.5m, 1.8m, 0.05m);
@@ -688,7 +719,7 @@ namespace ODTE.Strategy.Tests
             if (_random.NextDouble() < 0.1) mutated.DrawdownWeight = MutateDecimal(mutated.DrawdownWeight, 0.1m, 0.4m, 0.01m);
             if (_random.NextDouble() < 0.1) mutated.SharpeWeight = MutateDecimal(mutated.SharpeWeight, 0.2m, 0.6m, 0.02m);
             if (_random.NextDouble() < 0.1) mutated.StabilityWeight = MutateDecimal(mutated.StabilityWeight, 0.1m, 0.3m, 0.01m);
-            
+
             return mutated;
         }
 
@@ -742,10 +773,10 @@ namespace ODTE.Strategy.Tests
         {
             var profitableMonths = results.MonthlyResults.Count(m => m.PnL > 0);
             var consistencyRatio = (decimal)profitableMonths / results.MonthlyResults.Count;
-            
+
             var monthlyStdDev = CalculateMonthlyStandardDeviation(results.MonthlyResults);
             var stabilityScore = Math.Max(0, 100 - monthlyStdDev);
-            
+
             return (consistencyRatio * 100 + stabilityScore) / 2;
         }
 
@@ -753,10 +784,10 @@ namespace ODTE.Strategy.Tests
         {
             var crisisMonths = results.MonthlyResults.Where(m => m.MarketRegime == "CRISIS").ToList();
             if (!crisisMonths.Any()) return 50; // Neutral score if no crisis periods
-            
+
             var avgCrisisLoss = crisisMonths.Average(m => m.PnL);
             var crisisScore = Math.Max(0, 100 + avgCrisisLoss / 10); // Less negative is better
-            
+
             return crisisScore;
         }
 
@@ -790,14 +821,14 @@ namespace ODTE.Strategy.Tests
         {
             decimal peak = results.First().RunningCapital;
             decimal maxDrawdown = 0;
-            
+
             foreach (var result in results)
             {
                 peak = Math.Max(peak, result.RunningCapital);
                 var drawdown = (peak - result.RunningCapital) / peak * 100;
                 maxDrawdown = Math.Max(maxDrawdown, drawdown);
             }
-            
+
             return maxDrawdown;
         }
 
@@ -806,7 +837,7 @@ namespace ODTE.Strategy.Tests
             var returns = results.Select(r => r.PnL / 25000m).ToList();
             var avgReturn = returns.Average();
             var stdDev = (decimal)Math.Sqrt((double)returns.Select(r => (r - avgReturn) * (r - avgReturn)).Average());
-            
+
             return stdDev > 0 ? avgReturn * (decimal)Math.Sqrt(12) / (stdDev * (decimal)Math.Sqrt(12)) : 0;
         }
 
@@ -821,11 +852,11 @@ namespace ODTE.Strategy.Tests
         private List<HistoricalTradingDay> LoadComprehensive20YearData()
         {
             Console.WriteLine("📂 Loading comprehensive 20-year dataset...");
-            
+
             var data = new List<HistoricalTradingDay>();
             var startDate = new DateTime(2005, 1, 1);
             var endDate = new DateTime(2025, 7, 31);
-            
+
             var currentDate = startDate;
             while (currentDate <= endDate)
             {
@@ -834,7 +865,7 @@ namespace ODTE.Strategy.Tests
                 {
                     var vix = GenerateRealisticVIX(currentDate);
                     var marketRegime = DetermineMarketRegime(vix);
-                    
+
                     data.Add(new HistoricalTradingDay
                     {
                         Date = currentDate,
@@ -846,7 +877,7 @@ namespace ODTE.Strategy.Tests
                 }
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             Console.WriteLine($"✓ Loaded {data.Count} trading days from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
             return data;
         }
@@ -866,7 +897,7 @@ namespace ODTE.Strategy.Tests
                 baseVix = 32m;
             else
                 baseVix = 18m;
-            
+
             var noise = (decimal)(_random.NextDouble() * 8 - 4);
             return Math.Max(10m, Math.Min(80m, baseVix + noise));
         }
@@ -892,7 +923,7 @@ namespace ODTE.Strategy.Tests
         private GenerationResult AnalyzeGeneration(int generation)
         {
             var sortedPop = _population.OrderByDescending(c => c.Fitness).ToList();
-            
+
             return new GenerationResult
             {
                 Generation = generation,
@@ -918,7 +949,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"  Avg Fitness:  {result.AverageFitness:F2}");
             Console.WriteLine($"  Std Dev:      {result.FitnessStdDev:F2}");
             Console.WriteLine($"  Range:        {result.WorstFitness:F2} - {result.BestFitness:F2}");
-            
+
             // Print best chromosome summary
             var best = result.BestChromosome;
             Console.WriteLine($"  Best Config:  RFib=[{best.RFibLimit1:F0},{best.RFibLimit2:F0},{best.RFibLimit3:F0}] " +
@@ -929,13 +960,13 @@ namespace ODTE.Strategy.Tests
         private bool CheckConvergence(int generation)
         {
             if (generation < 50) return false; // Don't check early
-            
+
             var recentGenerations = _evolutionHistory.TakeLast(20).ToList();
             if (recentGenerations.Count < 20) return false;
-            
+
             var fitnessImprovement = recentGenerations.Last().BestFitness - recentGenerations.First().BestFitness;
             var avgStdDev = recentGenerations.Average(g => g.FitnessStdDev);
-            
+
             return fitnessImprovement < 1.0m && avgStdDev < 2.0m;
         }
 
@@ -943,23 +974,23 @@ namespace ODTE.Strategy.Tests
         {
             var filename = $"PM250_GA_Gen{generation:D3}_Results.csv";
             var filepath = Path.Combine(@"C:\code\ODTE", filename);
-            
+
             using (var writer = new StreamWriter(filepath))
             {
                 writer.WriteLine("Generation,Rank,Fitness,RFibLimit1,RFibLimit2,RFibLimit3,RFibLimit4,RFibLimit5,RFibLimit6," +
                                "ScalingSensitivity,WinRateThreshold,ImmediateProtection,NotchAgility");
-                
+
                 var sortedPop = _population.OrderByDescending(c => c.Fitness).ToList();
                 for (int i = 0; i < Math.Min(20, sortedPop.Count); i++)
                 {
                     var c = sortedPop[i];
-                    writer.WriteLine($"{generation},{i+1},{c.Fitness:F2},{c.RFibLimit1:F0},{c.RFibLimit2:F0}," +
+                    writer.WriteLine($"{generation},{i + 1},{c.Fitness:F2},{c.RFibLimit1:F0},{c.RFibLimit2:F0}," +
                                    $"{c.RFibLimit3:F0},{c.RFibLimit4:F0},{c.RFibLimit5:F0},{c.RFibLimit6:F0}," +
                                    $"{c.ScalingSensitivity:F3},{c.WinRateThreshold:F3},{c.ImmediateProtectionTrigger:F0}," +
                                    $"{c.NotchMovementAgility:F3}");
                 }
             }
-            
+
             Console.WriteLine($"  📁 Exported top 20 to {filename}");
         }
 
@@ -967,7 +998,7 @@ namespace ODTE.Strategy.Tests
         {
             var sortedPop = _population.OrderByDescending(c => c.Fitness).ToList();
             var topPerformers = sortedPop.Take(10).ToList();
-            
+
             return new ComprehensiveOptimizationResults
             {
                 TotalGenerations = _evolutionHistory.Count,
@@ -990,7 +1021,7 @@ namespace ODTE.Strategy.Tests
                                    $"{gen.MedianFitness:F2},{gen.FitnessStdDev:F2}");
                 }
             }
-            
+
             // Export top performers
             var topPerformersPath = @"C:\code\ODTE\PM250_GA_Top_Performers.csv";
             using (var writer = new StreamWriter(topPerformersPath))
@@ -1000,11 +1031,11 @@ namespace ODTE.Strategy.Tests
                                "ImmediateProtection,GradualProtection,NotchAgility,MinorLossThreshold,MajorLossThreshold," +
                                "CatastrophicLossThreshold,MildProfitThreshold,MajorProfitThreshold,RequiredProfitDays," +
                                "VolatileMultiplier,CrisisMultiplier,BullMultiplier,DrawdownWeight,SharpeWeight,StabilityWeight");
-                
+
                 for (int i = 0; i < results.TopPerformers.Count; i++)
                 {
                     var c = results.TopPerformers[i];
-                    writer.WriteLine($"{i+1},{c.Fitness:F2},{c.RFibLimit1:F0},{c.RFibLimit2:F0},{c.RFibLimit3:F0}," +
+                    writer.WriteLine($"{i + 1},{c.Fitness:F2},{c.RFibLimit1:F0},{c.RFibLimit2:F0},{c.RFibLimit3:F0}," +
                                    $"{c.RFibLimit4:F0},{c.RFibLimit5:F0},{c.RFibLimit6:F0},{c.ScalingSensitivity:F3}," +
                                    $"{c.LossReactionSpeed:F3},{c.ProfitReactionSpeed:F3},{c.WinRateThreshold:F3}," +
                                    $"{c.WinRateWeight:F3},{c.ImmediateProtectionTrigger:F0},{c.GradualProtectionTrigger:F0}," +
@@ -1014,7 +1045,7 @@ namespace ODTE.Strategy.Tests
                                    $"{c.BullMarketMultiplier:F3},{c.DrawdownWeight:F3},{c.SharpeWeight:F3},{c.StabilityWeight:F3}");
                 }
             }
-            
+
             Console.WriteLine($"\n📊 COMPREHENSIVE RESULTS EXPORTED:");
             Console.WriteLine($"  Evolution History: {evolutionPath}");
             Console.WriteLine($"  Top Performers: {topPerformersPath}");
@@ -1024,11 +1055,11 @@ namespace ODTE.Strategy.Tests
         {
             Console.WriteLine($"\n🏆 TOP 5 PERFORMERS VALIDATION:");
             Console.WriteLine("=".PadRight(50, '='));
-            
+
             for (int i = 0; i < Math.Min(5, results.TopPerformers.Count); i++)
             {
                 var performer = results.TopPerformers[i];
-                Console.WriteLine($"\n#{i+1} - Fitness: {performer.Fitness:F2}");
+                Console.WriteLine($"\n#{i + 1} - Fitness: {performer.Fitness:F2}");
                 Console.WriteLine($"  RFib Limits: [{performer.RFibLimit1:F0}, {performer.RFibLimit2:F0}, {performer.RFibLimit3:F0}, " +
                                 $"{performer.RFibLimit4:F0}, {performer.RFibLimit5:F0}, {performer.RFibLimit6:F0}]");
                 Console.WriteLine($"  Scaling Sensitivity: {performer.ScalingSensitivity:F2}");
@@ -1042,7 +1073,7 @@ namespace ODTE.Strategy.Tests
     }
 
     // Supporting classes and data structures
-    
+
     public class ComprehensiveChromosome
     {
         // RevFibNotch Limits
@@ -1052,44 +1083,44 @@ namespace ODTE.Strategy.Tests
         public decimal RFibLimit4 { get; set; }
         public decimal RFibLimit5 { get; set; }
         public decimal RFibLimit6 { get; set; }
-        
+
         // Scaling and Reactions
         public decimal ScalingSensitivity { get; set; }
         public decimal LossReactionSpeed { get; set; }
         public decimal ProfitReactionSpeed { get; set; }
-        
+
         // Win Rate Management
         public decimal WinRateThreshold { get; set; }
         public decimal WinRateWeight { get; set; }
-        
+
         // Protection Triggers
         public decimal ImmediateProtectionTrigger { get; set; }
         public decimal GradualProtectionTrigger { get; set; }
-        
+
         // Movement Agility and Thresholds
         public decimal NotchMovementAgility { get; set; }
         public decimal MinorLossThreshold { get; set; }
         public decimal MajorLossThreshold { get; set; }
         public decimal CatastrophicLossThreshold { get; set; }
-        
+
         // Profit Scaling
         public decimal MildProfitThreshold { get; set; }
         public decimal MajorProfitThreshold { get; set; }
         public int RequiredProfitDays { get; set; }
-        
+
         // Market Regime Adaptations
         public decimal VolatileMarketMultiplier { get; set; }
         public decimal CrisisMarketMultiplier { get; set; }
         public decimal BullMarketMultiplier { get; set; }
-        
+
         // Risk Weights
         public decimal DrawdownWeight { get; set; }
         public decimal SharpeWeight { get; set; }
         public decimal StabilityWeight { get; set; }
-        
+
         // Fitness score
         public decimal Fitness { get; set; }
-        
+
         public ComprehensiveChromosome Clone()
         {
             return new ComprehensiveChromosome

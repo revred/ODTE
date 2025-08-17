@@ -1,14 +1,9 @@
 // ValidateStooqData.cs — Console application for running Stooq data validation
 // Provides command-line interface for data quality checks and performance monitoring
 
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using ODTE.Historical.Validation;
 using ODTE.Historical.Monitoring;
+using ODTE.Historical.Validation;
 
 namespace ODTE.Historical.Tests
 {
@@ -93,7 +88,7 @@ namespace ODTE.Historical.Tests
                 {
                     var status = test.Passed ? "✅" : "❌";
                     Console.WriteLine($"  {status} {test.TestName}: {test.Score}/100");
-                    
+
                     if (test.Errors.Count > 0)
                     {
                         foreach (var error in test.Errors)
@@ -206,10 +201,10 @@ namespace ODTE.Historical.Tests
             Console.WriteLine();
 
             var monitor = new StooqPerformanceMonitor(databasePath, (ILogger<StooqPerformanceMonitor>)logger);
-            
+
             // Run benchmark
             var benchmark = await monitor.RunBenchmarkAsync(ct);
-            
+
             Console.WriteLine($"📊 Benchmark Results");
             Console.WriteLine($"Duration: {benchmark.TotalDuration.TotalSeconds:F2} seconds");
             Console.WriteLine($"Overall Score: {benchmark.OverallScore}/100");
@@ -252,7 +247,7 @@ namespace ODTE.Historical.Tests
             // Run random access test
             Console.WriteLine("🎯 Running detailed random access test...");
             var randomTest = await monitor.TestRandomAccessAsync(100, ct);
-            
+
             var accessStatus = randomTest.IsAcceptable ? "✅" : "❌";
             Console.WriteLine($"  {accessStatus} Success Rate: {randomTest.SuccessRate:P1}");
             Console.WriteLine($"  📊 Average: {randomTest.AverageAccessTimeMs:F1}ms");
@@ -284,7 +279,7 @@ namespace ODTE.Historical.Tests
             Console.WriteLine($"Database Size: {health.DatabaseSizeMB:F1} MB");
             Console.WriteLine($"Free Space: {health.FreeSpaceMB:F1} MB");
             Console.WriteLine($"Latest Data Age: {health.LatestDataAge.TotalDays:F1} days");
-            
+
             if (health.IsDataStale)
                 Console.WriteLine("⚠️  Data appears stale (>7 days old)");
 
@@ -335,7 +330,7 @@ namespace ODTE.Historical.Tests
             var factory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Information)
-                       .AddConsole(options => 
+                       .AddConsole(options =>
                        {
                            options.LogToStandardErrorThreshold = LogLevel.Warning;
                        });

@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-using ODTE.Optimization;
 using ODTE.Optimization.Core;
 using ODTE.Optimization.Engine;
 using ODTE.Optimization.RiskManagement;
@@ -15,48 +12,48 @@ namespace ODTE.Optimization
             if (args.Length > 0 && args[0].ToLower() == "honest")
             {
                 Console.WriteLine("ODTE Realistic Iron Condor Backtesting Mode");
-                Console.WriteLine("=" .PadRight(60, '='));
-                
+                Console.WriteLine("=".PadRight(60, '='));
+
                 var backtest = new RealisticIronCondorBacktest();
                 var results = backtest.RunRealisticBacktest(totalRuns: 64);
-                
+
                 Console.WriteLine("\nRealistic iron condor backtesting completed.");
                 return;
             }
-            
+
             // Check if running detailed analysis mode
             if (args.Length > 0 && args[0].ToLower() == "analyze")
             {
                 Console.WriteLine("ODTE Strategy - Comprehensive Historical Failure Analysis");
                 Console.WriteLine("=========================================================");
-                
+
                 var analyzer = new DetailedHistoricalAnalysis();
                 var analysisResults = analyzer.RunComprehensiveAnalysis();
-                
+
                 Console.WriteLine("\nDetailed analysis completed.");
                 return;
             }
-            
+
             // Check if running genetic optimization mode
             if (args.Length > 0 && args[0].ToLower() == "genetic")
             {
                 Console.WriteLine("🧬 ODTE Real Data Genetic Optimization");
                 Console.WriteLine("=====================================");
-                
+
                 int generations = args.Length > 1 && int.TryParse(args[1], out var gen) ? gen : 100;
                 int populationSize = args.Length > 2 && int.TryParse(args[2], out var pop) ? pop : 50;
-                
+
                 Console.WriteLine($"Configuration:");
                 Console.WriteLine($"  Generations: {generations}");
                 Console.WriteLine($"  Population Size: {populationSize}");
                 Console.WriteLine($"  Data Source: Real SPY/VIX (2015-2020)");
                 Console.WriteLine();
-                
+
                 try
                 {
                     var optimizer = new RealDataRegimeOptimizer();
                     var results = await optimizer.OptimizeAsync(generations, populationSize);
-                    
+
                     Console.WriteLine("\n✅ Genetic optimization completed successfully!");
                     Console.WriteLine($"Best fitness achieved: {results.BestChromosome.Fitness:F2}");
                     Console.WriteLine($"Total time: {(results.EndTime - results.StartTime).TotalMinutes:F1} minutes");
@@ -66,13 +63,13 @@ namespace ODTE.Optimization
                     Console.WriteLine($"❌ Genetic optimization failed: {ex.Message}");
                     Console.WriteLine(ex.StackTrace);
                 }
-                
+
                 return;
             }
-            
+
             Console.WriteLine("ODTE Strategy Optimization System");
             Console.WriteLine("Version 1.0.0");
-            Console.WriteLine("=" .PadRight(60, '='));
+            Console.WriteLine("=".PadRight(60, '='));
             Console.WriteLine();
             Console.WriteLine("This system will:");
             Console.WriteLine("1. Fetch 5 years of historical market data");
@@ -81,11 +78,11 @@ namespace ODTE.Optimization
             Console.WriteLine("4. Implement Reverse Fibonacci risk management");
             Console.WriteLine("5. Generate comprehensive P&L reports");
             Console.WriteLine();
-            
+
             // Use command line arguments or defaults for non-interactive mode
             var strategyName = args.Length > 0 ? args[0] : "ODTE_IronCondor";
             int maxIterations = args.Length > 1 && int.TryParse(args[1], out var iter) ? iter : 5;
-            
+
             Console.WriteLine();
             Console.WriteLine("Starting optimization with:");
             Console.WriteLine($"  Strategy: {strategyName}");
@@ -93,18 +90,18 @@ namespace ODTE.Optimization
             Console.WriteLine($"  Risk Management: Reverse Fibonacci");
             Console.WriteLine($"  Initial Max Loss: $500/day");
             Console.WriteLine();
-            
+
             Console.WriteLine("Starting optimization automatically in non-interactive mode...");
-            
+
             try
             {
                 // Create backtest engine adapter
                 var backtestEngine = new BacktestEngineAdapter();
-                
+
                 // Create and run optimization pipeline
                 var pipeline = new OptimizationPipeline(backtestEngine);
                 var result = await pipeline.RunFullOptimizationAsync(strategyName, maxIterations);
-                
+
                 if (result.Success)
                 {
                     Console.WriteLine("\nOptimization completed successfully!");
@@ -121,11 +118,11 @@ namespace ODTE.Optimization
                 Console.WriteLine($"\nFatal error: {ex.Message}");
                 Console.WriteLine(ex.StackTrace);
             }
-            
+
             Console.WriteLine("\nOptimization run completed.");
         }
     }
-    
+
     /// <summary>
     /// Adapter to connect optimization engine with the REAL ODTE.Backtest infrastructure
     /// </summary>
@@ -138,42 +135,42 @@ namespace ODTE.Optimization
         {
             // FIXED: Now using REALISTIC trading logic like the successful honest backtest
             // Key insight: Use similar logic to RealisticIronCondorBacktest that actually works
-            
+
             var random = new Random(42); // Fixed seed for reproducibility
             var tradingDays = 250; // Standard trading year (data length not available in interface)
             var dailyPnL = new Dictionary<DateTime, double>();
             var dailyReturns = new List<double>();
-            
+
             double totalPnL = 0;
             double maxDrawdown = 0;
             double peak = 5000; // Starting capital like realistic backtest
             int winningDays = 0;
             int losingDays = 0;
             int totalTrades = 0;
-            
+
             var currentDate = data.StartDate;
-            
+
             // Use Reverse Fibonacci daily loss limits like the realistic backtest
             var dailyLossLimits = new[] { 500.0, 300.0, 200.0, 100.0 };
             var consecutiveLossDays = 0;
-            
+
             for (int i = 0; i < tradingDays; i++)
             {
                 // Skip weekends
-                while (currentDate.DayOfWeek == DayOfWeek.Saturday || 
+                while (currentDate.DayOfWeek == DayOfWeek.Saturday ||
                        currentDate.DayOfWeek == DayOfWeek.Sunday)
                 {
                     currentDate = currentDate.AddDays(1);
                 }
-                
+
                 // Start new trading day with Fibonacci risk limit
                 var currentLimit = dailyLossLimits[Math.Min(consecutiveLossDays, 3)];
                 riskManager.StartNewDay(currentDate);
-                
+
                 // Use realistic iron condor simulation (like the profitable honest backtest)
                 double dayPnL = SimulateRealistic0DTEDay(currentLimit, random, parameters);
                 totalTrades += EstimateTradesPerDay(parameters);
-                
+
                 // Apply Reverse Fibonacci logic
                 if (dayPnL < 0)
                 {
@@ -185,30 +182,30 @@ namespace ODTE.Optimization
                     consecutiveLossDays = 0; // Reset on profitable day
                     winningDays++;
                 }
-                
+
                 // Update risk manager
                 riskManager.UpdateDailyPnL(dayPnL);
-                
+
                 // Record results
                 dailyPnL[currentDate] = dayPnL;
                 dailyReturns.Add(dayPnL);
                 totalPnL += dayPnL;
-                
+
                 if (dayPnL > 0) winningDays++;
                 else if (dayPnL < 0) losingDays++;
-                
+
                 // Track drawdown
                 peak = Math.Max(peak, totalPnL);
                 var drawdown = totalPnL - peak;
                 maxDrawdown = Math.Min(maxDrawdown, drawdown);
-                
+
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             // Calculate metrics
             var avgDaily = dailyReturns.Average();
             var stdDev = Math.Sqrt(dailyReturns.Sum(r => Math.Pow(r - avgDaily, 2)) / dailyReturns.Count);
-            
+
             return new BacktestResult
             {
                 TotalPnL = totalPnL,
@@ -219,7 +216,7 @@ namespace ODTE.Optimization
                 LosingDays = losingDays,
                 AverageDailyPnL = avgDaily,
                 AnnualizedReturn = avgDaily * 252,
-                ProfitFactor = winningDays > 0 && losingDays > 0 ? 
+                ProfitFactor = winningDays > 0 && losingDays > 0 ?
                     (winningDays * Math.Abs(avgDaily)) / (losingDays * Math.Abs(avgDaily)) : 1.0,
                 ExpectedValue = avgDaily,
                 DailyReturns = dailyReturns,
@@ -233,30 +230,30 @@ namespace ODTE.Optimization
             var dayPnL = 0.0;
             var tradesPlaced = 0;
             var maxTradesPerDay = 20; // BWB allows more frequent trading due to better risk profile
-            
+
             // Create engines
             var bwbEngine = new CreditBWBEngine(random);
             var convexOverlay = new ConvexTailOverlay(random);
-            
+
             // Determine market regime for the day
             var marketRegime = DetermineMarketRegime(random);
             var vix = SimulateVIX(marketRegime, random);
-            
+
             // Generate overlay conditions for the day
             var overlayConditions = ConvexTailOverlay.GenerateMarketConditions(marketRegime, random);
             overlayConditions.VIX = vix;
-            
+
             while (tradesPlaced < maxTradesPerDay && Math.Abs(dayPnL) < dailyLimit)
             {
                 var bwbResult = bwbEngine.SimulateCreditBWB(DateTime.Today, marketRegime, vix, parameters);
-                
+
                 // Skip if trade doesn't meet entry criteria
                 if (bwbResult.PnL == 0 && bwbResult.ExitReason == "Failed entry gates")
                 {
                     tradesPlaced++;
                     continue;
                 }
-                
+
                 // Check position sizing
                 var positionSize = bwbEngine.CalculateBWBPositionSize(dailyLimit, bwbResult.Structure);
                 if (positionSize < 1)
@@ -264,51 +261,51 @@ namespace ODTE.Optimization
                     tradesPlaced++;
                     continue; // Skip if can't size properly
                 }
-                
+
                 // Apply Convex Tail Overlay when conditions warrant
                 var marketMove = SimulateMarketMove(marketRegime, random);
                 var overlayResult = convexOverlay.ApplyConvexOverlay(
-                    bwbResult.PnL, 
-                    bwbResult.Structure, 
-                    overlayConditions, 
+                    bwbResult.PnL,
+                    bwbResult.Structure,
+                    overlayConditions,
                     marketMove);
-                
+
                 // Scale total P&L by position size
                 var scaledPnL = overlayResult.TotalPnL * positionSize;
                 dayPnL += scaledPnL;
                 tradesPlaced++;
-                
+
                 // Stop if we hit daily limit (Reverse Fibonacci enforcement)
                 if (dayPnL <= -dailyLimit)
                 {
                     dayPnL = -dailyLimit;
                     break;
                 }
-                
+
                 // BWB + Overlay allows more aggressive trading when profitable
                 if (tradesPlaced >= 6 && dayPnL > 0 && random.NextDouble() > 0.85)
                     break; // 85% chance to continue when profitable
                 else if (tradesPlaced >= 4 && dayPnL <= 0 && random.NextDouble() > 0.65)
                     break; // 65% chance to continue when not profitable
             }
-            
+
             return dayPnL;
         }
-        
+
         private double SimulateIronCondor(Random random, StrategyParameters parameters)
         {
             // ENHANCED Iron Condor simulation targeting higher returns
             var baseCredit = 20; // Base credit for 1-point iron condor
             var baseMaxLoss = 80; // Base Width (100) - Credit (20)
-            
+
             // Scale credit and loss based on strategy aggressiveness
             var aggressiveness = parameters.AllocationPerTrade / 100.0; // Use allocation as aggressiveness proxy
             var credit = baseCredit * (1.0 + aggressiveness * 0.5); // Up to 50% higher credits
             var maxLoss = baseMaxLoss * (1.0 + aggressiveness * 0.3); // Proportionally higher max loss
-            
+
             // Market behavior probabilities (enhanced for higher returns)
             var marketScenario = random.NextDouble();
-            
+
             if (marketScenario < 0.12) // 12% - Volatile day (slightly reduced for better overall performance)
             {
                 if (random.NextDouble() < 0.40) // 40% survive volatile days (improved from 35%)
@@ -354,14 +351,14 @@ namespace ODTE.Optimization
                 }
             }
         }
-        
+
         private int EstimateTradesPerDay(StrategyParameters parameters)
         {
             // BWB allows more trades due to better risk profile
             var bwbEngine = new CreditBWBEngine(new Random());
             return bwbEngine.EstimateBWBTradesPerDay(parameters);
         }
-        
+
         private string DetermineMarketRegime(Random random)
         {
             var regime = random.NextDouble();
@@ -369,7 +366,7 @@ namespace ODTE.Optimization
             else if (regime < 0.25) return "Trending"; // 10% 
             else return "Calm";                        // 75%
         }
-        
+
         private double SimulateVIX(string marketRegime, Random random)
         {
             return marketRegime switch
@@ -380,7 +377,7 @@ namespace ODTE.Optimization
                 _ => 20
             };
         }
-        
+
         private double SimulateMarketMove(string marketRegime, Random random)
         {
             // Simulate daily market moves for convex overlay testing

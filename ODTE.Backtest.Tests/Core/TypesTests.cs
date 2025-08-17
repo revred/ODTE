@@ -147,11 +147,11 @@ public class TypesTests
     {
         // Arrange
         var leg = new SpreadLeg(DateOnly.FromDateTime(DateTime.Today), 100, Right.Call, ratio);
-        
+
         // Act
         var isLong = ratio > 0;
         var isShort = ratio < 0;
-        
+
         // Assert
         if (expectedDescription.Contains("Long"))
             isLong.Should().BeTrue();
@@ -310,7 +310,7 @@ public class TypesTests
     {
         // Arrange
         var report = new RunReport();
-        
+
         // Add some test trades
         var position1 = new OpenPosition(CreateTestSpreadOrder(), 0.20, DateTime.Now)
         {

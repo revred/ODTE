@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -16,7 +12,7 @@ namespace ODTE.Strategy
         private readonly ICorrelationBudgetManager _correlationManager;
         private readonly IQualityEntryFilter _qualityFilter;
         private readonly IDualLaneExitManager _exitManager;
-        
+
         private ScalingConfiguration _config;
         private SessionStats _currentSession;
         private EscalationLevel _currentLevel;
@@ -35,11 +31,11 @@ namespace ODTE.Strategy
             _correlationManager = correlationManager ?? throw new ArgumentNullException(nameof(correlationManager));
             _qualityFilter = qualityFilter ?? throw new ArgumentNullException(nameof(qualityFilter));
             _exitManager = exitManager ?? throw new ArgumentNullException(nameof(exitManager));
-            
+
             _openPositions = new List<Position>();
             _currentLevel = EscalationLevel.Level0;
             _cooldownUntil = DateTime.MinValue;
-            
+
             // Initialize with Phase 1 configuration
             _config = CreatePhase1Configuration();
         }
@@ -57,7 +53,7 @@ namespace ODTE.Strategy
                 ScalingPhase.Maximum => CreatePhase4Configuration(),
                 _ => throw new ArgumentException($"Unknown scaling phase: {phase}")
             };
-            
+
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Configured for {phase} phase: Target={_config.MonthlyTarget:C}, RFib={string.Join("/", _config.RFibLimits.Select(x => x.ToString("C0")))}");
         }
 
@@ -67,7 +63,7 @@ namespace ODTE.Strategy
         public ScalingTradeDecision ProcessTradeOpportunity(TradeSetup setup)
         {
             UpdateSessionStats();
-            
+
             // Core risk management - absolute constraints
             if (!ValidateAbsoluteConstraints(setup))
             {
@@ -76,20 +72,20 @@ namespace ODTE.Strategy
 
             // Determine trade lane (Probe vs Quality/Punch)
             var tradeLane = DetermineTradeLane(setup);
-            
+
             // Check escalation level and permissions
             var escalationLevel = ComputeEscalationLevel();
-            
+
             // Calculate position sizing
             var positionSize = CalculatePositionSize(setup, tradeLane, escalationLevel);
-            
+
             if (positionSize <= 0)
             {
                 return ScalingTradeDecision.Reject("Insufficient position size");
             }
 
             // Final validations
-            if (!ValidateCorrelationBudget(setup, positionSize) || 
+            if (!ValidateCorrelationBudget(setup, positionSize) ||
                 !ValidateQualityRequirements(setup, tradeLane))
             {
                 return ScalingTradeDecision.Reject("Quality or correlation constraints");
@@ -114,10 +110,10 @@ namespace ODTE.Strategy
         {
             // Update current session statistics
             _currentSession = CalculateSessionStats();
-            
+
             // Check for auto de-escalation conditions
             CheckAutoDeescalation();
-            
+
             // Update escalation level
             _currentLevel = ComputeEscalationLevel();
         }
@@ -129,7 +125,7 @@ namespace ODTE.Strategy
         {
             var remainingBudget = CalculateRemainingBudget();
             var maxLossPerContract = (setup.Width - setup.ExpectedCredit) * 100m;
-            
+
             // Must fit within remaining budget
             if (maxLossPerContract > remainingBudget)
             {
@@ -179,7 +175,7 @@ namespace ODTE.Strategy
         /// </summary>
         private EscalationLevel ComputeEscalationLevel()
         {
-            if (!_config.EscalationEnabled || 
+            if (!_config.EscalationEnabled ||
                 DateTime.Now < _cooldownUntil ||
                 !_probeDetector.IsGreenlit(_currentSession))
             {
@@ -187,14 +183,14 @@ namespace ODTE.Strategy
             }
 
             var dailyCap = _riskManager.GetCurrentDailyLimit();
-            
+
             // Level 2: High P&L cushion + Quality punch trades profitable
-            if (_currentSession.RealizedDayPnL >= 0.60m * dailyCap && 
+            if (_currentSession.RealizedDayPnL >= 0.60m * dailyCap &&
                 _currentSession.Last3PunchPnL >= 0)
             {
                 return EscalationLevel.Level2;
             }
-            
+
             // Level 1: Basic P&L cushion met
             if (_currentSession.RealizedDayPnL >= 0.30m * dailyCap)
             {
@@ -211,13 +207,13 @@ namespace ODTE.Strategy
         {
             var remainingBudget = CalculateRemainingBudget();
             var maxLossPerContract = (setup.Width - setup.ExpectedCredit) * 100m;
-            
+
             // Get fraction based on lane and escalation level
             var fraction = GetCapitalFraction(lane, level);
-            
+
             // Per-trade cap calculation
             var perTradeCap = fraction * remainingBudget;
-            
+
             // Additional constraint for Quality lane: max 50% of realized P&L
             if (lane == TradeLane.Quality)
             {
@@ -228,7 +224,7 @@ namespace ODTE.Strategy
             // Calculate contracts
             var contractsByRisk = (int)Math.Floor(perTradeCap / maxLossPerContract);
             var contracts = Math.Min(contractsByRisk, _config.HardContractCap);
-            
+
             // Probe 1-lot rule: if probe trade fits in absolute budget, allow 1 contract
             if (contracts < 1 && lane == TradeLane.Probe && maxLossPerContract <= remainingBudget)
             {
@@ -277,7 +273,7 @@ namespace ODTE.Strategy
 
             var rhoWeightedExposureAfter = _correlationManager.CalculateRhoWeightedExposureAfter(
                 _openPositions, setup, positionSize);
-            
+
             if (rhoWeightedExposureAfter > _config.MaxRhoWeightedExposure)
             {
                 LogDecision("RHO_BUDGET_EXCEEDED", setup, positionSize, 0);
@@ -310,7 +306,7 @@ namespace ODTE.Strategy
         private void CheckAutoDeescalation()
         {
             var dailyCap = _riskManager.GetCurrentDailyLimit();
-            
+
             // Drop level if P&L falls below half of last escalation trigger
             if (_currentSession.RealizedDayPnL < 0.5m * GetLastEscalationTrigger(_currentLevel))
             {
@@ -320,7 +316,7 @@ namespace ODTE.Strategy
                     LogDecision("AUTO_DEESCALATE_PNL", null, 0, 0);
                 }
             }
-            
+
             // Cooldown after consecutive Quality lane losses
             if (_currentSession.ConsecutivePunchLosses >= 2)
             {
@@ -328,7 +324,7 @@ namespace ODTE.Strategy
                 _cooldownUntil = DateTime.Now.AddMinutes(_config.CooldownMinutes);
                 LogDecision("AUTO_DEESCALATE_LOSSES", null, 0, 0);
             }
-            
+
             // Correlation exposure exceeded
             var currentRhoExposure = _correlationManager.CalculateCurrentRhoWeightedExposure(_openPositions);
             if (currentRhoExposure > _config.MaxRhoWeightedExposure)
@@ -347,7 +343,7 @@ namespace ODTE.Strategy
             var dailyCap = _riskManager.GetCurrentDailyLimit();
             var openMaxLoss = _openPositions.Sum(p => p.MaxLoss);
             var realizedLossToday = Math.Min(0, _currentSession.RealizedDayPnL);
-            
+
             return Math.Max(0, dailyCap - openMaxLoss - Math.Abs(realizedLossToday));
         }
 
@@ -397,7 +393,7 @@ namespace ODTE.Strategy
         /// <summary>
         /// Log trading decision with detailed context
         /// </summary>
-        private void LogDecision(string reasonCode, TradeSetup setup, decimal contracts, decimal remainingBudget, 
+        private void LogDecision(string reasonCode, TradeSetup setup, decimal contracts, decimal remainingBudget,
             decimal fraction = 0, decimal perTradeCap = 0)
         {
             var lane = setup != null ? DetermineTradeLane(setup) : TradeLane.Unknown;
@@ -407,12 +403,12 @@ namespace ODTE.Strategy
             var expectedCredit = setup?.ExpectedCredit ?? 0;
             var width = setup?.Width ?? 0;
             var maxLossPerContract = setup != null ? (setup.Width - setup.ExpectedCredit) * 100m : 0;
-            
+
             var logMessage = $"Decision: {lane} L{(int)level} Cap:{dailyCap:C} Rem:{remainingBudget:C} " +
                            $"Frac:{fraction:P1} PerTrade:{perTradeCap:C} PnL:{realizedPnL:C} " +
                            $"Credit:{expectedCredit:C} Width:{width:F1} MaxLoss:{maxLossPerContract:C} " +
                            $"Contracts:{contracts} Reason:{reasonCode}";
-            
+
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {logMessage}");
         }
 
@@ -567,7 +563,7 @@ namespace ODTE.Strategy
         public string ReasonCode { get; set; }
         public decimal ExpectedCredit { get; set; }
         public decimal MaxLoss { get; set; }
-        
+
         public static ScalingTradeDecision Reject(string reason)
         {
             return new ScalingTradeDecision

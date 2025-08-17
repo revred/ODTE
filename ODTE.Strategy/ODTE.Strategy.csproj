@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <AssemblyTitle>ODTE Strategy Library</AssemblyTitle>
     <AssemblyDescription>0DTE Options Trading Strategy Library with Iron Condor, Credit BWB, Convex Tail Overlay, and 24-day regime switching</AssemblyDescription>
     <AssemblyVersion>1.0.0</AssemblyVersion>

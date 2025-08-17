@@ -1,8 +1,5 @@
-using System;
-using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
-using ODTE.Historical;
+using Xunit;
 
 namespace ODTE.Historical.Tests
 {
@@ -53,7 +50,7 @@ namespace ODTE.Historical.Tests
             result.Should().NotBeNull();
             result.Should().NotBeEmpty();
             result.Count.Should().BeGreaterThan(0);
-            
+
             // Check that we get approximately 390 minutes of trading data (6.5 hours)
             result.Count.Should().BeCloseTo(390, 50);
         }
@@ -74,10 +71,10 @@ namespace ODTE.Historical.Tests
                 // Basic OHLC validation
                 bar.High.Should().BeGreaterOrEqualTo(Math.Max(bar.Open, bar.Close));
                 bar.Low.Should().BeLessOrEqualTo(Math.Min(bar.Open, bar.Close));
-                
+
                 // Reasonable price range for SPY
                 bar.Close.Should().BeInRange(100, 600);
-                
+
                 // Positive volume
                 bar.Volume.Should().BeGreaterThan(0);
             }
@@ -96,7 +93,7 @@ namespace ODTE.Historical.Tests
             // Assert
             for (int i = 1; i < result.Count; i++)
             {
-                result[i].Timestamp.Should().BeAfter(result[i-1].Timestamp);
+                result[i].Timestamp.Should().BeAfter(result[i - 1].Timestamp);
             }
         }
 

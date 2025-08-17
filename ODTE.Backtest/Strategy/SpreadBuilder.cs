@@ -45,10 +45,10 @@ namespace ODTE.Backtest.Strategy;
 public sealed class SpreadBuilder : ISpreadBuilder
 {
     private readonly SimConfig _cfg;
-    
-    public SpreadBuilder(SimConfig cfg) 
-    { 
-        _cfg = cfg; 
+
+    public SpreadBuilder(SimConfig cfg)
+    {
+        _cfg = cfg;
     }
 
     /// <summary>
@@ -78,14 +78,14 @@ public sealed class SpreadBuilder : ISpreadBuilder
     {
         var exp = od.TodayExpiry(now);
         var quotes = od.GetQuotesAt(now).Where(q => q.Expiry == exp).ToList();
-        if (!quotes.Any()) 
+        if (!quotes.Any())
         {
             Console.WriteLine($"      DEBUG: No quotes available for {exp}");
             return null;
         }
 
         double spot = md.GetSpot(now);
-        if (spot <= 0) 
+        if (spot <= 0)
         {
             Console.WriteLine($"      DEBUG: Invalid spot price: {spot}");
             return null;
@@ -99,7 +99,7 @@ public sealed class SpreadBuilder : ISpreadBuilder
         }
 
         // === LOCAL HELPER FUNCTIONS ===
-        
+
         /// <summary>
         /// Select short and long strikes for single-sided spread.
         /// Picks closest delta in range for short leg, appropriate wing for long leg.
@@ -109,23 +109,23 @@ public sealed class SpreadBuilder : ISpreadBuilder
             // Filter to strikes within delta criteria
             var side = quotes.Where(q => q.Right == r && Math.Abs(q.Delta) >= dMin && Math.Abs(q.Delta) <= dMax)
                              .ToList();
-            
+
             Console.WriteLine($"      DEBUG: pickSingle {r} delta [{dMin:F2}-{dMax:F2}]: found {side.Count} candidates");
-            
+
             // Pick second-highest delta for short leg (good premium, not too risky)
             var sh = side.OrderByDescending(q => Math.Abs(q.Delta)).Skip(1).FirstOrDefault()
-                     ?? side.OrderByDescending(q => Math.Abs(q.Delta)).FirstOrDefault(); 
-            if (sh is null) 
+                     ?? side.OrderByDescending(q => Math.Abs(q.Delta)).FirstOrDefault();
+            if (sh is null)
             {
                 Console.WriteLine($"      DEBUG: No short strike found in delta range [{dMin:F2}-{dMax:F2}]");
                 return (null, null);
             }
-            
+
             // Calculate target strike for protective long leg
-            double targetK = r == Right.Put 
+            double targetK = r == Right.Put
                 ? sh.Strike - _cfg.WidthPoints.Min  // Put spread: long leg below short
                 : sh.Strike + _cfg.WidthPoints.Min; // Call spread: long leg above short
-            
+
             // Find closest available strike to target width (excluding short strike)
             var lg = side.Where(q => q.Strike != sh.Strike)
                          .OrderBy(q => Math.Abs(q.Strike - targetK))
@@ -139,38 +139,38 @@ public sealed class SpreadBuilder : ISpreadBuilder
         /// </summary>
         SpreadOrder? make(OptionQuote? sh, OptionQuote? lg, Decision t)
         {
-            if (sh is null || lg is null) 
+            if (sh is null || lg is null)
             {
                 Console.WriteLine($"      DEBUG: make() failed - sh={sh?.Strike:F1} lg={lg?.Strike:F1}");
                 return null;
             }
-            
+
             double width = Math.Abs(lg.Strike - sh.Strike);
             double credit = Math.Max(0, (sh.Bid - lg.Ask));  // Net credit received
-            double cpw = width > 0 ? credit/width : 0;
-            
+            double cpw = width > 0 ? credit / width : 0;
+
             Console.WriteLine($"      DEBUG: make() - Width={width:F1} Credit={credit:F2} C/W={cpw:F3} (need {_cfg.CreditPerWidthMin.Single:F3})");
             Console.WriteLine($"      DEBUG: Short: K={sh.Strike:F1} Bid={sh.Bid:F2} Ask={sh.Ask:F2}");
             Console.WriteLine($"      DEBUG: Long:  K={lg.Strike:F1} Bid={lg.Bid:F2} Ask={lg.Ask:F2}");
-            
+
             // Quality filters
-            if (cpw < _cfg.CreditPerWidthMin.Single) 
+            if (cpw < _cfg.CreditPerWidthMin.Single)
             {
                 Console.WriteLine($"      DEBUG: Insufficient credit/width: {cpw:F3} < {_cfg.CreditPerWidthMin.Single:F3}");
                 return null;  // Insufficient credit for risk
             }
-            if ((sh.Ask - sh.Bid) > _cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10)) 
+            if ((sh.Ask - sh.Bid) > _cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10))
             {
                 Console.WriteLine($"      DEBUG: Too illiquid: spread {sh.Ask - sh.Bid:F2} > {_cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10):F2}");
                 return null;  // Too illiquid
             }
-            
+
             return new SpreadOrder(
-                now, 
-                _cfg.Underlying, 
-                credit, 
-                width, 
-                cpw, 
+                now,
+                _cfg.Underlying,
+                credit,
+                width,
+                cpw,
                 t,
                 new SpreadLeg(exp, sh.Strike, sh.Right, -1),  // Short leg (sell)
                 new SpreadLeg(exp, lg.Strike, lg.Right, +1)); // Long leg (buy protection)
@@ -184,14 +184,14 @@ public sealed class SpreadBuilder : ISpreadBuilder
             Decision.Condor => BuildCondor(now, quotes, exp),
             _ => null
         };
-        
+
         /// <summary>Put credit spread: Sell put, buy put at lower strike (bullish bias)</summary>
         SpreadOrder? pickSinglePut()
         {
             var (sh, lg) = pickSingle(Right.Put, _cfg.ShortDelta.SingleMin, _cfg.ShortDelta.SingleMax);
             return make(sh, lg, Decision.SingleSidePut);
         }
-        
+
         /// <summary>Call credit spread: Sell call, buy call at higher strike (bearish bias)</summary>
         SpreadOrder? pickSingleCall()
         {
@@ -233,21 +233,21 @@ public sealed class SpreadBuilder : ISpreadBuilder
     private SpreadOrder? BuildCondor(DateTime now, List<OptionQuote> quotes, DateOnly exp)
     {
         // Filter puts and calls within condor delta criteria
-        var puts = quotes.Where(q => q.Right==Right.Put && 
-                Math.Abs(q.Delta)>=_cfg.ShortDelta.CondorMin && 
-                Math.Abs(q.Delta)<=_cfg.ShortDelta.CondorMax)
+        var puts = quotes.Where(q => q.Right == Right.Put &&
+                Math.Abs(q.Delta) >= _cfg.ShortDelta.CondorMin &&
+                Math.Abs(q.Delta) <= _cfg.ShortDelta.CondorMax)
             .OrderBy(q => Math.Abs(q.Delta))
             .ToList();
-            
-        var calls= quotes.Where(q => q.Right==Right.Call && 
-                Math.Abs(q.Delta)>=_cfg.ShortDelta.CondorMin && 
-                Math.Abs(q.Delta)<=_cfg.ShortDelta.CondorMax)
+
+        var calls = quotes.Where(q => q.Right == Right.Call &&
+                Math.Abs(q.Delta) >= _cfg.ShortDelta.CondorMin &&
+                Math.Abs(q.Delta) <= _cfg.ShortDelta.CondorMax)
             .OrderBy(q => Math.Abs(q.Delta))
             .ToList();
-        
+
         Console.WriteLine($"      DEBUG: BuildCondor delta [{_cfg.ShortDelta.CondorMin:F2}-{_cfg.ShortDelta.CondorMax:F2}]: found {puts.Count} puts, {calls.Count} calls");
-        
-        if (!puts.Any() || !calls.Any()) 
+
+        if (!puts.Any() || !calls.Any())
         {
             Console.WriteLine($"      DEBUG: BuildCondor failed - insufficient quotes (puts:{puts.Count}, calls:{calls.Count})");
             return null;
@@ -256,17 +256,17 @@ public sealed class SpreadBuilder : ISpreadBuilder
         // Select strikes for maximum credit: higher delta = more premium
         var sp = puts.OrderByDescending(q => Math.Abs(q.Delta)).First();   // Short put: highest delta (most premium)
         var sc = calls.OrderByDescending(q => Math.Abs(q.Delta)).First();  // Short call: highest delta (most premium)
-        
+
         Console.WriteLine($"      DEBUG: Selected short strikes - Put K={sp.Strike:F1} Δ={Math.Abs(sp.Delta):F3}, Call K={sc.Strike:F1} Δ={Math.Abs(sc.Delta):F3}");
-        
+
         // Find protective wings at target width from FULL option chain (not just delta-filtered)
         var allPuts = quotes.Where(q => q.Right == Right.Put).ToList();
         var allCalls = quotes.Where(q => q.Right == Right.Call).ToList();
-        
+
         // Target strikes for protective wings  
         double targetLongPut = sp.Strike - _cfg.WidthPoints.Min;
         double targetLongCall = sc.Strike + _cfg.WidthPoints.Min;
-        
+
         // Find closest available strikes EXCLUDING the short strikes
         var lp = allPuts.Where(q => q.Strike != sp.Strike)
                         .OrderBy(q => Math.Abs(q.Strike - targetLongPut))
@@ -274,31 +274,31 @@ public sealed class SpreadBuilder : ISpreadBuilder
         var lc = allCalls.Where(q => q.Strike != sc.Strike)
                          .OrderBy(q => Math.Abs(q.Strike - targetLongCall))
                          .FirstOrDefault();
-        
-        if (lp is null || lc is null) 
+
+        if (lp is null || lc is null)
         {
             Console.WriteLine($"      DEBUG: BuildCondor failed - no protective wings (lp={lp?.Strike:F1}, lc={lc?.Strike:F1})");
             return null;
         }
-        
+
         Console.WriteLine($"      DEBUG: Protective wings - Put K={lp.Strike:F1}, Call K={lc.Strike:F1}, Width={_cfg.WidthPoints.Min}");
-        
+
         // Calculate combined credit (put spread + call spread)
-        double width = _cfg.WidthPoints.Min; 
+        double width = _cfg.WidthPoints.Min;
         double credit = Math.Max(0, (sp.Bid - lp.Ask) + (sc.Bid - lc.Ask));
-        double cpw = width > 0 ? credit/width : 0;
-        
+        double cpw = width > 0 ? credit / width : 0;
+
         Console.WriteLine($"      DEBUG: Condor credit calc - Width={width:F1} Credit={credit:F2} C/W={cpw:F3} (need {_cfg.CreditPerWidthMin.Condor:F3})");
         Console.WriteLine($"      DEBUG: Put spread: {sp.Strike:F1} Bid={sp.Bid:F2} - {lp.Strike:F1} Ask={lp.Ask:F2} = {sp.Bid - lp.Ask:F2}");
         Console.WriteLine($"      DEBUG: Call spread: {sc.Strike:F1} Bid={sc.Bid:F2} - {lc.Strike:F1} Ask={lc.Ask:F2} = {sc.Bid - lc.Ask:F2}");
-        
+
         // Apply quality filters
-        if (cpw < _cfg.CreditPerWidthMin.Condor) 
+        if (cpw < _cfg.CreditPerWidthMin.Condor)
         {
             Console.WriteLine($"      DEBUG: Insufficient condor credit/width: {cpw:F3} < {_cfg.CreditPerWidthMin.Condor:F3}");
             return null;  // Insufficient credit
         }
-        if ((sp.Ask - sp.Bid) > _cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10)) 
+        if ((sp.Ask - sp.Bid) > _cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10))
         {
             Console.WriteLine($"      DEBUG: Too illiquid: spread {sp.Ask - sp.Bid:F2} > {_cfg.Slippage.SpreadPctCap * Math.Max(credit, 0.10):F2}");
             return null;  // Illiquid
@@ -307,11 +307,11 @@ public sealed class SpreadBuilder : ISpreadBuilder
         // SIMPLIFIED: Return put spread only for prototype
         // TODO: Implement true 4-leg condor order management
         return new SpreadOrder(
-            now, 
-            _cfg.Underlying, 
-            credit, 
-            width, 
-            cpw, 
+            now,
+            _cfg.Underlying,
+            credit,
+            width,
+            cpw,
             Decision.Condor,
             new SpreadLeg(exp, sp.Strike, Right.Put, -1),   // Short put
             new SpreadLeg(exp, lp.Strike, Right.Put, +1));  // Long put protection

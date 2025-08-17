@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ODTE.Historical.DataProviders;
 
@@ -17,11 +11,11 @@ public class TwelveDataProvider : IOptionsDataProvider
     private readonly string _apiKey;
     private readonly RateLimiter _rateLimiter;
     private ProviderHealthStatus _lastHealthStatus;
-    
+
     public string ProviderName => "Twelve Data";
     public int Priority => 3; // Tertiary provider
     public bool IsAvailable => _lastHealthStatus?.IsHealthy ?? true;
-    
+
     public TwelveDataProvider(string apiKey, HttpClient? httpClient = null)
     {
         _apiKey = apiKey;
@@ -29,33 +23,33 @@ public class TwelveDataProvider : IOptionsDataProvider
         _rateLimiter = new RateLimiter(8, TimeSpan.FromMinutes(1)); // 8 requests per minute for free tier
         _lastHealthStatus = new ProviderHealthStatus { IsHealthy = true, LastCheck = DateTime.UtcNow };
     }
-    
+
     public async Task<OptionsChainData?> GetOptionsChainAsync(
-        string symbol, 
+        string symbol,
         DateTime date,
         CancellationToken cancellationToken = default)
     {
         await _rateLimiter.WaitAsync(cancellationToken);
-        
+
         try
         {
             // Twelve Data provides options chain endpoint
             var response = await _httpClient.GetAsync(
                 $"options/chain?symbol={symbol}&expiration_date={date:yyyy-MM-dd}&apikey={_apiKey}",
                 cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 await HandleErrorResponse(response);
                 return null;
             }
-            
+
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var data = JsonSerializer.Deserialize<TwelveDataOptionsResponse>(json);
-            
+
             if (data?.Status != "ok" || data.Data == null)
                 return null;
-            
+
             var chainData = new OptionsChainData
             {
                 Symbol = symbol,
@@ -66,7 +60,7 @@ public class TwelveDataProvider : IOptionsDataProvider
                 Calls = new List<OptionsContract>(),
                 Puts = new List<OptionsContract>()
             };
-            
+
             foreach (var expiration in data.Data)
             {
                 if (expiration.Calls != null)
@@ -89,7 +83,7 @@ public class TwelveDataProvider : IOptionsDataProvider
                         Vega = c.Greeks?.Vega ?? 0
                     }));
                 }
-                
+
                 if (expiration.Puts != null)
                 {
                     chainData.Puts.AddRange(expiration.Puts.Select(p => new OptionsContract
@@ -111,7 +105,7 @@ public class TwelveDataProvider : IOptionsDataProvider
                     }));
                 }
             }
-            
+
             return chainData;
         }
         catch (Exception ex)
@@ -120,7 +114,7 @@ public class TwelveDataProvider : IOptionsDataProvider
             return null;
         }
     }
-    
+
     public async Task<List<MarketDataBar>> GetIntradayBarsAsync(
         string symbol,
         DateTime startDate,
@@ -129,7 +123,7 @@ public class TwelveDataProvider : IOptionsDataProvider
         CancellationToken cancellationToken = default)
     {
         await _rateLimiter.WaitAsync(cancellationToken);
-        
+
         try
         {
             var intervalStr = interval?.TotalMinutes switch
@@ -142,25 +136,25 @@ public class TwelveDataProvider : IOptionsDataProvider
                 240 => "4h",
                 _ => "1min"
             };
-            
+
             var response = await _httpClient.GetAsync(
                 $"time_series?symbol={symbol}&interval={intervalStr}" +
                 $"&start_date={startDate:yyyy-MM-dd HH:mm:ss}&end_date={endDate:yyyy-MM-dd HH:mm:ss}" +
                 $"&apikey={_apiKey}",
                 cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 await HandleErrorResponse(response);
                 return new List<MarketDataBar>();
             }
-            
+
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var data = JsonSerializer.Deserialize<TwelveDataTimeSeriesResponse>(json);
-            
+
             if (data?.Status != "ok" || data.Values == null)
                 return new List<MarketDataBar>();
-            
+
             return data.Values.Select(v => new MarketDataBar
             {
                 Timestamp = DateTime.Parse(v.Datetime ?? ""),
@@ -178,21 +172,21 @@ public class TwelveDataProvider : IOptionsDataProvider
             return new List<MarketDataBar>();
         }
     }
-    
+
     public async Task<ProviderHealthStatus> CheckHealthAsync()
     {
         var startTime = DateTime.UtcNow;
-        
+
         try
         {
             var response = await _httpClient.GetAsync($"api_usage?apikey={_apiKey}");
             var responseTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
-            
+
             var content = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<TwelveDataUsageResponse>(content);
-            
+
             var isHealthy = response.IsSuccessStatusCode && data?.Status == "ok";
-            
+
             _lastHealthStatus = new ProviderHealthStatus
             {
                 IsHealthy = isHealthy,
@@ -213,26 +207,26 @@ public class TwelveDataProvider : IOptionsDataProvider
                 ErrorMessage = ex.Message
             };
         }
-        
+
         return _lastHealthStatus;
     }
-    
+
     public RateLimitStatus GetRateLimitStatus()
     {
         return _rateLimiter.GetStatus();
     }
-    
+
     private async Task HandleErrorResponse(HttpResponseMessage response)
     {
         if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
         {
             _rateLimiter.SetThrottled(TimeSpan.FromMinutes(1));
         }
-        
+
         var content = await response.Content.ReadAsStringAsync();
         RecordFailure($"HTTP {response.StatusCode}: {content}");
     }
-    
+
     private void RecordFailure(string error)
     {
         _lastHealthStatus = new ProviderHealthStatus

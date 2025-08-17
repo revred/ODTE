@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AdvancedGeneticOptimizer
 {
     public class SimpleGeneticOptimizer
     {
         private readonly Random _random = new Random(42);
-        
+
         public enum StrategyType
         {
             IronCondor,
@@ -21,12 +16,12 @@ namespace AdvancedGeneticOptimizer
             RatioSpreads,
             Calendar
         }
-        
+
         public enum MarketRegime
         {
             Bull, Volatile, Crisis, Neutral
         }
-        
+
         public class Strategy
         {
             public string Id { get; set; } = "";
@@ -39,12 +34,12 @@ namespace AdvancedGeneticOptimizer
             public decimal SlippageCost { get; set; }
             public decimal ShortDelta { get; set; }
             public decimal SpreadWidth { get; set; }
-            
+
             // Market regime multipliers
             public decimal BullMultiplier { get; set; }
             public decimal VolatileMultiplier { get; set; }
             public decimal CrisisMultiplier { get; set; }
-            
+
             // Performance metrics
             public decimal FitnessScore { get; set; }
             public decimal TotalReturn { get; set; }
@@ -53,7 +48,7 @@ namespace AdvancedGeneticOptimizer
             public decimal MaxDrawdown { get; set; }
             public decimal ProfitFactor { get; set; }
         }
-        
+
         public class TradeResult
         {
             public DateTime Date { get; set; }
@@ -68,16 +63,16 @@ namespace AdvancedGeneticOptimizer
             public bool IsWinner { get; set; }
             public decimal PositionSize { get; set; }
         }
-        
+
         public async Task<List<Strategy>> OptimizeStrategies()
         {
             Console.WriteLine("🧬 Starting Advanced Genetic Optimization");
             Console.WriteLine("🎯 Target: High Profits + Capital Preservation");
             Console.WriteLine("🔬 Using GAP01-GAP64 Seeds + Realistic Execution");
-            
+
             var population = InitializePopulation(64);
             var allResults = new List<Strategy>();
-            
+
             for (int generation = 0; generation < 1000; generation++)
             {
                 // Evaluate fitness
@@ -85,31 +80,31 @@ namespace AdvancedGeneticOptimizer
                 {
                     EvaluateStrategy(strategy);
                 }
-                
+
                 allResults.AddRange(population);
-                
+
                 // Create next generation
                 population = CreateNextGeneration(population);
-                
+
                 if ((generation + 1) % 100 == 0)
                 {
                     var bestFitness = population.Max(s => s.FitnessScore);
                     Console.WriteLine($"Generation {generation + 1}: Best Fitness = {bestFitness:F2}");
                 }
             }
-            
+
             // Return top 3 strategies
             var top3 = allResults.OrderByDescending(s => s.FitnessScore).Take(3).ToList();
-            
+
             await GenerateReport(top3);
-            
+
             return top3;
         }
-        
+
         private List<Strategy> InitializePopulation(int size)
         {
             var population = new List<Strategy>();
-            
+
             for (int i = 0; i < size; i++)
             {
                 var strategy = new Strategy
@@ -123,7 +118,7 @@ namespace AdvancedGeneticOptimizer
                     SlippageCost = RandomDecimal(0.02m, 0.08m),
                     ShortDelta = RandomDecimal(0.10m, 0.20m),
                     SpreadWidth = RandomDecimal(5m, 20m),
-                    
+
                     // Enhanced RevFib limits for higher profits
                     RevFibLimits = new decimal[]
                     {
@@ -134,39 +129,39 @@ namespace AdvancedGeneticOptimizer
                         RandomDecimal(200, 600),
                         RandomDecimal(100, 300)
                     },
-                    
+
                     // Market regime multipliers from GAP analysis
                     BullMultiplier = RandomDecimal(1.0m, 1.5m),
                     VolatileMultiplier = RandomDecimal(0.6m, 1.2m),
                     CrisisMultiplier = RandomDecimal(0.15m, 0.4m)
                 };
-                
+
                 population.Add(strategy);
             }
-            
+
             return population;
         }
-        
+
         private void EvaluateStrategy(Strategy strategy)
         {
             var trades = SimulateTradingPeriod(strategy);
             CalculatePerformanceMetrics(strategy, trades);
         }
-        
+
         private List<TradeResult> SimulateTradingPeriod(Strategy strategy)
         {
             var trades = new List<TradeResult>();
             var capital = 25000m;
             var currentRevFibLevel = 0;
-            
+
             // Simulate 20 years of trading
             var startDate = new DateTime(2005, 1, 1);
             var endDate = new DateTime(2025, 7, 31);
             var current = startDate;
-            
+
             while (current <= endDate)
             {
-                if (current.DayOfWeek != DayOfWeek.Saturday && 
+                if (current.DayOfWeek != DayOfWeek.Saturday &&
                     current.DayOfWeek != DayOfWeek.Sunday &&
                     _random.NextDouble() < 0.3) // Trade 30% of days
                 {
@@ -175,7 +170,7 @@ namespace AdvancedGeneticOptimizer
                     {
                         trades.Add(trade);
                         capital += trade.NetPnL;
-                        
+
                         // Update RevFib level
                         if (trade.NetPnL < 0)
                             currentRevFibLevel = Math.Min(currentRevFibLevel + 1, 5);
@@ -185,17 +180,17 @@ namespace AdvancedGeneticOptimizer
                 }
                 current = current.AddDays(1);
             }
-            
+
             return trades;
         }
-        
+
         private TradeResult? ExecuteTrade(Strategy strategy, DateTime date, decimal capital, int revFibLevel)
         {
             // Generate market conditions
             var spxPrice = GenerateSpxPrice(date);
             var vixLevel = GenerateVixLevel(date);
             var regime = ClassifyMarketRegime(vixLevel);
-            
+
             // Calculate position size
             var baseSize = Math.Min(capital * 0.05m, strategy.RevFibLimits[revFibLevel]);
             var regimeMultiplier = regime switch
@@ -206,7 +201,7 @@ namespace AdvancedGeneticOptimizer
                 _ => 1.0m
             };
             var positionSize = baseSize * regimeMultiplier;
-            
+
             var trade = new TradeResult
             {
                 Date = date,
@@ -216,35 +211,35 @@ namespace AdvancedGeneticOptimizer
                 Regime = regime,
                 PositionSize = positionSize
             };
-            
+
             // Calculate strategy P&L
             CalculateStrategyPnL(trade, strategy);
-            
+
             // Apply realistic costs
             var legCount = GetLegCount(strategy.Type);
             trade.Commission = legCount * strategy.CommissionPerLeg;
             trade.Slippage = positionSize * strategy.SlippageCost;
             trade.NetPnL = trade.GrossPnL - trade.Commission - trade.Slippage;
             trade.IsWinner = trade.NetPnL > 0;
-            
+
             return trade;
         }
-        
+
         private void CalculateStrategyPnL(TradeResult trade, Strategy strategy)
         {
             var creditReceived = trade.PositionSize * GetCreditMultiplier(trade.Strategy);
-            
+
             // Adjust for VIX (higher VIX = more premium)
             creditReceived *= (1 + trade.VixLevel / 200m);
-            
+
             // Win probability based on strategy and delta
             var baseWinRate = GetBaseWinRate(trade.Strategy);
             var actualWinRate = baseWinRate * (1 - strategy.ShortDelta);
-            
+
             // Market movement simulation
             var marketMove = GenerateMarketMovement(trade.VixLevel, trade.SpxPrice);
             var withinProfitZone = Math.Abs(marketMove) < strategy.SpreadWidth * 0.7m;
-            
+
             if (withinProfitZone && _random.NextDouble() < (double)actualWinRate)
             {
                 // Winning trade
@@ -257,7 +252,7 @@ namespace AdvancedGeneticOptimizer
                 trade.GrossPnL = -Math.Min(creditReceived * strategy.StopLossPct, maxLoss);
             }
         }
-        
+
         private decimal GetCreditMultiplier(StrategyType strategy)
         {
             return strategy switch
@@ -272,7 +267,7 @@ namespace AdvancedGeneticOptimizer
                 _ => 0.02m
             };
         }
-        
+
         private decimal GetBaseWinRate(StrategyType strategy)
         {
             return strategy switch
@@ -287,7 +282,7 @@ namespace AdvancedGeneticOptimizer
                 _ => 0.80m
             };
         }
-        
+
         private int GetLegCount(StrategyType strategy)
         {
             return strategy switch
@@ -302,7 +297,7 @@ namespace AdvancedGeneticOptimizer
                 _ => 4
             };
         }
-        
+
         private decimal GetMaxLoss(StrategyType strategy, decimal credit, decimal spreadWidth)
         {
             return strategy switch
@@ -317,7 +312,7 @@ namespace AdvancedGeneticOptimizer
                 _ => spreadWidth * 100 - credit
             };
         }
-        
+
         private decimal GenerateSpxPrice(DateTime date)
         {
             var yearProgress = (date.Year - 2005) / 20.0;
@@ -325,18 +320,18 @@ namespace AdvancedGeneticOptimizer
             var noise = (decimal)(_random.NextDouble() - 0.5) * 100;
             return (decimal)basePrice + noise;
         }
-        
+
         private decimal GenerateVixLevel(DateTime date)
         {
             var baseVix = 18m;
             if (date.Year == 2008) baseVix = 32m;
             else if (date.Year == 2020) baseVix = 29m;
             else if (date.Year == 2018 && date.Month == 2) baseVix = 25m;
-            
+
             var noise = (decimal)(_random.NextDouble() - 0.5) * 8;
             return Math.Max(10m, baseVix + noise);
         }
-        
+
         private MarketRegime ClassifyMarketRegime(decimal vix)
         {
             return vix switch
@@ -346,13 +341,13 @@ namespace AdvancedGeneticOptimizer
                 >= 30m => MarketRegime.Crisis
             };
         }
-        
+
         private decimal GenerateMarketMovement(decimal vix, decimal spxPrice)
         {
             var volatility = vix / 100m / (decimal)Math.Sqrt(252);
             return (decimal)(_random.NextDouble() - 0.5) * 2 * volatility * spxPrice;
         }
-        
+
         private void CalculatePerformanceMetrics(Strategy strategy, List<TradeResult> trades)
         {
             if (!trades.Any())
@@ -360,20 +355,20 @@ namespace AdvancedGeneticOptimizer
                 strategy.FitnessScore = 0;
                 return;
             }
-            
+
             var totalPnL = trades.Sum(t => t.NetPnL);
             strategy.TotalReturn = totalPnL / 25000m;
             strategy.WinRate = (decimal)trades.Count(t => t.IsWinner) / trades.Count;
-            
+
             var grossProfit = trades.Where(t => t.NetPnL > 0).Sum(t => t.NetPnL);
             var grossLoss = Math.Abs(trades.Where(t => t.NetPnL < 0).Sum(t => t.NetPnL));
             strategy.ProfitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit;
-            
+
             // Calculate max drawdown
             var runningTotal = 0m;
             var peak = 0m;
             var maxDrawdown = 0m;
-            
+
             foreach (var trade in trades.OrderBy(t => t.Date))
             {
                 runningTotal += trade.NetPnL;
@@ -382,25 +377,25 @@ namespace AdvancedGeneticOptimizer
                 if (drawdown > maxDrawdown) maxDrawdown = drawdown;
             }
             strategy.MaxDrawdown = maxDrawdown;
-            
+
             // Simplified Sharpe ratio
             var returns = trades.Select(t => t.NetPnL / t.PositionSize).ToList();
             var avgReturn = returns.Average();
             var stdDev = CalculateStdDev(returns);
             strategy.SharpeRatio = stdDev > 0 ? avgReturn / stdDev * (decimal)Math.Sqrt(252) : 0;
-            
+
             // Multi-objective fitness
             var returnScore = Math.Max(0, strategy.TotalReturn * 100);
             var sharpeScore = Math.Max(0, Math.Min(50, strategy.SharpeRatio * 10));
             var winRateScore = strategy.WinRate * 30;
             var drawdownScore = Math.Max(0, 20 - (strategy.MaxDrawdown * 100));
             var profitFactorScore = Math.Min(20, strategy.ProfitFactor * 5);
-            
-            strategy.FitnessScore = returnScore * 0.4m + sharpeScore * 0.2m + 
-                                  winRateScore * 0.2m + drawdownScore * 0.1m + 
+
+            strategy.FitnessScore = returnScore * 0.4m + sharpeScore * 0.2m +
+                                  winRateScore * 0.2m + drawdownScore * 0.1m +
                                   profitFactorScore * 0.1m;
         }
-        
+
         private decimal CalculateStdDev(List<decimal> values)
         {
             if (values.Count < 2) return 0;
@@ -408,37 +403,37 @@ namespace AdvancedGeneticOptimizer
             var variance = values.Sum(v => (v - avg) * (v - avg)) / (values.Count - 1);
             return (decimal)Math.Sqrt((double)variance);
         }
-        
+
         private List<Strategy> CreateNextGeneration(List<Strategy> currentGeneration)
         {
             var sorted = currentGeneration.OrderByDescending(s => s.FitnessScore).ToList();
             var nextGen = new List<Strategy>();
-            
+
             // Elitism: Keep top 10%
             var eliteCount = sorted.Count / 10;
             for (int i = 0; i < eliteCount; i++)
             {
                 nextGen.Add(CloneStrategy(sorted[i]));
             }
-            
+
             // Fill rest with crossover and mutation
             while (nextGen.Count < currentGeneration.Count)
             {
                 var parent1 = TournamentSelection(sorted);
                 var parent2 = TournamentSelection(sorted);
                 var child = Crossover(parent1, parent2);
-                
+
                 if (_random.NextDouble() < 0.35) // 35% mutation rate
                 {
                     Mutate(child);
                 }
-                
+
                 nextGen.Add(child);
             }
-            
+
             return nextGen;
         }
-        
+
         private Strategy TournamentSelection(List<Strategy> population)
         {
             var tournament = new List<Strategy>();
@@ -448,7 +443,7 @@ namespace AdvancedGeneticOptimizer
             }
             return tournament.OrderByDescending(s => s.FitnessScore).First();
         }
-        
+
         private Strategy Crossover(Strategy parent1, Strategy parent2)
         {
             var child = new Strategy
@@ -467,29 +462,29 @@ namespace AdvancedGeneticOptimizer
                 CrisisMultiplier = BlendParameter(parent1.CrisisMultiplier, parent2.CrisisMultiplier),
                 RevFibLimits = new decimal[6]
             };
-            
+
             for (int i = 0; i < 6; i++)
             {
                 child.RevFibLimits[i] = BlendParameter(parent1.RevFibLimits[i], parent2.RevFibLimits[i]);
             }
-            
+
             return child;
         }
-        
+
         private decimal BlendParameter(decimal value1, decimal value2)
         {
             var alpha = (decimal)_random.NextDouble();
             return value1 * alpha + value2 * (1 - alpha);
         }
-        
+
         private void Mutate(Strategy strategy)
         {
             var mutations = _random.Next(3, 8);
-            
+
             for (int i = 0; i < mutations; i++)
             {
                 var param = _random.Next(0, 10);
-                
+
                 switch (param)
                 {
                     case 0:
@@ -526,14 +521,14 @@ namespace AdvancedGeneticOptimizer
                 }
             }
         }
-        
+
         private decimal MutateParameter(decimal current, decimal strength, decimal min, decimal max)
         {
             var mutation = ((decimal)_random.NextDouble() - 0.5m) * 2 * strength;
             var newValue = current + mutation;
             return Math.Max(min, Math.Min(max, newValue));
         }
-        
+
         private Strategy CloneStrategy(Strategy original)
         {
             return new Strategy
@@ -553,16 +548,16 @@ namespace AdvancedGeneticOptimizer
                 RevFibLimits = (decimal[])original.RevFibLimits.Clone()
             };
         }
-        
+
         private decimal RandomDecimal(decimal min, decimal max)
         {
             return min + (decimal)_random.NextDouble() * (max - min);
         }
-        
+
         private async Task GenerateReport(List<Strategy> top3)
         {
             var report = new StringBuilder();
-            
+
             report.AppendLine("# 🏆 TOP 3 PROFITABLE GENETIC OPTIMIZATION RESULTS");
             report.AppendLine();
             report.AppendLine("## 🧬 Advanced Genetic Algorithm Results");
@@ -572,11 +567,11 @@ namespace AdvancedGeneticOptimizer
             report.AppendLine("- **Realistic Costs**: Commission, slippage, bid-ask spreads");
             report.AppendLine("- **GAP Foundation**: Built on GAP01-GAP64 breakthrough configurations");
             report.AppendLine();
-            
+
             for (int i = 0; i < top3.Count; i++)
             {
                 var strategy = top3[i];
-                
+
                 report.AppendLine($"## 🥇 RANK #{i + 1}: {strategy.Id}");
                 report.AppendLine();
                 report.AppendLine("### 📊 Performance Metrics");
@@ -587,7 +582,7 @@ namespace AdvancedGeneticOptimizer
                 report.AppendLine($"- **Max Drawdown**: {strategy.MaxDrawdown:P2}");
                 report.AppendLine($"- **Profit Factor**: {strategy.ProfitFactor:F2}");
                 report.AppendLine();
-                
+
                 report.AppendLine("### 🎯 Strategy Configuration");
                 report.AppendLine($"- **Primary Strategy**: {strategy.Type}");
                 report.AppendLine($"- **Win Rate Target**: {strategy.WinRateTarget:P1}");
@@ -596,49 +591,49 @@ namespace AdvancedGeneticOptimizer
                 report.AppendLine($"- **Short Delta**: {strategy.ShortDelta:F3}");
                 report.AppendLine($"- **Spread Width**: ${strategy.SpreadWidth:F0}");
                 report.AppendLine();
-                
+
                 report.AppendLine("### 💰 Execution Parameters");
                 report.AppendLine($"- **Commission Per Leg**: ${strategy.CommissionPerLeg:F2}");
                 report.AppendLine($"- **Slippage Cost**: {strategy.SlippageCost:P2}");
                 report.AppendLine();
-                
+
                 report.AppendLine("### 🏷️ Market Regime Multipliers");
                 report.AppendLine($"- **Bull Markets**: {strategy.BullMultiplier:F2}x");
                 report.AppendLine($"- **Volatile Markets**: {strategy.VolatileMultiplier:F2}x");
                 report.AppendLine($"- **Crisis Markets**: {strategy.CrisisMultiplier:F2}x");
                 report.AppendLine();
-                
+
                 report.AppendLine("### 🔢 RevFib Limits");
                 report.AppendLine($"- **Limits**: [{string.Join(", ", strategy.RevFibLimits.Select(x => $"${x:F0}"))}]");
                 report.AppendLine();
-                
+
                 // Calculate expected annualized return (with overflow protection)
                 var safeReturn = Math.Max(-0.99m, Math.Min(10m, strategy.TotalReturn));
-                var annualizedReturn = safeReturn > 0 ? 
-                    (decimal)Math.Pow((double)(1 + safeReturn), 1.0 / 20.0) - 1 : 
+                var annualizedReturn = safeReturn > 0 ?
+                    (decimal)Math.Pow((double)(1 + safeReturn), 1.0 / 20.0) - 1 :
                     safeReturn / 20m;
                 report.AppendLine("### 🎯 Investment Outlook");
                 report.AppendLine($"- **Expected Annual Return**: {annualizedReturn:P1}");
                 report.AppendLine($"- **Risk Level**: {(strategy.MaxDrawdown < 0.1m ? "Low" : strategy.MaxDrawdown < 0.2m ? "Medium" : "High")}");
                 report.AppendLine($"- **Capital Efficiency**: {(strategy.ProfitFactor > 2m ? "Excellent" : strategy.ProfitFactor > 1.5m ? "Good" : "Fair")}");
                 report.AppendLine();
-                
+
                 report.AppendLine("---");
                 report.AppendLine();
             }
-            
+
             await File.WriteAllTextAsync("TOP3_PROFITABLE_STRATEGIES.md", report.ToString());
             Console.WriteLine("✅ Generated TOP3_PROFITABLE_STRATEGIES.md");
         }
-        
+
         public static async Task Main(string[] args)
         {
             var optimizer = new SimpleGeneticOptimizer();
             var top3 = await optimizer.OptimizeStrategies();
-            
+
             Console.WriteLine("\n🎉 OPTIMIZATION COMPLETE!");
             Console.WriteLine($"Top 3 strategies identified with fitness scores:");
-            
+
             for (int i = 0; i < top3.Count; i++)
             {
                 var strategy = top3[i];

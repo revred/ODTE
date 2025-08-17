@@ -39,7 +39,7 @@ public class TradeLogDatabaseTests : IDisposable
         // Assert - Retrieve and verify the trade was persisted
         var trades = await _database.GetTradesByDateAsync(DateOnly.FromDateTime(DateTime.Today));
         trades.Should().HaveCount(1);
-        
+
         var persistedTrade = trades[0];
         persistedTrade.Symbol.Should().Be("XSP");
         persistedTrade.Strike.Should().Be(530.0m);
@@ -56,7 +56,7 @@ public class TradeLogDatabaseTests : IDisposable
         var date = DateOnly.FromDateTime(DateTime.Today);
         var winningTrade = new TradeLog(DateTime.UtcNow, "XSP", date, Right.Put, 530m, SpreadType.CreditSpread, 100m, 25m, "Profitable exit", "Calm");
         var losingTrade = new TradeLog(DateTime.UtcNow, "XSP", date, Right.Call, 535m, SpreadType.CreditSpread, 100m, -75m, "Stop loss", "Volatile");
-        
+
         await _database.LogTradeAsync(winningTrade);
         await _database.LogTradeAsync(losingTrade);
 
@@ -102,10 +102,10 @@ public class TradeLogDatabaseTests : IDisposable
     public void Dispose()
     {
         _database?.Dispose();
-        
+
         // Give a moment for connections to fully close
         Task.Delay(100).Wait();
-        
+
         try
         {
             if (Directory.Exists(_testDbPath))

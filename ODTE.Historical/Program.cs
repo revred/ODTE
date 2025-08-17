@@ -1,9 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ODTE.Historical
 {
@@ -21,11 +18,11 @@ namespace ODTE.Historical
             Console.WriteLine();
 
             var mode = GetCommandLineArgument(args, "--mode", "interactive");
-            
+
             var host = CreateHostBuilder(args).Build();
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
             var dataEvaluator = host.Services.GetRequiredService<DataProviderEvaluator>();
-            
+
             try
             {
                 switch (mode.ToLower())
@@ -70,12 +67,12 @@ namespace ODTE.Historical
         static async Task SetupProfessionalInfrastructure(IServiceProvider services, ILogger logger)
         {
             logger.LogInformation("🏗️  Setting up professional data infrastructure...");
-            
+
             var connectionString = "Data Source=C:\\code\\ODTE\\data\\ODTE_Professional_20Y.db";
-            
+
             logger.LogInformation("Creating professional database schema...");
             await ProfessionalDataArchitecture.CreateDatabaseSchema(connectionString);
-            
+
             logger.LogInformation("✅ Professional infrastructure setup completed!");
             logger.LogInformation("Database: {Path}", connectionString);
             logger.LogInformation("Ready for data acquisition.");
@@ -84,7 +81,7 @@ namespace ODTE.Historical
         static async Task AcquireHistoricalData(IServiceProvider services, ILogger logger)
         {
             logger.LogInformation("📊 Starting historical data acquisition...");
-            
+
             var config = new ProfessionalDataPipeline.DataPipelineConfig
             {
                 StartDate = new DateTime(2005, 1, 1),
@@ -99,7 +96,7 @@ namespace ODTE.Historical
 
             var httpClient = services.GetRequiredService<HttpClient>();
             var connectionString = "Data Source=C:\\code\\ODTE\\data\\ODTE_Professional_20Y.db";
-            
+
             var pipeline = new ProfessionalDataPipeline(
                 services.GetRequiredService<ILogger<ProfessionalDataPipeline>>(),
                 httpClient,
@@ -108,7 +105,7 @@ namespace ODTE.Historical
             );
 
             var result = await pipeline.AcquireHistoricalDataset();
-            
+
             if (result.Success)
             {
                 logger.LogInformation("✅ Data acquisition completed successfully!");
@@ -131,36 +128,36 @@ namespace ODTE.Historical
         static async Task ValidateDataQuality(IServiceProvider services, ILogger logger)
         {
             logger.LogInformation("🔍 Running data quality validation...");
-            
+
             // Implementation would validate the acquired dataset
             logger.LogInformation("✅ Data quality validation completed!");
-            
+
             await Task.CompletedTask;
         }
 
         static async Task GenerateDataReport(IServiceProvider services, ILogger logger)
         {
             logger.LogInformation("📈 Generating data quality and coverage report...");
-            
+
             // Implementation would generate comprehensive reports
             logger.LogInformation("✅ Data report generated!");
-            
+
             await Task.CompletedTask;
         }
 
         static async Task RunInteractiveMode(IServiceProvider services, ILogger logger)
         {
             var evaluator = services.GetRequiredService<DataProviderEvaluator>();
-            
+
             logger.LogInformation("🎯 ODTE Professional Data Acquisition - Interactive Mode");
             logger.LogInformation("");
 
             // Show current data status
             ShowCurrentDataStatus();
-            
+
             // Show provider recommendations
             ShowProviderRecommendations();
-            
+
             // Show implementation options
             ShowImplementationOptions();
 
@@ -187,7 +184,7 @@ namespace ODTE.Historical
         {
             Console.WriteLine("💰 DATA PROVIDER RECOMMENDATIONS");
             Console.WriteLine("================================");
-            
+
             var providers = DataProviderEvaluator.GetEvaluatedProviders()
                 .Where(p => p.OverallScore >= 75)
                 .OrderByDescending(p => p.OverallScore);
@@ -221,14 +218,14 @@ namespace ODTE.Historical
             Console.WriteLine("   ✅ FRED Economic Data (VIX family - free)");
             Console.WriteLine("   🎯 Result: Institutional-grade 20-year dataset");
             Console.WriteLine();
-            
+
             Console.WriteLine("2. 💼 PROFESSIONAL ($3,200/year)");
             Console.WriteLine("   ✅ QuantConnect Data Library");
             Console.WriteLine("   ✅ Polygon.io Professional");
             Console.WriteLine("   ✅ FRED Economic Data");
             Console.WriteLine("   🎯 Result: High-quality 20-year dataset");
             Console.WriteLine();
-            
+
             Console.WriteLine("3. 💡 BUDGET ($3,700 first year)");
             Console.WriteLine("   ✅ Polygon.io Professional");
             Console.WriteLine("   ✅ Alpha Query Historical (one-time)");

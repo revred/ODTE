@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace ODTE.Optimization.Core
 {
     public interface IStrategyOptimizer
@@ -10,11 +6,11 @@ namespace ODTE.Optimization.Core
             StrategyVersion baseStrategy,
             MarketDataSet historicalData,
             OptimizationConfig config);
-        
+
         Task<List<StrategyVersion>> GenerateVariationsAsync(
             StrategyVersion parent,
             int populationSize);
-        
+
         Task<PerformanceMetrics> EvaluateStrategyAsync(
             StrategyVersion strategy,
             MarketDataSet testData);
@@ -36,27 +32,27 @@ namespace ODTE.Optimization.Core
         // Opening range parameters
         public int OpeningRangeMinutes { get; set; } = 15;
         public double OpeningRangeBreakoutThreshold { get; set; } = 0.5;
-        
+
         // Entry criteria
         public double MinIVRank { get; set; } = 30;
         public double MaxDelta { get; set; } = 0.16;
         public double MinPremium { get; set; } = 0.20;
         public int StrikeOffset { get; set; } = 5;
-        
+
         // Risk management
         public double StopLossPercent { get; set; } = 200;
         public double ProfitTargetPercent { get; set; } = 50;
         public double DeltaExitThreshold { get; set; } = 0.33;
-        
+
         // Position sizing
         public int MaxPositionsPerSide { get; set; } = 10;
         public double AllocationPerTrade { get; set; } = 1000;
-        
+
         // Timing
         public TimeSpan EntryStartTime { get; set; } = new TimeSpan(14, 30, 0);
         public TimeSpan EntryEndTime { get; set; } = new TimeSpan(17, 0, 0);
         public TimeSpan ForceCloseTime { get; set; } = new TimeSpan(20, 45, 0);
-        
+
         // Market regime filters
         public bool UseVWAPFilter { get; set; } = true;
         public bool UseATRFilter { get; set; } = true;

@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Logging;
 using ODTE.Execution.Interfaces;
 using ODTE.Execution.Models;
-using Microsoft.Extensions.Logging;
 
 namespace ODTE.Execution.RiskManagement;
 
@@ -13,7 +13,7 @@ public class EnhancedRiskGate
     private readonly IFillEngine _fillEngine;
     private readonly ILogger<EnhancedRiskGate> _logger;
     private readonly Dictionary<DateTime, RiskState> _dailyRiskState = new();
-    
+
     public EnhancedRiskGate(IFillEngine fillEngine, ILogger<EnhancedRiskGate>? logger = null)
     {
         _fillEngine = fillEngine;
@@ -29,15 +29,15 @@ public class EnhancedRiskGate
         {
             var today = marketState.Timestamp.Date;
             var riskState = GetOrCreateRiskState(today);
-            
+
             // Calculate worst-case loss for this order
             var worstCaseFillPrice = _fillEngine.CalculateWorstCaseFill(order, quote, _fillEngine.CurrentProfile);
             var worstCaseLoss = CalculateMaxStructureLoss(order, worstCaseFillPrice, quote);
-            
+
             // Get current allowed daily loss based on loss streak
             var allowedDailyLoss = GetAllowedDailyLoss(riskState.ConsecutiveLossDays);
             var projectedTotalLoss = riskState.RealizedLossToday + worstCaseLoss;
-            
+
             var result = new RiskGateResult
             {
                 IsApproved = projectedTotalLoss <= allowedDailyLoss,
@@ -50,7 +50,7 @@ public class EnhancedRiskGate
                 ConsecutiveLossDays = riskState.ConsecutiveLossDays,
                 RevFibLevel = GetRevFibLevel(riskState.ConsecutiveLossDays)
             };
-            
+
             if (!result.IsApproved)
             {
                 result.RejectionReason = $"Order would breach daily RevFib limit: ${projectedTotalLoss:F2} > ${allowedDailyLoss:F2}";
@@ -58,10 +58,10 @@ public class EnhancedRiskGate
             }
             else
             {
-                _logger.LogDebug("Order {OrderId} approved: ${Loss:F2} of ${Limit:F2} daily budget", 
+                _logger.LogDebug("Order {OrderId} approved: ${Loss:F2} of ${Limit:F2} daily budget",
                     order.OrderId, projectedTotalLoss, allowedDailyLoss);
             }
-            
+
             return result;
         }
         catch (Exception ex)
@@ -84,7 +84,7 @@ public class EnhancedRiskGate
     {
         var today = executionDate.Date;
         var riskState = GetOrCreateRiskState(today);
-        
+
         riskState.RealizedLossToday += actualLoss;
         riskState.ExecutedOrders.Add(new ExecutedOrder
         {
@@ -92,8 +92,8 @@ public class EnhancedRiskGate
             Loss = actualLoss,
             ExecutionTime = executionDate
         });
-        
-        _logger.LogDebug("Registered order {OrderId} execution: ${Loss:F2}, daily total: ${Total:F2}", 
+
+        _logger.LogDebug("Registered order {OrderId} execution: ${Loss:F2}, daily total: ${Total:F2}",
             orderId, actualLoss, riskState.RealizedLossToday);
     }
 
@@ -104,12 +104,12 @@ public class EnhancedRiskGate
     {
         var today = date.Date;
         var riskState = GetOrCreateRiskState(today);
-        
+
         // Update loss streak based on day's performance
         if (totalDayPnL < 0)
         {
             riskState.ConsecutiveLossDays = Math.Min(3, riskState.ConsecutiveLossDays + 1);
-            _logger.LogInformation("Loss day recorded: streak now {Streak} days, next day limit: ${Limit:F2}", 
+            _logger.LogInformation("Loss day recorded: streak now {Streak} days, next day limit: ${Limit:F2}",
                 riskState.ConsecutiveLossDays, GetAllowedDailyLoss(riskState.ConsecutiveLossDays));
         }
         else
@@ -120,10 +120,10 @@ public class EnhancedRiskGate
             }
             riskState.ConsecutiveLossDays = 0;
         }
-        
+
         riskState.FinalDayPnL = totalDayPnL;
         riskState.IsFinalized = true;
-        
+
         // Initialize next day's risk state
         var tomorrow = today.AddDays(1);
         var tomorrowState = new RiskState
@@ -171,7 +171,7 @@ public class EnhancedRiskGate
     {
         // For options, max loss depends on strategy type
         // This is a simplified calculation - production should use full Greeks-based analysis
-        
+
         if (order.StrategyType == "CreditSpread")
         {
             // Credit spread: max loss = width - credit

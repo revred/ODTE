@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -74,7 +69,7 @@ namespace ODTE.Strategy
 
                 // Step 5: Reverse Fibonacci position sizing
                 var adjustedSize = _riskManager.CalculatePositionSize(parameters.PositionSize, _recentTrades);
-                
+
                 // Step 6: Enhanced trade execution with volume optimization
                 var tradeSpec = CreateHighFrequencyTradeSpec(conditions, goScore, adjustedSize);
                 var result = await ExecuteOptimalTrade(tradeSpec, conditions);
@@ -116,7 +111,7 @@ namespace ODTE.Strategy
             var hour = conditions.Date.Hour;
             var isValidHour = (hour >= 9 && hour <= 11) ||  // Morning session
                              (hour >= 13 && hour <= 15);     // Afternoon session
-            
+
             return isValidHour;
         }
 
@@ -136,7 +131,7 @@ namespace ODTE.Strategy
             var todaysLoss = _recentTrades
                 .Where(t => t.ExecutionTime.Date == conditions.Date.Date && t.PnL < 0)
                 .Sum(t => t.PnL);
-            
+
             if (Math.Abs(todaysLoss) > MAX_DAILY_DRAWDOWN)
             {
                 assessment.IsAcceptable = false;
@@ -154,7 +149,7 @@ namespace ODTE.Strategy
             }
 
             // 4. Market regime suitability
-            if (conditions.MarketRegime == "Crisis" || 
+            if (conditions.MarketRegime == "Crisis" ||
                 (conditions.MarketRegime == "Volatile" && Math.Abs(conditions.TrendScore) > 1.2))
             {
                 assessment.IsAcceptable = false;
@@ -177,7 +172,7 @@ namespace ODTE.Strategy
 
             // Volume-optimized sizing
             var volumeMultiplier = CalculateVolumeOptimization(conditions);
-            
+
             // Market timing enhancement
             var timingMultiplier = CalculateTimingMultiplier(conditions);
 
@@ -199,42 +194,42 @@ namespace ODTE.Strategy
         {
             // Optimize for higher volume while maintaining quality
             var baseMultiplier = 1.0m;
-            
+
             // Favor calm markets for consistent execution
             if (conditions.MarketRegime == "Calm" && conditions.VIX < 20)
                 baseMultiplier *= 1.3m;
-            
+
             // Enhance during high-probability periods
             var hour = conditions.Date.Hour;
             if (hour == 10 || hour == 14) // Peak efficiency hours
                 baseMultiplier *= 1.2m;
-            
+
             // Recent performance momentum
             var recentProfitability = _recentTrades.TakeLast(10).Sum(t => t.PnL);
             if (recentProfitability > 100m)
                 baseMultiplier *= 1.15m;
-            
+
             return Math.Min(baseMultiplier, 1.8m); // Cap at 80% increase
         }
 
         private decimal CalculateTimingMultiplier(MarketConditions conditions)
         {
             var multiplier = 1.0m;
-            
+
             // Time-of-day optimization
             var minute = conditions.Date.Minute;
-            
+
             // Favor specific minute patterns for better fills
             if (minute % 6 == 0) // Align with 6-minute separation
                 multiplier *= 1.1m;
-            
+
             // Market microstructure timing
             var hour = conditions.Date.Hour;
             if (hour == 9 && minute >= 45) // Post-opening stabilization
                 multiplier *= 1.15m;
             else if (hour == 15 && minute <= 30) // Pre-close positioning
                 multiplier *= 1.1m;
-            
+
             return multiplier;
         }
 
@@ -242,17 +237,17 @@ namespace ODTE.Strategy
         {
             // Enhanced iron condor execution for high frequency
             var creditReceived = spec.CreditTarget * spec.PositionSize * (decimal)conditions.UnderlyingPrice * 0.01m;
-            
+
             // Apply execution quality adjustments
             var executionQuality = CalculateExecutionQuality(conditions);
             var adjustedCredit = creditReceived * (decimal)executionQuality;
-            
+
             // Simulate realistic execution with high-frequency considerations
             var executionCost = adjustedCredit * 0.01m; // 1% for faster execution
             var slippage = adjustedCredit * 0.005m; // 0.5% slippage
-            
+
             var netPnL = adjustedCredit - executionCost - slippage;
-            
+
             // Quality validation - ensure we maintain target performance
             if (netPnL < TARGET_PROFIT_PER_TRADE * 0.7m) // Allow 30% variance for volume
             {
@@ -281,18 +276,18 @@ namespace ODTE.Strategy
         private decimal CalculateExecutionQuality(MarketConditions conditions)
         {
             var quality = 1.0m;
-            
+
             // Market liquidity assessment
             if (conditions.VIX < 15)
                 quality *= 1.05m; // Better fills in calm markets
             else if (conditions.VIX > 30)
                 quality *= 0.95m; // Wider spreads in volatile markets
-            
+
             // Time-based execution quality
             var hour = conditions.Date.Hour;
             if (hour >= 10 && hour <= 14)
                 quality *= 1.03m; // Peak liquidity hours
-            
+
             return Math.Max(0.9m, Math.Min(1.1m, quality));
         }
 
@@ -305,9 +300,9 @@ namespace ODTE.Strategy
                 Success = result.IsWin,
                 Strategy = "PM250"
             };
-            
+
             _recentTrades.Add(execution);
-            
+
             // Maintain rolling window (last 1000 trades for performance)
             if (_recentTrades.Count > 1000)
             {
@@ -341,13 +336,13 @@ namespace ODTE.Strategy
         {
             // Simplified GoScore calculation for high-frequency trading
             var baseScore = 50.0;
-            
+
             // VIX contribution (30% weight)
-            var vixScore = conditions.VIX >= 15 && conditions.VIX <= 25 ? 85.0 : 
-                          conditions.VIX < 15 ? 70.0 : 
+            var vixScore = conditions.VIX >= 15 && conditions.VIX <= 25 ? 85.0 :
+                          conditions.VIX < 15 ? 70.0 :
                           conditions.VIX <= 35 ? 75.0 : 45.0;
             baseScore += (vixScore - 50) * 0.3;
-            
+
             // Market regime contribution (25% weight) 
             var regimeScore = conditions.MarketRegime switch
             {
@@ -357,19 +352,19 @@ namespace ODTE.Strategy
                 _ => 60.0
             };
             baseScore += (regimeScore - 50) * 0.25;
-            
+
             // Trend stability contribution (20% weight)
             var trendStability = Math.Max(0, 1.0 - Math.Abs(conditions.TrendScore));
             baseScore += trendStability * 20.0 * 0.2;
-            
+
             // Time of day contribution (15% weight)
             var hour = conditions.Date.Hour;
             var timeScore = (hour >= 10 && hour <= 14) ? 85.0 : 65.0;
             baseScore += (timeScore - 50) * 0.15;
-            
+
             // Add some realistic variance
             baseScore += (_random.NextDouble() - 0.5) * 10.0;
-            
+
             return Math.Max(0, Math.Min(100, baseScore));
         }
     }

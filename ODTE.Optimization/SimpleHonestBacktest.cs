@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Optimization
 {
     /// <summary>
@@ -33,11 +29,11 @@ namespace ODTE.Optimization
             // DEFENSIVE VALIDATION
             if (totalRuns <= 0)
                 throw new ArgumentException("Total runs must be positive", nameof(totalRuns));
-                
+
             var results = new List<RunResult>();
             var strategies = new[] { "IronCondor", "PutSpread", "CallSpread" };
             var random = new Random(42); // Fixed seed for reproducibility
-            
+
             Console.WriteLine("================================================================================");
             Console.WriteLine("REALISTIC HONEST BACKTESTING");
             Console.WriteLine($"Total Runs: {totalRuns}");
@@ -93,10 +89,10 @@ namespace ODTE.Optimization
             {
                 var currentLimit = dailyLossLimits[Math.Min(consecutiveLossDays, 3)];
                 var dayPnL = SimulateTradingDay(strategy, currentLimit, random);
-                
+
                 result.FinalCapital += dayPnL;
                 result.DailyPnL.Add(dayPnL);
-                
+
                 // Track drawdown
                 peak = Math.Max(peak, result.FinalCapital);
                 var currentDrawdown = result.FinalCapital - peak;
@@ -137,7 +133,7 @@ namespace ODTE.Optimization
                 throw new ArgumentException($"Unknown strategy: {strategy}", nameof(strategy));
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
-                
+
             // Handle edge case: zero daily limit means no trading allowed
             if (dailyLimit == 0)
                 return 0;
@@ -176,13 +172,13 @@ namespace ODTE.Optimization
                 {
                     // FIXED: Use mathematically correct maximum losses
                     var maxLoss = GetMaxLossForStrategy(strategy);
-                    
+
                     // Generate realistic loss within mathematical bounds
                     var lossRange = (int)(maxLoss * 0.8); // 80% of max loss as typical range
                     var minLoss = Math.Min(20, lossRange / 2);
-                    
+
                     tradePnL = -random.Next(minLoss, (int)maxLoss + 1);
-                    
+
                     // BUSINESS LOGIC VALIDATION
                     if (Math.Abs(tradePnL) > maxLoss)
                         throw new InvalidOperationException($"Generated loss ${Math.Abs(tradePnL)} exceeds maximum ${maxLoss} for {strategy}");
@@ -206,7 +202,7 @@ namespace ODTE.Optimization
             var avgPnL = results.Average(r => r.TotalPnL);
             var avgNetPnL = results.Average(r => r.NetPnL);
             var profitableRuns = results.Count(r => r.NetPnL > 0);
-            
+
             Console.WriteLine();
             Console.WriteLine($"=== INTERIM STATS (After {results.Count} runs) ===");
             Console.WriteLine($"Average Gross P&L: ${avgPnL:F0}");

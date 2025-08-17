@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using ODTE.Strategy.Interfaces;
 using ODTE.Strategy.Models;
 
 namespace ODTE.Strategy
@@ -60,7 +57,7 @@ namespace ODTE.Strategy
 
             // Calculate post-order utilization
             var utilizationAfterOrder = (_currentDayRiskUsed + candidate.MaxPotentialLoss) / currentLimit;
-            
+
             // Warning at 90% utilization
             var warningLevel = utilizationAfterOrder >= 0.90m;
 
@@ -82,7 +79,7 @@ namespace ODTE.Strategy
         public int CalculateMaxPositionSize(decimal mplPerContract)
         {
             if (mplPerContract <= 0) return 0;
-            
+
             var remainingCapacity = RemainingCapacity;
             return (int)Math.Floor(remainingCapacity / mplPerContract);
         }

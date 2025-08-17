@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -26,14 +22,14 @@ namespace ODTE.Strategy
         private readonly Dictionary<DateTime, decimal> _dailyPnL;
         private readonly Dictionary<DateTime, decimal> _dailyBudgetUsed;
         private readonly List<TradeExecution> _consecutiveLossTracker;
-        
+
         // Enhanced risk management configuration
         private const decimal BASE_POSITION_SIZE = 1.0m;
         private const decimal MIN_POSITION_SIZE = 0.15m; // 15% minimum
         private const decimal MAX_DAILY_DRAWDOWN = 75.0m;
         private const decimal MAX_WEEKLY_DRAWDOWN = 300.0m;
         private const int MAX_CONSECUTIVE_LOSSES = 5;
-        
+
         // NEW: Dynamic daily budget limits (Tier A enhancement)
         private readonly decimal[] DAILY_BUDGET_LIMITS = { 625.0m, 385.0m, 240.0m, 150.0m };
         private int _consecutiveLossDays = 0;
@@ -49,14 +45,14 @@ namespace ODTE.Strategy
                 0.23m,  // Day 3: 23% (Conservative)
                 0.15m   // Day 4+: 15% (Minimum viable)
             };
-            
+
             _dailyPnL = new Dictionary<DateTime, decimal>();
             _dailyBudgetUsed = new Dictionary<DateTime, decimal>();
             _consecutiveLossTracker = new List<TradeExecution>();
         }
-        
+
         #region Tier A Enhancement Methods - Budget Tracking
-        
+
         /// <summary>
         /// Get remaining daily budget for risk validation (Tier A-1.3)
         /// </summary>
@@ -67,10 +63,10 @@ namespace ODTE.Strategy
             var dayKey = tradingDay.Date;
             var dailyLimit = GetDailyBudgetLimit(tradingDay);
             var usedBudget = _dailyBudgetUsed.ContainsKey(dayKey) ? _dailyBudgetUsed[dayKey] : 0m;
-            
+
             return Math.Max(0m, dailyLimit - usedBudget);
         }
-        
+
         /// <summary>
         /// Get current daily budget limit based on consecutive loss streak
         /// </summary>
@@ -81,7 +77,7 @@ namespace ODTE.Strategy
             var levelIndex = Math.Min(_consecutiveLossDays, DAILY_BUDGET_LIMITS.Length - 1);
             return DAILY_BUDGET_LIMITS[levelIndex];
         }
-        
+
         /// <summary>
         /// Record actual trade loss for budget tracking
         /// </summary>
@@ -90,14 +86,14 @@ namespace ODTE.Strategy
         public void RecordTradeLoss(DateTime tradingDay, decimal lossAmount)
         {
             var dayKey = tradingDay.Date;
-            
+
             if (!_dailyBudgetUsed.ContainsKey(dayKey))
             {
                 _dailyBudgetUsed[dayKey] = 0m;
             }
-            
+
             _dailyBudgetUsed[dayKey] += Math.Abs(lossAmount);
-            
+
             // Update daily P&L tracking
             if (!_dailyPnL.ContainsKey(dayKey))
             {
@@ -105,7 +101,7 @@ namespace ODTE.Strategy
             }
             _dailyPnL[dayKey] -= Math.Abs(lossAmount);
         }
-        
+
         /// <summary>
         /// Record profitable trade for budget and streak tracking
         /// </summary>
@@ -114,21 +110,21 @@ namespace ODTE.Strategy
         public void RecordTradeProfit(DateTime tradingDay, decimal profitAmount)
         {
             var dayKey = tradingDay.Date;
-            
+
             // Update daily P&L tracking
             if (!_dailyPnL.ContainsKey(dayKey))
             {
                 _dailyPnL[dayKey] = 0m;
             }
             _dailyPnL[dayKey] += Math.Abs(profitAmount);
-            
+
             // Check if this makes the day profitable and reset streak
             if (_dailyPnL[dayKey] > 0m)
             {
                 _consecutiveLossDays = 0; // Reset on profitable day
             }
         }
-        
+
         /// <summary>
         /// Check if trading is allowed based on budget and limits
         /// </summary>
@@ -139,7 +135,7 @@ namespace ODTE.Strategy
             var remainingBudget = GetRemainingDailyBudget(tradingDay);
             return remainingBudget > 10m; // Minimum $10 buffer for micro trades
         }
-        
+
         /// <summary>
         /// Update consecutive loss day count (called at end of day)
         /// </summary>
@@ -148,7 +144,7 @@ namespace ODTE.Strategy
         {
             var dayKey = tradingDay.Date;
             var dayPnL = _dailyPnL.ContainsKey(dayKey) ? _dailyPnL[dayKey] : 0m;
-            
+
             if (dayPnL < 0m)
             {
                 _consecutiveLossDays++;
@@ -157,11 +153,11 @@ namespace ODTE.Strategy
             {
                 _consecutiveLossDays = 0; // Reset on profitable day
             }
-            
+
             // Cap at maximum levels
             _consecutiveLossDays = Math.Min(_consecutiveLossDays, DAILY_BUDGET_LIMITS.Length - 1);
         }
-        
+
         /// <summary>
         /// Get current risk management status
         /// </summary>
@@ -172,7 +168,7 @@ namespace ODTE.Strategy
             var dailyLimit = GetDailyBudgetLimit(tradingDay);
             var remainingBudget = GetRemainingDailyBudget(tradingDay);
             var budgetUtilization = dailyLimit > 0 ? (double)((dailyLimit - remainingBudget) / dailyLimit) : 0;
-            
+
             return new RiskStatus
             {
                 TradingDay = tradingDay,
@@ -184,7 +180,7 @@ namespace ODTE.Strategy
                 RiskLevel = GetRiskLevel(budgetUtilization, _consecutiveLossDays)
             };
         }
-        
+
         private RiskLevel GetRiskLevel(double budgetUtilization, int consecutiveLossDays)
         {
             if (consecutiveLossDays >= 3 || budgetUtilization > 0.8)
@@ -196,7 +192,7 @@ namespace ODTE.Strategy
             else
                 return RiskLevel.Minimal;
         }
-        
+
         #endregion
 
         public decimal CalculatePositionSize(decimal baseSize, List<TradeExecution> recentTrades)
@@ -256,7 +252,7 @@ namespace ODTE.Strategy
             // Update consecutive loss tracking
             _consecutiveLossTracker.Clear();
             var orderedTrades = recentTrades.OrderByDescending(t => t.ExecutionTime).ToList();
-            
+
             foreach (var trade in orderedTrades)
             {
                 if (trade.PnL < 0)
@@ -269,7 +265,7 @@ namespace ODTE.Strategy
         private RiskBlock AssessImmediateRisk(List<TradeExecution> recentTrades)
         {
             var today = DateTime.Today;
-            
+
             // Check daily drawdown limit
             if (_dailyPnL.ContainsKey(today))
             {
@@ -299,7 +295,7 @@ namespace ODTE.Strategy
             var weeklyLoss = _dailyPnL
                 .Where(kvp => kvp.Key >= weekStart && kvp.Value < 0)
                 .Sum(kvp => Math.Abs(kvp.Value));
-            
+
             if (weeklyLoss > MAX_WEEKLY_DRAWDOWN)
             {
                 return new RiskBlock
@@ -327,14 +323,14 @@ namespace ODTE.Strategy
             // Calculate consecutive losing days
             var consecutiveLossDays = 0;
             var currentDate = today;
-            
+
             for (int i = 0; i < 10; i++) // Check last 10 days
             {
                 if (_dailyPnL.ContainsKey(currentDate) && _dailyPnL[currentDate] < 0)
                     consecutiveLossDays++;
                 else
                     break;
-                    
+
                 currentDate = currentDate.AddDays(-1);
             }
 
@@ -346,19 +342,19 @@ namespace ODTE.Strategy
         private decimal CalculateDrawdownProtection(List<TradeExecution> recentTrades)
         {
             var today = DateTime.Today;
-            
+
             if (!_dailyPnL.ContainsKey(today))
                 return 1.0m; // No trades today yet
-            
+
             var todayPnL = _dailyPnL[today];
-            
+
             // Progressive scaling based on daily drawdown
             if (todayPnL >= 0)
                 return 1.0m; // Profitable day, no scaling
-            
+
             var dailyLoss = Math.Abs(todayPnL);
             var lossRatio = dailyLoss / MAX_DAILY_DRAWDOWN;
-            
+
             if (lossRatio <= 0.25m)
                 return 1.0m;    // 0-25% of daily limit: full position
             else if (lossRatio <= 0.50m)
@@ -375,13 +371,13 @@ namespace ODTE.Strategy
             var weeklyPnL = _dailyPnL
                 .Where(kvp => kvp.Key >= weekStart)
                 .Sum(kvp => kvp.Value);
-            
+
             if (weeklyPnL >= 0)
                 return 1.0m; // Profitable week, no scaling
-            
+
             var weeklyLoss = Math.Abs(weeklyPnL);
             var weeklyLossRatio = weeklyLoss / MAX_WEEKLY_DRAWDOWN;
-            
+
             if (weeklyLossRatio <= 0.33m)
                 return 1.0m;    // 0-33% of weekly limit: full position
             else if (weeklyLossRatio <= 0.66m)
@@ -394,13 +390,13 @@ namespace ODTE.Strategy
         {
             // High-frequency trading volume optimization
             var recentPerformance = recentTrades.TakeLast(20).ToList();
-            
+
             if (!recentPerformance.Any())
                 return 1.0m;
-            
+
             var winRate = recentPerformance.Count(t => t.PnL > 0) / (double)recentPerformance.Count;
             var avgPnL = recentPerformance.Average(t => t.PnL);
-            
+
             // Scale up during excellent performance
             if (winRate >= 0.95 && avgPnL > 20m)
                 return 1.2m;    // 20% increase for exceptional performance
@@ -417,15 +413,15 @@ namespace ODTE.Strategy
         public RiskMetrics GetCurrentRiskMetrics(List<TradeExecution> recentTrades)
         {
             UpdateTrackingData(recentTrades);
-            
+
             var today = DateTime.Today;
             var weekStart = today.AddDays(-(int)today.DayOfWeek);
-            
+
             var dailyPnL = _dailyPnL.GetValueOrDefault(today, 0m);
             var weeklyPnL = _dailyPnL
                 .Where(kvp => kvp.Key >= weekStart)
                 .Sum(kvp => kvp.Value);
-            
+
             return new RiskMetrics
             {
                 ConsecutiveLossDays = CalculateConsecutiveLossDays(),
@@ -442,17 +438,17 @@ namespace ODTE.Strategy
         {
             var consecutiveDays = 0;
             var currentDate = DateTime.Today;
-            
+
             for (int i = 0; i < 10; i++)
             {
                 if (_dailyPnL.ContainsKey(currentDate) && _dailyPnL[currentDate] < 0)
                     consecutiveDays++;
                 else
                     break;
-                    
+
                 currentDate = currentDate.AddDays(-1);
             }
-            
+
             return consecutiveDays;
         }
     }
@@ -474,7 +470,7 @@ namespace ODTE.Strategy
         public decimal WeeklyDrawdownUsed { get; set; }
         public decimal CurrentPositionScale { get; set; }
     }
-    
+
     /// <summary>
     /// Risk management status for Tier A enhancements
     /// </summary>
@@ -487,7 +483,7 @@ namespace ODTE.Strategy
         public double BudgetUtilization { get; set; }
         public bool CanTrade { get; set; }
         public RiskLevel RiskLevel { get; set; }
-        
+
         public string GetSummary()
         {
             return $"Day {TradingDay:MM/dd}: Risk Level {RiskLevel}, " +
@@ -497,7 +493,7 @@ namespace ODTE.Strategy
                    $"Trading: {(CanTrade ? "ALLOWED" : "BLOCKED")}";
         }
     }
-    
+
     /// <summary>
     /// Risk level classification
     /// </summary>

@@ -1,10 +1,7 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using ODTE.Historical.Validation;
+using Xunit;
 
 namespace ODTE.Historical.Tests
 {
@@ -21,7 +18,7 @@ namespace ODTE.Historical.Tests
         {
             var factory = LoggerFactory.Create(builder => builder.AddConsole());
             _logger = factory.CreateLogger<SyntheticDataBenchmark>();
-            
+
             // Use the actual database path
             _testDatabasePath = Path.Combine("..", "..", "..", "..", "data", "ODTE_TimeSeries_5Y.db");
         }
@@ -46,7 +43,7 @@ namespace ODTE.Historical.Tests
             result.BenchmarkId.Should().NotBeNullOrEmpty();
             result.OverallScore.Should().BeInRange(0, 100);
             result.Duration.Should().BePositive();
-            
+
             // Statistical tests should be populated
             result.StatisticalTests.Should().NotBeNull();
             result.VolatilityAnalysis.Should().NotBeNull();

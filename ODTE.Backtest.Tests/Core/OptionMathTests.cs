@@ -82,7 +82,7 @@ public class OptionMathTests
 
         // Assert
         delta.Should().BeApproximately(expectedDelta, 0.15); // Allow 15% tolerance for numerical approximation
-        
+
         // Validate delta ranges
         if (right == Right.Call)
             delta.Should().BeInRange(0.0, 1.0);
@@ -263,7 +263,7 @@ public class OptionMathTests
         // Assert
         callDelta.Should().BeInRange(0.0, 1.0);
         putDelta.Should().BeInRange(-1.0, 0.0);
-        
+
         // For ATM options, call + put delta should approximately equal 1 (ignoring dividends)
         var sumOfAbsoluteDeltas = Math.Abs(callDelta) + Math.Abs(putDelta);
         sumOfAbsoluteDeltas.Should().BeApproximately(1.0, 0.1);
@@ -285,7 +285,7 @@ public class OptionMathTests
         // Assert
         callPrice.Should().BeGreaterThan(0);
         putPrice.Should().BeGreaterThan(0);
-        
+
         // Higher volatility should lead to higher option values
         if (sigma >= 0.20)
         {
@@ -308,7 +308,7 @@ public class OptionMathTests
         // Assert - Delta should increase with moneyness for calls
         otmCallDelta.Should().BeLessThan(atmCallDelta);
         itmCallDelta.Should().BeGreaterThan(atmCallDelta);
-        
+
         // All deltas should be in valid range
         new[] { atmCallDelta, otmCallDelta, itmCallDelta }.Should().AllSatisfy(d => d.Should().BeInRange(0.0, 1.0));
     }
@@ -317,20 +317,20 @@ public class OptionMathTests
     public void ExtremeCases_ShouldHandleGracefully()
     {
         // Arrange & Act & Assert - Test extreme parameter values
-        
+
         // Very high volatility
         var highVolPrice = OptionMath.Price(100, 100, 0.05, 0.0, 5.0, 0.25, Right.Call);
         highVolPrice.Should().BeGreaterThan(0);
         highVolPrice.Should().BeLessThan(100); // Should be less than spot price
-        
+
         // Very low time to expiration
         var shortTimePrice = OptionMath.Price(100, 100, 0.05, 0.0, 0.20, 0.001, Right.Call);
         shortTimePrice.Should().BeGreaterThanOrEqualTo(0);
-        
+
         // Deep ITM options
         var deepItmCall = OptionMath.Price(150, 100, 0.05, 0.0, 0.20, 0.25, Right.Call);
         deepItmCall.Should().BeGreaterThan(45); // Should be close to intrinsic value (50)
-        
+
         // Deep OTM options
         var deepOtmCall = OptionMath.Price(50, 100, 0.05, 0.0, 0.20, 0.25, Right.Call);
         deepOtmCall.Should().BeGreaterThan(0);

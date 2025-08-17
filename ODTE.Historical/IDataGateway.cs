@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Threading;
-
 namespace ODTE.Historical
 {
     /// <summary>
@@ -38,9 +33,9 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token for the operation</param>
         /// <returns>Collection of market data points</returns>
         Task<IEnumerable<MarketDataPoint>> GetHistoricalDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -54,9 +49,9 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token for the operation</param>
         /// <returns>Collection of synthetic market data points</returns>
         Task<IEnumerable<MarketDataPoint>> GenerateSyntheticDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             string scenario = "normal",
             CancellationToken cancellationToken = default);
 
@@ -67,7 +62,7 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token for the operation</param>
         /// <returns>Current market data point</returns>
         Task<MarketDataPoint?> GetCurrentDataAsync(
-            string symbol, 
+            string symbol,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -87,9 +82,9 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token for the operation</param>
         /// <returns>Data validation result with quality metrics</returns>
         Task<DataValidationResult> ValidateDataQualityAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -104,10 +99,10 @@ namespace ODTE.Historical
         /// <param name="cancellationToken">Cancellation token for the operation</param>
         /// <returns>Export operation result</returns>
         Task<ExportResult> ExportDataAsync(
-            string symbol, 
-            DateTime startDate, 
-            DateTime endDate, 
-            string format, 
+            string symbol,
+            DateTime startDate,
+            DateTime endDate,
+            string format,
             string outputPath,
             CancellationToken cancellationToken = default);
     }

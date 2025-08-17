@@ -2,7 +2,6 @@ using FluentAssertions;
 using ODTE.Backtest.Core;
 using ODTE.Backtest.Data;
 using Xunit;
-using System.IO;
 
 namespace ODTE.Backtest.Tests.Data;
 
@@ -47,7 +46,7 @@ public class CsvMarketDataTests : IDisposable
 
         // Assert
         bars.Should().NotBeEmpty();
-        bars.Should().AllSatisfy(bar => 
+        bars.Should().AllSatisfy(bar =>
         {
             var barDate = DateOnly.FromDateTime(bar.Ts);
             barDate.Should().BeOnOrAfter(startDate);
@@ -70,7 +69,7 @@ public class CsvMarketDataTests : IDisposable
 
         // Assert
         bars.Should().NotBeEmpty();
-        bars.Should().AllSatisfy(bar => 
+        bars.Should().AllSatisfy(bar =>
         {
             // Verify bars are within RTH by using the same IsRth logic
             bar.Ts.IsRth().Should().BeTrue("Bar should be within Regular Trading Hours (9:30 AM - 4:00 PM ET)");
@@ -92,11 +91,11 @@ public class CsvMarketDataTests : IDisposable
 
         // Assert
         bars.Should().NotBeEmpty();
-        
+
         // Should include pre-market and after-hours bars
         var hasPreMarket = bars.Any(bar => bar.Ts.Hour < 9 || (bar.Ts.Hour == 9 && bar.Ts.Minute < 30));
         var hasAfterHours = bars.Any(bar => bar.Ts.Hour >= 16);
-        
+
         (hasPreMarket || hasAfterHours).Should().BeTrue();
     }
 

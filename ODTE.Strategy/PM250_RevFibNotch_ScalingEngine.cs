@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -16,7 +12,7 @@ namespace ODTE.Strategy
         private readonly ICorrelationBudgetManager _correlationManager;
         private readonly IQualityEntryFilter _qualityFilter;
         private readonly IDualLaneExitManager _exitManager;
-        
+
         private RevFibNotchScalingConfiguration _config;
         private SessionStats _currentSession;
         private EscalationLevel _currentLevel;
@@ -35,11 +31,11 @@ namespace ODTE.Strategy
             _correlationManager = correlationManager ?? throw new ArgumentNullException(nameof(correlationManager));
             _qualityFilter = qualityFilter ?? throw new ArgumentNullException(nameof(qualityFilter));
             _exitManager = exitManager ?? throw new ArgumentNullException(nameof(exitManager));
-            
+
             _openPositions = new List<Position>();
             _currentLevel = EscalationLevel.Level0;
             _cooldownUntil = DateTime.MinValue;
-            
+
             // Initialize with conservative scaling configuration
             _config = CreateRevFibNotchScalingConfiguration();
         }
@@ -52,13 +48,13 @@ namespace ODTE.Strategy
         {
             // OPTIMIZED: Update RevFibNotch position based on P&L and win rate
             var notchAdjustment = _revFibNotchManager.ProcessDailyPnL(dailyPnL, date, dailyWinRate);
-            
+
             // Update session statistics
             UpdateSessionForNewDay(dailyPnL, date);
-            
+
             // Determine scaling phase based on current RFib level
             var scalingPhase = DetermineScalingPhase(_revFibNotchManager.CurrentRFibLimit);
-            
+
             // Update configuration for new scaling phase if changed
             if (scalingPhase != _config.CurrentPhase)
             {
@@ -83,10 +79,10 @@ namespace ODTE.Strategy
         public RevFibNotchTradeDecision ProcessTradeOpportunity(TradeSetup setup)
         {
             UpdateSessionStats();
-            
+
             // Get current RevFibNotch limit
             var currentRFibLimit = _revFibNotchManager.CurrentRFibLimit;
-            
+
             // Core risk management - absolute constraints
             if (!ValidateAbsoluteConstraints(setup, currentRFibLimit))
             {
@@ -95,20 +91,20 @@ namespace ODTE.Strategy
 
             // Determine trade lane (Probe vs Quality/Punch)
             var tradeLane = DetermineTradeLane(setup);
-            
+
             // Check escalation level and permissions
             var escalationLevel = ComputeEscalationLevel();
-            
+
             // Calculate position sizing with RevFibNotch constraints
             var positionSize = CalculatePositionSize(setup, tradeLane, escalationLevel, currentRFibLimit);
-            
+
             if (positionSize <= 0)
             {
                 return RevFibNotchTradeDecision.Reject("Insufficient position size within RevFibNotch limits", currentRFibLimit);
             }
 
             // Final validations
-            if (!ValidateCorrelationBudget(setup, positionSize) || 
+            if (!ValidateCorrelationBudget(setup, positionSize) ||
                 !ValidateQualityRequirements(setup, tradeLane))
             {
                 return RevFibNotchTradeDecision.Reject("Quality or correlation constraints", currentRFibLimit);
@@ -153,7 +149,7 @@ namespace ODTE.Strategy
         {
             var oldPhase = _config.CurrentPhase;
             _config = CreateConfigurationForPhase(phase);
-            
+
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] REVFIBNOTCH SCALING PHASE CHANGE:");
             Console.WriteLine($"  Phase: {oldPhase} → {phase}");
             Console.WriteLine($"  RFib: {_revFibNotchManager.CurrentRFibLimit:C}");
@@ -169,7 +165,7 @@ namespace ODTE.Strategy
         {
             var remainingBudget = CalculateRemainingBudget(currentRFibLimit);
             var maxLossPerContract = (setup.Width - setup.ExpectedCredit) * 100m;
-            
+
             // Must fit within RevFibNotch budget
             if (maxLossPerContract > remainingBudget)
             {
@@ -194,17 +190,17 @@ namespace ODTE.Strategy
         {
             var remainingBudget = CalculateRemainingBudget(rFibLimit);
             var maxLossPerContract = (setup.Width - setup.ExpectedCredit) * 100m;
-            
+
             // Get fraction based on lane, escalation level, and current phase
             var fraction = GetCapitalFraction(lane, level);
-            
+
             // Apply RevFibNotch scaling multiplier
             var notchMultiplier = GetNotchScalingMultiplier(_config.CurrentPhase);
             var adjustedFraction = fraction * notchMultiplier;
-            
+
             // Per-trade cap calculation
             var perTradeCap = adjustedFraction * remainingBudget;
-            
+
             // Additional constraint for Quality lane: max 50% of realized P&L
             if (lane == TradeLane.Quality && _currentSession?.RealizedDayPnL > 0)
             {
@@ -215,7 +211,7 @@ namespace ODTE.Strategy
             // Calculate contracts
             var contractsByRisk = (int)Math.Floor(perTradeCap / maxLossPerContract);
             var contracts = Math.Min(contractsByRisk, _config.HardContractCap);
-            
+
             // Probe 1-lot rule: if probe trade fits in absolute budget, allow 1 contract
             if (contracts < 1 && lane == TradeLane.Probe && maxLossPerContract <= remainingBudget)
             {
@@ -281,7 +277,7 @@ namespace ODTE.Strategy
         {
             var openMaxLoss = _openPositions.Sum(p => p.MaxLoss);
             var realizedLossToday = Math.Min(0, _currentSession?.RealizedDayPnL ?? 0);
-            
+
             return Math.Max(0, rFibLimit - openMaxLoss - Math.Abs(realizedLossToday));
         }
 
@@ -292,10 +288,10 @@ namespace ODTE.Strategy
         {
             // Update current session statistics
             _currentSession = CalculateSessionStats();
-            
+
             // Check for auto de-escalation conditions
             CheckAutoDeescalation();
-            
+
             // Update escalation level
             _currentLevel = ComputeEscalationLevel();
         }
@@ -317,11 +313,11 @@ namespace ODTE.Strategy
                 ConsecutivePunchLosses = 0,
                 InEventBlackout = IsInEventBlackout()
             };
-            
+
             // Reset escalation level for new day
             _currentLevel = EscalationLevel.Level0;
             _cooldownUntil = DateTime.MinValue;
-            
+
             // Clear open positions for new day
             _openPositions.Clear();
         }
@@ -347,7 +343,7 @@ namespace ODTE.Strategy
 
         private EscalationLevel ComputeEscalationLevel()
         {
-            if (!_config.EscalationEnabled || 
+            if (!_config.EscalationEnabled ||
                 DateTime.Now < _cooldownUntil ||
                 !_probeDetector.IsGreenlit(_currentSession))
             {
@@ -355,14 +351,14 @@ namespace ODTE.Strategy
             }
 
             var dailyCap = _revFibNotchManager.CurrentRFibLimit;
-            
+
             // Level 2: High P&L cushion + Quality punch trades profitable
-            if (_currentSession.RealizedDayPnL >= 0.60m * dailyCap && 
+            if (_currentSession.RealizedDayPnL >= 0.60m * dailyCap &&
                 _currentSession.Last3PunchPnL >= 0)
             {
                 return EscalationLevel.Level2;
             }
-            
+
             // Level 1: Basic P&L cushion met
             if (_currentSession.RealizedDayPnL >= 0.30m * dailyCap)
             {
@@ -375,7 +371,7 @@ namespace ODTE.Strategy
         private void CheckAutoDeescalation()
         {
             var dailyCap = _revFibNotchManager.CurrentRFibLimit;
-            
+
             // Drop level if P&L falls below half of last escalation trigger
             if (_currentSession.RealizedDayPnL < 0.5m * GetLastEscalationTrigger(_currentLevel))
             {
@@ -385,7 +381,7 @@ namespace ODTE.Strategy
                     LogDecision("AUTO_DEESCALATE_PNL", null, 0, 0, dailyCap);
                 }
             }
-            
+
             // Cooldown after consecutive Quality lane losses
             if (_currentSession.ConsecutivePunchLosses >= 2)
             {
@@ -448,7 +444,7 @@ namespace ODTE.Strategy
         /// <summary>
         /// Log trading decision with RevFibNotch context
         /// </summary>
-        private void LogDecision(string reasonCode, TradeSetup setup, decimal contracts, decimal remainingBudget, 
+        private void LogDecision(string reasonCode, TradeSetup setup, decimal contracts, decimal remainingBudget,
             decimal rFibLimit, decimal fraction = 0, decimal perTradeCap = 0, decimal notchMultiplier = 1.0m)
         {
             var lane = setup != null ? DetermineTradeLane(setup) : TradeLane.Unknown;
@@ -459,12 +455,12 @@ namespace ODTE.Strategy
             var expectedCredit = setup?.ExpectedCredit ?? 0;
             var width = setup?.Width ?? 0;
             var maxLossPerContract = setup != null ? (setup.Width - setup.ExpectedCredit) * 100m : 0;
-            
+
             var logMessage = $"RevFibNotch Decision: {lane} L{(int)level} Phase:{phase} " +
                            $"Notch:{notchIndex} RFib:{rFibLimit:C} Rem:{remainingBudget:C} " +
                            $"Frac:{fraction:P1} Mult:{notchMultiplier:F2} PerTrade:{perTradeCap:C} " +
                            $"PnL:{realizedPnL:C} Contracts:{contracts} Reason:{reasonCode}";
-            
+
             Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {logMessage}");
         }
 
@@ -492,7 +488,7 @@ namespace ODTE.Strategy
                     HardContractCap = 3,
                     CooldownMinutes = 120 // Longer cooldown
                 },
-                
+
                 RevFibNotchScalingPhase.Defensive => new RevFibNotchScalingConfiguration
                 {
                     CurrentPhase = phase,
@@ -506,7 +502,7 @@ namespace ODTE.Strategy
                     HardContractCap = 4,
                     CooldownMinutes = 90
                 },
-                
+
                 RevFibNotchScalingPhase.Conservative => new RevFibNotchScalingConfiguration
                 {
                     CurrentPhase = phase,
@@ -520,7 +516,7 @@ namespace ODTE.Strategy
                     HardContractCap = 5,
                     CooldownMinutes = 60
                 },
-                
+
                 RevFibNotchScalingPhase.Balanced => new RevFibNotchScalingConfiguration
                 {
                     CurrentPhase = phase,
@@ -534,7 +530,7 @@ namespace ODTE.Strategy
                     HardContractCap = 5,
                     CooldownMinutes = 60
                 },
-                
+
                 RevFibNotchScalingPhase.Aggressive => new RevFibNotchScalingConfiguration
                 {
                     CurrentPhase = phase,
@@ -548,7 +544,7 @@ namespace ODTE.Strategy
                     HardContractCap = 6,
                     CooldownMinutes = 45
                 },
-                
+
                 RevFibNotchScalingPhase.Maximum => new RevFibNotchScalingConfiguration
                 {
                     CurrentPhase = phase,
@@ -562,7 +558,7 @@ namespace ODTE.Strategy
                     HardContractCap = 7,
                     CooldownMinutes = 30
                 },
-                
+
                 _ => CreateConfigurationForPhase(RevFibNotchScalingPhase.Balanced)
             };
         }
@@ -613,7 +609,7 @@ namespace ODTE.Strategy
         public string ReasonCode { get; set; } = string.Empty;
         public decimal ExpectedCredit { get; set; }
         public decimal MaxLoss { get; set; }
-        
+
         public static RevFibNotchTradeDecision Reject(string reason, decimal rFibLimit)
         {
             return new RevFibNotchTradeDecision

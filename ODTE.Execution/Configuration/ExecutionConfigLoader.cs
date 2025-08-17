@@ -1,7 +1,7 @@
+using Microsoft.Extensions.Logging;
 using ODTE.Execution.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Microsoft.Extensions.Logging;
 
 namespace ODTE.Execution.Configuration;
 
@@ -13,11 +13,11 @@ public class ExecutionConfigLoader
 {
     private readonly ILogger<ExecutionConfigLoader> _logger;
     private readonly IDeserializer _deserializer;
-    
+
     public ExecutionConfigLoader(ILogger<ExecutionConfigLoader>? logger = null)
     {
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ExecutionConfigLoader>.Instance;
-        
+
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .IgnoreUnmatchedProperties()
@@ -32,25 +32,25 @@ public class ExecutionConfigLoader
         try
         {
             _logger.LogDebug("Loading execution profile {ProfileName} from {ConfigPath}", profileName, configPath);
-            
+
             if (!File.Exists(configPath))
             {
                 _logger.LogWarning("Config file not found: {ConfigPath}, using default profile", configPath);
                 return GetDefaultProfile(profileName);
             }
-            
+
             var yaml = await File.ReadAllTextAsync(configPath);
             var config = _deserializer.Deserialize<ExecutionConfig>(yaml);
-            
+
             if (!config.Profiles.TryGetValue(profileName, out var profileConfig))
             {
                 _logger.LogWarning("Profile {ProfileName} not found in config, using default", profileName);
                 return GetDefaultProfile(profileName);
             }
-            
+
             var profile = MapToExecutionProfile(profileConfig, profileName);
             _logger.LogInformation("Loaded execution profile {ProfileName} successfully", profileName);
-            
+
             return profile;
         }
         catch (Exception ex)
@@ -68,19 +68,19 @@ public class ExecutionConfigLoader
         try
         {
             _logger.LogDebug("Loading calibration data from {CalibrationPath}", calibrationPath);
-            
+
             if (!File.Exists(calibrationPath))
             {
                 _logger.LogWarning("Calibration file not found: {CalibrationPath}, using defaults", calibrationPath);
                 return GetDefaultCalibration();
             }
-            
+
             var yaml = await File.ReadAllTextAsync(calibrationPath);
             var calibration = _deserializer.Deserialize<CalibrationData>(yaml);
-            
-            _logger.LogInformation("Loaded calibration data for {Instrument} dated {CalibrationDate}", 
+
+            _logger.LogInformation("Loaded calibration data for {Instrument} dated {CalibrationDate}",
                 calibration.Instrument, calibration.CalibrationDate);
-                
+
             return calibration;
         }
         catch (Exception ex)
@@ -104,14 +104,14 @@ public class ExecutionConfigLoader
                     [profile.Name] = MapFromExecutionProfile(profile)
                 }
             };
-            
+
             var serializer = new SerializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .Build();
-                
+
             var yaml = serializer.Serialize(config);
             await File.WriteAllTextAsync(configPath, yaml);
-            
+
             _logger.LogInformation("Saved execution profile {ProfileName} to {ConfigPath}", profile.Name, configPath);
         }
         catch (Exception ex)

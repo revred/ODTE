@@ -39,10 +39,10 @@ public class Microstructure
 
             // Apply spread widening effects
             var spreadMultiplier = GetSpreadMultiplier(sessionPct, currentTime);
-            
+
             // Adjust bid-ask spread implicitly through price noise
             var priceNoise = GetPriceNoise(sessionPct, currentTime) * spreadMultiplier;
-            
+
             yield return tick with
             {
                 Volume = Math.Max(adjustedVolume, 1000), // Minimum volume floor
@@ -73,7 +73,7 @@ public class Microstructure
 
         // Add some randomness
         var noise = 1.0 + (_random.NextDouble() - 0.5) * 0.3; // ±15% noise
-        
+
         return Math.Max(baseMultiplier * noise, 0.2); // Minimum 20% of base volume
     }
 
@@ -107,10 +107,10 @@ public class Microstructure
     {
         // Base noise: 1-2 cents
         var baseNoise = 0.01 + _random.NextDouble() * 0.01;
-        
+
         // Random direction
         var direction = _random.NextDouble() > 0.5 ? 1 : -1;
-        
+
         return baseNoise * direction;
     }
 
@@ -124,9 +124,9 @@ public class Microstructure
 
         var lunchStart = ParseTimeToUtcHour(_config.LunchStart);
         var lunchEnd = ParseTimeToUtcHour(_config.LunchEnd);
-        
+
         var currentHour = currentTime.Hour + currentTime.Minute / 60.0;
-        
+
         return currentHour >= lunchStart && currentHour < lunchEnd;
     }
 
@@ -152,15 +152,15 @@ public static class MicrostructureExtensions
     /// Apply microstructure effects to a market stream
     /// </summary>
     public static async IAsyncEnumerable<SpotTick> WithMicrostructure(
-        this IAsyncEnumerable<SpotTick> stream, 
+        this IAsyncEnumerable<SpotTick> stream,
         Microstructure microstructure)
     {
         var buffer = new List<SpotTick>();
-        
+
         await foreach (var tick in stream)
         {
             buffer.Add(tick);
-            
+
             // Process in small batches to maintain streaming behavior
             if (buffer.Count >= 10)
             {

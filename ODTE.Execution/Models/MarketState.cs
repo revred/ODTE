@@ -13,32 +13,32 @@ public record MarketState
     public List<string> ActiveEvents { get; init; } = new();
     public decimal UnderlyingPrice { get; init; }
     public int DaysToExpiry { get; init; }
-    
+
     /// <summary>
     /// Market stress indicator (0.0 = calm, 1.0 = extreme stress)
     /// </summary>
     public decimal StressLevel { get; init; }
-    
+
     /// <summary>
     /// Volatility term structure slope
     /// </summary>
     public decimal TermStructureSlope { get; init; }
-    
+
     /// <summary>
     /// Put/call skew indicator
     /// </summary>
     public decimal PutCallSkew { get; init; }
-    
+
     /// <summary>
     /// Options volume rank (percentile)
     /// </summary>
     public decimal VolumeRank { get; init; }
-    
+
     /// <summary>
     /// Check if we're in a high-risk event window
     /// </summary>
     public bool IsEventRisk => ActiveEvents.Any() || IsOpenCloseWindow;
-    
+
     /// <summary>
     /// Check if we're near market open/close
     /// </summary>
@@ -48,19 +48,19 @@ public record MarketState
         {
             var marketOpen = Timestamp.Date.AddHours(9.5); // 9:30 AM ET
             var marketClose = Timestamp.Date.AddHours(16);  // 4:00 PM ET
-            
+
             return Math.Abs((Timestamp - marketOpen).TotalMinutes) <= 10 ||
                    Math.Abs((Timestamp - marketClose).TotalMinutes) <= 10;
         }
     }
-    
+
     /// <summary>
     /// Calculate adjusted spread multiplier based on market conditions
     /// </summary>
     public decimal GetSpreadMultiplier()
     {
         var multiplier = 1.0m;
-        
+
         // VIX regime adjustments
         multiplier *= VIXRegime switch
         {
@@ -70,7 +70,7 @@ public record MarketState
             VIXRegime.Extreme => 2.0m,
             _ => 1.0m
         };
-        
+
         // Time-of-day adjustments
         multiplier *= TimeRegime switch
         {
@@ -82,11 +82,11 @@ public record MarketState
             TimeOfDayRegime.PostMarket => 2.5m,
             _ => 1.0m
         };
-        
+
         // Event risk adjustments
         if (IsEventRisk)
             multiplier *= 1.5m;
-            
+
         return multiplier;
     }
 }
@@ -128,7 +128,7 @@ public static class MarketStateFactory
             ActiveEvents = DetectActiveEvents(timestamp)
         };
     }
-    
+
     private static VIXRegime ClassifyVIXRegime(decimal vix) => vix switch
     {
         < 14 => VIXRegime.Low,
@@ -136,13 +136,13 @@ public static class MarketStateFactory
         < 30 => VIXRegime.High,
         _ => VIXRegime.Extreme
     };
-    
+
     private static TimeOfDayRegime ClassifyTimeRegime(DateTime timestamp)
     {
         var timeOfDay = timestamp.TimeOfDay;
         var marketOpen = TimeSpan.FromHours(9.5);   // 9:30 AM
         var marketClose = TimeSpan.FromHours(16);   // 4:00 PM
-        
+
         if (timeOfDay < TimeSpan.FromHours(9.5))
             return TimeOfDayRegime.PreMarket;
         else if (timeOfDay < TimeSpan.FromHours(10.5))
@@ -156,20 +156,20 @@ public static class MarketStateFactory
         else
             return TimeOfDayRegime.PostMarket;
     }
-    
+
     private static decimal CalculateStressLevel(decimal vix)
     {
         // Normalize VIX to 0-1 stress scale
         return Math.Min(1.0m, Math.Max(0.0m, (vix - 10m) / 50m));
     }
-    
+
     private static List<string> DetectActiveEvents(DateTime timestamp)
     {
         var events = new List<string>();
-        
+
         // Add FOMC, CPI, OPEX detection logic here
         // For now, return empty list
-        
+
         return events;
     }
 }

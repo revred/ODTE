@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -22,17 +18,17 @@ namespace ODTE.Strategy
         private int _consecutiveLossingDays;
         private decimal _cumulativeDrawdown;
         private decimal _peakAccountValue;
-        
+
         // REAL DATA OPTIMIZED PARAMETERS - BALANCED APPROACH
         private readonly decimal _maxSingleTradeRisk = 18.00m; // Reduced from observed $26.37 max loss but not too conservative
         private readonly decimal _dailyDrawdownLimit = 40.00m; // Reduced from observed $59.86 but allows trading
         private readonly decimal _emergencyStopLoss = 15.00m; // Hard stop before major losses
-        
+
         public BattleHardenedCapitalPreservation()
         {
             // Balanced Fibonacci curtailment - preserve high win rate while controlling risk
-            _fibonacciLevels = new List<decimal> 
-            { 
+            _fibonacciLevels = new List<decimal>
+            {
                 500m,  // Day 0: Start at normal level  
                 350m,  // Day 1: Moderate reduction after first loss
                 250m,  // Day 2: More conservative
@@ -41,7 +37,7 @@ namespace ODTE.Strategy
                 75m,   // Day 5: Minimal risk
                 50m,   // Day 6+: Emergency level
             };
-            
+
             _dailyLosses = new Dictionary<string, decimal>();
             _recentPerformance = new Queue<decimal>();
             _consecutiveLossingDays = 0;
@@ -57,29 +53,29 @@ namespace ODTE.Strategy
             // Base Fibonacci level
             var fibIndex = Math.Min(_consecutiveLossingDays, _fibonacciLevels.Count - 1);
             var baseLimit = _fibonacciLevels[fibIndex];
-            
+
             // Real data shows we need VIX-based scaling
             var vixMultiplier = CalculateVixMultiplier(conditions.VIX);
-            
+
             // Trend risk adjustment (real data shows trend days had larger losses)
             var trendAdjustment = CalculateTrendRiskAdjustment(conditions.TrendScore);
-            
+
             // Recent performance adjustment
             var performanceAdjustment = CalculatePerformanceAdjustment();
-            
+
             // Apply all adjustments
             var adjustedLimit = baseLimit * vixMultiplier * trendAdjustment * performanceAdjustment;
-            
+
             // Absolute safety caps based on real data analysis - more balanced
             adjustedLimit = Math.Min(adjustedLimit, accountSize * 0.025m); // Never more than 2.5% of account (less restrictive)
             adjustedLimit = Math.Min(adjustedLimit, _dailyDrawdownLimit);
-            
+
             // Emergency stop if in severe drawdown
             if (_cumulativeDrawdown > accountSize * 0.12m) // 12% drawdown triggers emergency mode (more tolerant)
             {
                 adjustedLimit = Math.Min(adjustedLimit, 50m); // Higher emergency minimum
             }
-            
+
             return Math.Max(adjustedLimit, 10m); // Minimum viable trade size
         }
 
@@ -107,7 +103,7 @@ namespace ODTE.Strategy
         private decimal CalculateTrendRiskAdjustment(double trendScore)
         {
             var absTrend = Math.Abs(trendScore);
-            
+
             // Strong trends caused some of the larger losses in real data
             return absTrend switch
             {
@@ -126,15 +122,15 @@ namespace ODTE.Strategy
         private decimal CalculatePerformanceAdjustment()
         {
             if (_recentPerformance.Count < 5) return 1.0m;
-            
+
             var recentTotal = _recentPerformance.Sum();
             var recentAverage = recentTotal / _recentPerformance.Count;
-            
+
             // If recent performance is poor, reduce risk
             if (recentAverage < -5m) return 0.6m;  // Recent losses - reduce significantly
             if (recentAverage < 0m) return 0.8m;   // Recent flat - reduce moderately
             if (recentAverage > 5m) return 1.1m;   // Recent gains - slight increase
-            
+
             return 1.0m; // Neutral
         }
 
@@ -145,21 +141,21 @@ namespace ODTE.Strategy
         {
             // Block if single trade risk exceeds our battle-hardened limit
             if (proposedRisk > _maxSingleTradeRisk) return true;
-            
+
             // Block if daily limit would be exceeded
             var todayKey = DateTime.Today.ToString("yyyy-MM-dd");
             var todayLosses = _dailyLosses.GetValueOrDefault(todayKey, 0m);
             if (todayLosses + proposedRisk > GetDailyRiskLimit(accountSize, conditions)) return true;
-            
+
             // Block if in emergency drawdown mode - more tolerant
             if (_cumulativeDrawdown > accountSize * 0.15m) return true; // 15% vs 10%
-            
+
             // Block if VIX is extremely high - more tolerant
             if (conditions.VIX > 55) return true; // 55 vs 45
-            
+
             // Block if extreme trend conditions - more tolerant  
             if (Math.Abs(conditions.TrendScore) > 1.2) return true; // Allow more trend
-            
+
             return false;
         }
 
@@ -169,17 +165,17 @@ namespace ODTE.Strategy
         public void RecordTradeResult(decimal pnl, DateTime tradeDate)
         {
             var dateKey = tradeDate.ToString("yyyy-MM-dd");
-            
+
             // Update daily tracking
             if (pnl < 0)
             {
                 _dailyLosses[dateKey] = _dailyLosses.GetValueOrDefault(dateKey, 0m) + Math.Abs(pnl);
             }
-            
+
             // Update recent performance queue
             _recentPerformance.Enqueue(pnl);
             if (_recentPerformance.Count > 10) _recentPerformance.Dequeue();
-            
+
             // Update consecutive losing days
             if (GetDailyPnL(dateKey) < 0)
             {
@@ -189,7 +185,7 @@ namespace ODTE.Strategy
             {
                 _consecutiveLossingDays = 0; // Reset on profitable day
             }
-            
+
             // Update drawdown tracking
             var currentAccountValue = _peakAccountValue + _recentPerformance.Sum();
             if (currentAccountValue > _peakAccountValue)

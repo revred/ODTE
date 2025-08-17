@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using ODTE.Historical;
 
 /// <summary>
@@ -11,25 +9,25 @@ class ConsolidateParquetToSqlite
     {
         Console.WriteLine("🚀 CONSOLIDATING 2015-2016 PARQUET DATA TO SQLITE");
         Console.WriteLine(new string('=', 60));
-        
+
         try
         {
             string sourceDirectory = @"C:\code\ODTE\data\Historical\XSP";
             Console.WriteLine($"Source: {sourceDirectory}");
-            
+
             using var manager = new HistoricalDataManager();
             Console.WriteLine("Initializing HistoricalDataManager...");
-            
+
             await manager.InitializeAsync();
             Console.WriteLine("Manager initialized successfully");
-            
+
             Console.WriteLine("Starting parquet consolidation...");
             var importResult = await manager.ConsolidateFromParquetAsync(sourceDirectory);
-            
+
             if (importResult.Success)
             {
                 Console.WriteLine("✅ CONSOLIDATION SUCCESSFUL!");
-                
+
                 var stats = await manager.GetStatsAsync();
                 Console.WriteLine($"📊 Database Statistics:");
                 Console.WriteLine($"   - Total Records: {stats.TotalRecords:N0}");
@@ -47,7 +45,7 @@ class ConsolidateParquetToSqlite
             Console.WriteLine($"❌ ERROR: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
-        
+
         Console.WriteLine("\nPress any key to exit...");
         Console.ReadKey();
     }

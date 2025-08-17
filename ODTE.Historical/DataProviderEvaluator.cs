@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Historical
 {
     /// <summary>
@@ -244,7 +239,7 @@ namespace ODTE.Historical
             public decimal TotalCost { get; set; }
             public string DataQuality { get; set; } = "";
             public string Strategy { get; set; } = "";
-            
+
             public List<string> GetImplementationSteps()
             {
                 return new List<string>
@@ -267,11 +262,11 @@ namespace ODTE.Historical
         {
             // For ODTE: Need 20 years of dense options data, focus on SPY/SPX/XSP
             var providers = GetEvaluatedProviders();
-            
+
             return new DataAcquisitionStrategy
             {
                 PrimaryProvider = providers.First(p => p.Name == "CBOE DataShop"),
-                SecondaryProvider = providers.First(p => p.Name == "Polygon.io Historical"), 
+                SecondaryProvider = providers.First(p => p.Name == "Polygon.io Historical"),
                 VixProvider = providers.First(p => p.Name == "FRED Economic Data"),
                 TotalCost = 6200,
                 DataQuality = "Excellent",

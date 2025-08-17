@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 
 namespace ODTE.Historical
@@ -282,8 +279,8 @@ namespace ODTE.Historical
             }
 
             public static DataQualityMetrics CalculateQualityMetrics(
-                List<OptionsHistoricalRecord> records, 
-                DateTime date, 
+                List<OptionsHistoricalRecord> records,
+                DateTime date,
                 string symbol)
             {
                 var validRecords = records.Count(ValidateOptionsRecord);

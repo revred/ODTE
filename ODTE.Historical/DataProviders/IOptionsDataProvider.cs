@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace ODTE.Historical.DataProviders;
 
 /// <summary>
@@ -13,15 +8,15 @@ public interface IOptionsDataProvider
     string ProviderName { get; }
     int Priority { get; } // Lower number = higher priority
     bool IsAvailable { get; }
-    
+
     /// <summary>
     /// Fetch options chain data for a specific symbol and date
     /// </summary>
     Task<OptionsChainData?> GetOptionsChainAsync(
-        string symbol, 
+        string symbol,
         DateTime date,
         CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Fetch intraday bars for underlying
     /// </summary>
@@ -31,12 +26,12 @@ public interface IOptionsDataProvider
         DateTime endDate,
         TimeSpan? interval = null,
         CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Check if provider is healthy and can accept requests
     /// </summary>
     Task<ProviderHealthStatus> CheckHealthAsync();
-    
+
     /// <summary>
     /// Get current rate limit status
     /// </summary>

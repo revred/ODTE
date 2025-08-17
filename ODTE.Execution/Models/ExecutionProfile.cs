@@ -9,13 +9,13 @@ public record ExecutionProfile
     public string Name { get; init; } = "";
     public int LatencyMs { get; init; } = 250;
     public decimal MaxTobParticipation { get; init; } = 0.05m;
-    
+
     public SlippageSettings SlippageFloor { get; init; } = new();
     public SizePenaltySettings SizePenalty { get; init; } = new();
     public int AdverseSelectionBps { get; init; } = 25;
     public MidFillSettings MidFill { get; init; } = new();
     public EventOverrideSettings EventOverrides { get; init; } = new();
-    
+
     /// <summary>
     /// Get pre-configured conservative profile for institutional compliance
     /// </summary>
@@ -46,22 +46,22 @@ public record ExecutionProfile
             }
         }
     };
-    
+
     /// <summary>
     /// Get pre-configured base profile for research
     /// </summary>
-    public static ExecutionProfile Base => Conservative with 
-    { 
+    public static ExecutionProfile Base => Conservative with
+    {
         Name = "base",
         LatencyMs = 200,
         MaxTobParticipation = 0.08m
     };
-    
+
     /// <summary>
     /// Get pre-configured optimistic profile for sensitivity analysis only
     /// </summary>
-    public static ExecutionProfile Optimistic => Base with 
-    { 
+    public static ExecutionProfile Optimistic => Base with
+    {
         Name = "optimistic",
         LatencyMs = 150,
         MaxTobParticipation = 0.12m
@@ -83,7 +83,7 @@ public record MidFillSettings
 {
     public Dictionary<string, decimal> PWhenSpreadLeq20c { get; init; } = new();
     public Dictionary<string, decimal> POtherwise { get; init; } = new();
-    
+
     /// <summary>
     /// Get mid-fill probability for current profile and spread
     /// </summary>

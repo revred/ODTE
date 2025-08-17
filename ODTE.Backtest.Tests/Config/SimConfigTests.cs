@@ -103,7 +103,7 @@ public class SimConfigTests
         // Assert
         deltaConfig.CondorMin.Should().BeLessThan(deltaConfig.CondorMax);
         deltaConfig.SingleMin.Should().BeLessThan(deltaConfig.SingleMax);
-        
+
         // All values should be positive and reasonable for options
         new[] { condorMin, condorMax, singleMin, singleMax }
             .Should().AllSatisfy(d => d.Should().BeInRange(0.01, 0.50));
@@ -149,10 +149,10 @@ public class SimConfigTests
         // Assert
         creditConfig.Condor.Should().Be(0.18); // 18% minimum
         creditConfig.Single.Should().Be(0.20); // 20% minimum (higher for directional risk)
-        
+
         // Condor can accept slightly lower credit due to two-sided nature
         creditConfig.Single.Should().BeGreaterThanOrEqualTo(creditConfig.Condor);
-        
+
         // Both should be reasonable minimums
         creditConfig.Condor.Should().BeInRange(0.10, 0.30);
         creditConfig.Single.Should().BeInRange(0.15, 0.35);
@@ -186,7 +186,7 @@ public class SimConfigTests
         // Assert
         stopsConfig.CreditMultiple.Should().Be(2.2); // Exit at 2.2x credit loss
         stopsConfig.DeltaBreach.Should().Be(0.33); // Exit at 33 delta (gamma danger zone)
-        
+
         // Business rules
         stopsConfig.CreditMultiple.Should().BeInRange(1.5, 4.0); // Reasonable stop loss range
         stopsConfig.DeltaBreach.Should().BeInRange(0.25, 0.45); // Before significant gamma acceleration
@@ -220,7 +220,7 @@ public class SimConfigTests
         riskConfig.DailyLossStop.Should().Be(500); // $500 daily loss limit
         riskConfig.PerTradeMaxLossCap.Should().Be(200); // $200 per trade max loss
         riskConfig.MaxConcurrentPerSide.Should().Be(2); // Max 2 positions per side
-        
+
         // Business rules
         riskConfig.DailyLossStop.Should().BeGreaterThan(riskConfig.PerTradeMaxLossCap);
         riskConfig.MaxConcurrentPerSide.Should().BeInRange(1, 10);
@@ -238,7 +238,7 @@ public class SimConfigTests
         slippageConfig.LateSessionExtraTicks.Should().Be(0.5);
         slippageConfig.TickValue.Should().Be(0.05); // $0.05 for index options
         slippageConfig.SpreadPctCap.Should().Be(0.25); // 25% max spread
-        
+
         // Business rules
         slippageConfig.TickValue.Should().BeGreaterThan(0);
         slippageConfig.SpreadPctCap.Should().BeInRange(0.10, 0.50);
@@ -254,11 +254,11 @@ public class SimConfigTests
         // Assert
         feesConfig.CommissionPerContract.Should().Be(0.65);
         feesConfig.ExchangeFeesPerContract.Should().Be(0.25);
-        
+
         // Total cost per contract
         var totalCostPerContract = feesConfig.CommissionPerContract + feesConfig.ExchangeFeesPerContract;
         totalCostPerContract.Should().Be(0.90);
-        
+
         // Total cost per spread (2 contracts)
         var totalCostPerSpread = totalCostPerContract * 2;
         totalCostPerSpread.Should().Be(1.80);
@@ -277,7 +277,7 @@ public class SimConfigTests
         signalsConfig.CalmIvCondition.Should().Be("short_leq_30d");
         signalsConfig.EventBlockMinutesBefore.Should().Be(60); // 1 hour before events
         signalsConfig.EventBlockMinutesAfter.Should().Be(15); // 15 minutes after events
-        
+
         // Business rules
         signalsConfig.OrMinutes.Should().BeInRange(5, 30);
         signalsConfig.VwapWindowMinutes.Should().BeInRange(15, 120);
@@ -294,7 +294,7 @@ public class SimConfigTests
         // Assert
         throttleConfig.RvHighCadenceSeconds.Should().Be(1800); // 30 minutes when volatile
         throttleConfig.RvLowCadenceSeconds.Should().Be(600); // 10 minutes when calm
-        
+
         // Business rules
         throttleConfig.RvHighCadenceSeconds.Should().BeGreaterThan(throttleConfig.RvLowCadenceSeconds);
         throttleConfig.RvLowCadenceSeconds.Should().BeInRange(300, 1800); // 5-30 minutes
@@ -313,9 +313,9 @@ public class SimConfigTests
         pathsConfig.Vix9dCsv.Should().Be("./Samples/vix9d_daily.csv");
         pathsConfig.CalendarCsv.Should().Be("./Samples/calendar.csv");
         pathsConfig.ReportsDir.Should().Be("./Reports");
-        
+
         // All paths should be non-empty
-        new[] { pathsConfig.BarsCsv, pathsConfig.VixCsv, pathsConfig.Vix9dCsv, 
+        new[] { pathsConfig.BarsCsv, pathsConfig.VixCsv, pathsConfig.Vix9dCsv,
                 pathsConfig.CalendarCsv, pathsConfig.ReportsDir }
             .Should().AllSatisfy(path => path.Should().NotBeNullOrEmpty());
     }
@@ -327,23 +327,23 @@ public class SimConfigTests
         var config = new SimConfig();
 
         // Act & Assert - Business rule consistency checks
-        
+
         // Delta ranges should be logical
         config.ShortDelta.CondorMin.Should().BeLessThan(config.ShortDelta.CondorMax);
         config.ShortDelta.SingleMin.Should().BeLessThan(config.ShortDelta.SingleMax);
-        
+
         // Width ranges should be logical
         config.WidthPoints.Min.Should().BeLessThanOrEqualTo(config.WidthPoints.Max);
-        
+
         // Risk management should be consistent
         config.Risk.DailyLossStop.Should().BeGreaterThan(config.Risk.PerTradeMaxLossCap);
-        
+
         // Throttling should make sense
         config.Throttle.RvHighCadenceSeconds.Should().BeGreaterThan(config.Throttle.RvLowCadenceSeconds);
-        
+
         // Event blocking should be logical
         config.Signals.EventBlockMinutesBefore.Should().BeGreaterThan(config.Signals.EventBlockMinutesAfter);
-        
+
         // Credit requirements should be reasonable
         config.CreditPerWidthMin.Single.Should().BeInRange(0.1, 0.5);
         config.CreditPerWidthMin.Condor.Should().BeInRange(0.1, 0.5);
@@ -405,7 +405,7 @@ public class SimConfigTests
             Timezone = "America/New_York",
             CadenceSeconds = 900,
             NoNewRiskMinutesToClose = 40,
-            
+
             ShortDelta = new ShortDeltaCfg
             {
                 CondorMin = 0.07,
@@ -413,7 +413,7 @@ public class SimConfigTests
                 SingleMin = 0.10,
                 SingleMax = 0.20
             },
-            
+
             Risk = new RiskCfg
             {
                 DailyLossStop = 500,

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -39,19 +35,19 @@ namespace ODTE.Strategy
             {
                 // Step 1: Calculate individual condition scores
                 var scores = CalculateConditionScores(conditions);
-                
+
                 // Step 2: Apply weighted composite scoring
                 var compositeScore = CalculateCompositeScore(scores);
-                
+
                 // Step 3: Apply time-based optimizations
                 var timeAdjustedScore = ApplyTimingOptimizations(compositeScore, conditions);
-                
+
                 // Step 4: Historical pattern enhancement
                 var finalScore = ApplyHistoricalPatternBoost(timeAdjustedScore, conditions);
-                
+
                 // Step 5: Classify quality level
                 var quality = ClassifyQualityLevel(finalScore);
-                
+
                 return new OptimalConditions
                 {
                     Quality = quality,
@@ -77,22 +73,22 @@ namespace ODTE.Strategy
 
             // 1. Volatility Assessment (25% weight)
             scores["Volatility"] = AnalyzeVolatilityConditions(conditions);
-            
+
             // 2. Market Regime Suitability (20% weight)
             scores["MarketRegime"] = AnalyzeMarketRegime(conditions);
-            
+
             // 3. Trend Stability (15% weight)
             scores["TrendStability"] = AnalyzeTrendStability(conditions);
-            
+
             // 4. Liquidity Conditions (15% weight)
             scores["Liquidity"] = AnalyzeLiquidityConditions(conditions);
-            
+
             // 5. Time-of-Day Favorability (10% weight)
             scores["TimeOfDay"] = AnalyzeTimeOptimality(conditions);
-            
+
             // 6. Options-Specific Factors (10% weight)
             scores["OptionsFactors"] = AnalyzeOptionsSpecificFactors(conditions);
-            
+
             // 7. Risk Environment (5% weight)
             scores["RiskEnvironment"] = AnalyzeRiskEnvironment(conditions);
 
@@ -102,7 +98,7 @@ namespace ODTE.Strategy
         private double AnalyzeVolatilityConditions(MarketConditions conditions)
         {
             var vix = conditions.VIX;
-            
+
             // Optimal VIX ranges for 0DTE strategies
             if (vix >= 15 && vix <= 25)
                 return 90.0; // Sweet spot: enough premium, manageable risk
@@ -140,7 +136,7 @@ namespace ODTE.Strategy
         private double AnalyzeTrendStability(MarketConditions conditions)
         {
             var trendScore = Math.Abs(conditions.TrendScore);
-            
+
             // Favor moderate trends for iron condor strategies
             if (trendScore <= 0.3)
                 return 90.0; // Very stable, ideal for neutral strategies
@@ -159,9 +155,9 @@ namespace ODTE.Strategy
             // Estimate liquidity based on time and market conditions
             var hour = conditions.Date.Hour;
             var minute = conditions.Date.Minute;
-            
+
             var timeScore = 50.0;
-            
+
             // Peak liquidity hours
             if ((hour >= 9 && hour <= 11) || (hour >= 13 && hour <= 15))
                 timeScore = 90.0;
@@ -169,13 +165,13 @@ namespace ODTE.Strategy
                 timeScore = 75.0;
             else
                 timeScore = 40.0; // Low liquidity periods
-            
+
             // VIX impact on liquidity
             var vixAdjustment = conditions.VIX > 30 ? 0.9 : 1.0; // High vol reduces effective liquidity
-            
+
             // Market regime impact
             var regimeAdjustment = conditions.MarketRegime == "Crisis" ? 0.7 : 1.0;
-            
+
             return timeScore * vixAdjustment * regimeAdjustment;
         }
 
@@ -184,9 +180,9 @@ namespace ODTE.Strategy
             var hour = conditions.Date.Hour;
             var minute = conditions.Date.Minute;
             var dayOfWeek = conditions.Date.DayOfWeek;
-            
+
             var score = 50.0;
-            
+
             // Optimal hours for 0DTE trading
             if (hour == 10 || hour == 14)
                 score = 95.0; // Peak performance hours
@@ -196,24 +192,24 @@ namespace ODTE.Strategy
                 score = 65.0; // Acceptable hours
             else
                 score = 20.0; // Poor timing
-            
+
             // Minute-level optimization (6-minute alignment)
             if (minute % 6 == 0)
                 score *= 1.1; // Boost for 6-minute intervals
-            
+
             // Day of week adjustments
             if (dayOfWeek == DayOfWeek.Tuesday || dayOfWeek == DayOfWeek.Wednesday || dayOfWeek == DayOfWeek.Thursday)
                 score *= 1.05; // Mid-week optimal
             else if (dayOfWeek == DayOfWeek.Monday || dayOfWeek == DayOfWeek.Friday)
                 score *= 0.95; // Start/end week adjustments
-            
+
             return Math.Min(score, 100.0);
         }
 
         private double AnalyzeOptionsSpecificFactors(MarketConditions conditions)
         {
             var score = 50.0;
-            
+
             // Implied volatility considerations
             var vix = conditions.VIX;
             if (vix >= 18 && vix <= 28)
@@ -224,7 +220,7 @@ namespace ODTE.Strategy
                 score += 15.0; // High IV but manageable
             else
                 score += 5.0; // Suboptimal IV environment
-            
+
             // Time decay favorability (0DTE specific)
             var hour = conditions.Date.Hour;
             if (hour >= 14)
@@ -233,33 +229,33 @@ namespace ODTE.Strategy
                 score += 10.0; // Good theta decay
             else
                 score += 5.0; // Moderate theta impact
-            
+
             // Underlying price stability
             var trendStability = 1.0 - Math.Min(Math.Abs(conditions.TrendScore), 1.0);
             score += trendStability * 20.0; // Reward stability for neutral strategies
-            
+
             return Math.Min(score, 100.0);
         }
 
         private double AnalyzeRiskEnvironment(MarketConditions conditions)
         {
             var score = 70.0; // Base moderate score
-            
+
             // Economic event risk (simplified)
             var hour = conditions.Date.Hour;
             if (hour == 10 && conditions.Date.Minute == 0) // Potential economic release
                 score -= 20.0;
-            
+
             // Market close risk
             if (hour >= 15 && hour <= 16)
                 score -= 10.0; // Elevated pin risk near close
-            
+
             // Volatility risk
             if (conditions.VIX > 35)
                 score -= 25.0; // High volatility environment
             else if (conditions.VIX < 12)
                 score -= 15.0; // Ultra-low vol (complacency risk)
-            
+
             // Regime-specific risks
             switch (conditions.MarketRegime.ToLower())
             {
@@ -273,14 +269,14 @@ namespace ODTE.Strategy
                     score += 15.0;
                     break;
             }
-            
+
             return Math.Max(score, 0.0);
         }
 
         private double CalculateCompositeScore(Dictionary<string, double> scores)
         {
             var weightedScore = 0.0;
-            
+
             foreach (var score in scores)
             {
                 if (_conditionWeights.ContainsKey(score.Key))
@@ -288,28 +284,28 @@ namespace ODTE.Strategy
                     weightedScore += score.Value * _conditionWeights[score.Key];
                 }
             }
-            
+
             return Math.Round(weightedScore, 1);
         }
 
         private double ApplyTimingOptimizations(double baseScore, MarketConditions conditions)
         {
             var adjustedScore = baseScore;
-            
+
             // Time-of-day momentum
             var hour = conditions.Date.Hour;
             if (hour == 10 || hour == 14) // Optimal execution windows
                 adjustedScore *= 1.05;
             else if (hour == 9 || hour == 15) // Good execution windows
                 adjustedScore *= 1.02;
-            
+
             // Day-of-week patterns
             var dayOfWeek = conditions.Date.DayOfWeek;
             if (dayOfWeek == DayOfWeek.Wednesday) // Mid-week stability
                 adjustedScore *= 1.03;
             else if (dayOfWeek == DayOfWeek.Friday) // Expiration day effects
                 adjustedScore *= 0.98;
-            
+
             return Math.Min(adjustedScore, 100.0);
         }
 
@@ -317,13 +313,13 @@ namespace ODTE.Strategy
         {
             // Simplified pattern recognition
             var patternBoost = 0.0;
-            
+
             // Look for similar historical conditions
             var similarPatterns = _historicalPatterns
                 .Where(p => Math.Abs(p.VIX - conditions.VIX) < 5 &&
                            p.MarketRegime == conditions.MarketRegime)
                 .ToList();
-            
+
             if (similarPatterns.Any())
             {
                 var avgSuccess = similarPatterns.Average(p => p.SuccessRate);
@@ -332,7 +328,7 @@ namespace ODTE.Strategy
                 else if (avgSuccess < 0.60)
                     patternBoost = -5.0; // Penalty for historically poor patterns
             }
-            
+
             return Math.Max(0.0, Math.Min(100.0, baseScore + patternBoost));
         }
 
@@ -354,24 +350,24 @@ namespace ODTE.Strategy
         {
             var topFactors = scores.OrderByDescending(s => s.Value).Take(3).ToList();
             var bottomFactors = scores.OrderBy(s => s.Value).Take(2).ToList();
-            
+
             switch (quality)
             {
                 case OptimalQuality.Exceptional:
                     return $"Exceptional conditions: {topFactors[0].Key}({topFactors[0].Value:F0}), {topFactors[1].Key}({topFactors[1].Value:F0}), VIX={conditions.VIX:F1}";
-                
+
                 case OptimalQuality.Optimal:
                     return $"Optimal setup: {topFactors[0].Key}({topFactors[0].Value:F0}), {topFactors[1].Key}({topFactors[1].Value:F0}), regime={conditions.MarketRegime}";
-                
+
                 case OptimalQuality.Favorable:
                     return $"Favorable conditions: {topFactors[0].Key}({topFactors[0].Value:F0}), minor concerns in {bottomFactors[0].Key}";
-                
+
                 case OptimalQuality.Adequate:
                     return $"Adequate setup: {topFactors[0].Key}({topFactors[0].Value:F0}), watch {bottomFactors[0].Key}({bottomFactors[0].Value:F0})";
-                
+
                 case OptimalQuality.Poor:
                     return $"Poor conditions: {bottomFactors[0].Key}({bottomFactors[0].Value:F0}), {bottomFactors[1].Key}({bottomFactors[1].Value:F0})";
-                
+
                 default:
                     return "Unknown quality classification";
             }
@@ -402,15 +398,15 @@ namespace ODTE.Strategy
                 WasSuccessful = wasSuccessful,
                 Timestamp = conditions.Date
             };
-            
+
             _historicalPatterns.Add(pattern);
-            
+
             // Maintain rolling window of patterns
             if (_historicalPatterns.Count > 1000)
             {
                 _historicalPatterns.RemoveRange(0, 200);
             }
-            
+
             // Update success rates
             UpdatePatternSuccessRates();
         }
@@ -418,11 +414,11 @@ namespace ODTE.Strategy
         private void UpdatePatternSuccessRates()
         {
             var regimeGroups = _historicalPatterns.GroupBy(p => p.MarketRegime);
-            
+
             foreach (var group in regimeGroups)
             {
                 var successRate = group.Count(p => p.WasSuccessful) / (double)group.Count();
-                
+
                 foreach (var pattern in group)
                 {
                     pattern.SuccessRate = successRate;

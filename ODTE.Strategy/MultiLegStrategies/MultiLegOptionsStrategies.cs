@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.MultiLegStrategies
 {
     /// <summary>
@@ -33,7 +29,7 @@ namespace ODTE.Strategy.MultiLegStrategies
         // Standard commission and slippage constants
         public const decimal CommissionPerLeg = 2.00m;
         public const decimal SlippagePerLeg = 0.025m; // 0.5 ticks × $0.05
-        
+
         public enum StrategyType
         {
             BrokenWingButterfly,
@@ -47,7 +43,7 @@ namespace ODTE.Strategy.MultiLegStrategies
             DiagonalSpread,
             RatioSpread
         }
-        
+
         public enum MarketCondition
         {
             Bull,      // Rising market
@@ -55,7 +51,7 @@ namespace ODTE.Strategy.MultiLegStrategies
             Calm,      // Low volatility
             Volatile   // High volatility
         }
-        
+
         public class OptionLeg
         {
             public string Type { get; set; } = ""; // "Call" or "Put"
@@ -69,7 +65,7 @@ namespace ODTE.Strategy.MultiLegStrategies
             public decimal Theta { get; set; }
             public decimal Vega { get; set; }
         }
-        
+
         public class StrategyPosition
         {
             public StrategyType Type { get; set; }
@@ -88,33 +84,33 @@ namespace ODTE.Strategy.MultiLegStrategies
             public decimal NetVega { get; set; }
             public MarketCondition OptimalCondition { get; set; }
         }
-        
+
         #region 1. Broken Wing Butterfly (Credit)
-        
+
         public static StrategyPosition CreateBrokenWingButterfly(
-            decimal underlyingPrice, 
+            decimal underlyingPrice,
             decimal vix = 20m,
             MarketCondition condition = MarketCondition.Calm)
         {
             // Credit BWB: Sell 1 ATM, Buy 1 OTM, Buy 1 Far OTM (skewed)
             // Designed to collect credit while maintaining defined risk
-            
+
             var position = new StrategyPosition { Type = StrategyType.BrokenWingButterfly };
-            
+
             // Strike selection based on market condition
             var atmlStrike = Math.Round(underlyingPrice / 5) * 5; // Round to nearest $5
             var shortStrike = atmlStrike;
             var longStrike1 = atmlStrike + 10; // 10 points OTM
             var longStrike2 = atmlStrike + 25; // 25 points OTM (broken wing)
-            
+
             // Calculate premiums with VIX adjustment
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             position.Legs = new List<OptionLeg>
             {
                 // Sell ATM Call
                 new() {
-                    Type = "Call", Action = "Sell", Strike = shortStrike, 
+                    Type = "Call", Action = "Sell", Strike = shortStrike,
                     Premium = CalculateCallPremium(underlyingPrice, shortStrike, 0.0m, vix) * vixMultiplier,
                     Quantity = 1, Delta = 0.50m, Gamma = 0.05m, Theta = -0.15m, Vega = 0.25m
                 },
@@ -131,33 +127,33 @@ namespace ODTE.Strategy.MultiLegStrategies
                     Quantity = 1, Delta = 0.10m, Gamma = 0.01m, Theta = -0.03m, Vega = 0.08m
                 }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 2. Iron Condor
-        
+
         public static StrategyPosition CreateIronCondor(
             decimal underlyingPrice,
             decimal vix = 20m,
             MarketCondition condition = MarketCondition.Calm)
         {
             var position = new StrategyPosition { Type = StrategyType.IronCondor };
-            
+
             // Standard Iron Condor: Sell OTM Put, Buy Further OTM Put, Sell OTM Call, Buy Further OTM Call
             var putShortStrike = underlyingPrice - 25;
             var putLongStrike = underlyingPrice - 50;
             var callShortStrike = underlyingPrice + 25;
             var callLongStrike = underlyingPrice + 50;
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             position.Legs = new List<OptionLeg>
             {
                 // Put Credit Spread
-                new() { Type = "Put", Action = "Sell", Strike = putShortStrike, 
+                new() { Type = "Put", Action = "Sell", Strike = putShortStrike,
                         Premium = CalculatePutPremium(underlyingPrice, putShortStrike, 0.0m, vix) * vixMultiplier,
                         Quantity = 1, Delta = -0.25m, Gamma = 0.02m, Theta = -0.08m, Vega = 0.15m },
                 new() { Type = "Put", Action = "Buy", Strike = putLongStrike,
@@ -172,27 +168,27 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Premium = CalculateCallPremium(underlyingPrice, callLongStrike, 0.0m, vix) * vixMultiplier,
                         Quantity = 1, Delta = 0.10m, Gamma = 0.01m, Theta = -0.03m, Vega = 0.08m }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 3. Iron Butterfly
-        
+
         public static StrategyPosition CreateIronButterfly(
             decimal underlyingPrice,
             decimal vix = 20m,
             MarketCondition condition = MarketCondition.Calm)
         {
             var position = new StrategyPosition { Type = StrategyType.IronButterfly };
-            
+
             // Iron Butterfly: Sell ATM Call & Put, Buy OTM Call & Put
             var atmStrike = Math.Round(underlyingPrice / 5) * 5;
             var wingStrike = 25m; // $25 wings
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             position.Legs = new List<OptionLeg>
             {
                 // Sell ATM Straddle
@@ -211,14 +207,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Premium = CalculatePutPremium(underlyingPrice, atmStrike - wingStrike, 0.0m, vix) * vixMultiplier,
                         Quantity = 1, Delta = -0.15m, Gamma = 0.02m, Theta = -0.05m, Vega = 0.12m }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 4. Call Spread
-        
+
         public static StrategyPosition CreateCallSpread(
             decimal underlyingPrice,
             bool isBullish = true,
@@ -226,15 +222,15 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Bull)
         {
             var position = new StrategyPosition { Type = StrategyType.CallSpread };
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             if (isBullish)
             {
                 // Bull Call Spread: Buy lower strike, Sell higher strike
                 var longStrike = underlyingPrice - 10;
                 var shortStrike = underlyingPrice + 15;
-                
+
                 position.Legs = new List<OptionLeg>
                 {
                     new() { Type = "Call", Action = "Buy", Strike = longStrike,
@@ -250,7 +246,7 @@ namespace ODTE.Strategy.MultiLegStrategies
                 // Bear Call Spread: Sell lower strike, Buy higher strike
                 var shortStrike = underlyingPrice + 10;
                 var longStrike = underlyingPrice + 35;
-                
+
                 position.Legs = new List<OptionLeg>
                 {
                     new() { Type = "Call", Action = "Sell", Strike = shortStrike,
@@ -261,14 +257,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                             Quantity = 1, Delta = 0.15m, Gamma = 0.02m, Theta = -0.05m, Vega = 0.12m }
                 };
             }
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 5. Put Spread
-        
+
         public static StrategyPosition CreatePutSpread(
             decimal underlyingPrice,
             bool isBullish = true,
@@ -276,15 +272,15 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Bull)
         {
             var position = new StrategyPosition { Type = StrategyType.PutSpread };
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             if (isBullish)
             {
                 // Bull Put Spread: Sell higher strike, Buy lower strike
                 var shortStrike = underlyingPrice - 15;
                 var longStrike = underlyingPrice - 40;
-                
+
                 position.Legs = new List<OptionLeg>
                 {
                     new() { Type = "Put", Action = "Sell", Strike = shortStrike,
@@ -300,7 +296,7 @@ namespace ODTE.Strategy.MultiLegStrategies
                 // Bear Put Spread: Buy higher strike, Sell lower strike
                 var longStrike = underlyingPrice + 10;
                 var shortStrike = underlyingPrice - 15;
-                
+
                 position.Legs = new List<OptionLeg>
                 {
                     new() { Type = "Put", Action = "Buy", Strike = longStrike,
@@ -311,14 +307,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                             Quantity = 1, Delta = -0.35m, Gamma = 0.03m, Theta = -0.10m, Vega = 0.18m }
                 };
             }
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 6. Straddle
-        
+
         public static StrategyPosition CreateStraddle(
             decimal underlyingPrice,
             bool isLong = true,
@@ -326,13 +322,13 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Volatile)
         {
             var position = new StrategyPosition { Type = StrategyType.Straddle };
-            
+
             var atmStrike = Math.Round(underlyingPrice / 5) * 5;
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             var action = isLong ? "Buy" : "Sell";
             var deltaSign = isLong ? 1m : -1m;
-            
+
             position.Legs = new List<OptionLeg>
             {
                 new() { Type = "Call", Action = action, Strike = atmStrike,
@@ -342,14 +338,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Premium = CalculatePutPremium(underlyingPrice, atmStrike, 0.0m, vix) * vixMultiplier,
                         Quantity = 1, Delta = -0.50m * deltaSign, Gamma = 0.05m, Theta = -0.15m * deltaSign, Vega = 0.25m * deltaSign }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 7. Strangle
-        
+
         public static StrategyPosition CreateStrangle(
             decimal underlyingPrice,
             bool isLong = true,
@@ -357,14 +353,14 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Volatile)
         {
             var position = new StrategyPosition { Type = StrategyType.Strangle };
-            
+
             var callStrike = underlyingPrice + 20; // OTM call
             var putStrike = underlyingPrice - 20;  // OTM put
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             var action = isLong ? "Buy" : "Sell";
             var deltaSign = isLong ? 1m : -1m;
-            
+
             position.Legs = new List<OptionLeg>
             {
                 new() { Type = "Call", Action = action, Strike = callStrike,
@@ -374,14 +370,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Premium = CalculatePutPremium(underlyingPrice, putStrike, 0.0m, vix) * vixMultiplier,
                         Quantity = 1, Delta = -0.30m * deltaSign, Gamma = 0.03m, Theta = -0.08m * deltaSign, Vega = 0.18m * deltaSign }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 8. Calendar Spread
-        
+
         public static StrategyPosition CreateCalendarSpread(
             decimal underlyingPrice,
             string optionType = "Call",
@@ -389,10 +385,10 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Calm)
         {
             var position = new StrategyPosition { Type = StrategyType.CalendarSpread };
-            
+
             var strike = Math.Round(underlyingPrice / 5) * 5; // ATM
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             // Calendar: Sell front month, Buy back month
             position.Legs = new List<OptionLeg>
             {
@@ -405,14 +401,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Quantity = 1, Expiration = DateTime.Today.AddDays(60),
                         Delta = optionType == "Call" ? 0.45m : -0.45m, Gamma = 0.03m, Theta = -0.10m, Vega = 0.25m }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 9. Diagonal Spread
-        
+
         public static StrategyPosition CreateDiagonalSpread(
             decimal underlyingPrice,
             string optionType = "Call",
@@ -420,13 +416,13 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Bull)
         {
             var position = new StrategyPosition { Type = StrategyType.DiagonalSpread };
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             // Diagonal: Different strikes AND different expirations
             var shortStrike = underlyingPrice + 10;
             var longStrike = underlyingPrice + 30;
-            
+
             position.Legs = new List<OptionLeg>
             {
                 new() { Type = optionType, Action = "Sell", Strike = shortStrike,
@@ -438,14 +434,14 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Quantity = 1, Expiration = DateTime.Today.AddDays(60),
                         Delta = optionType == "Call" ? 0.20m : -0.35m, Gamma = 0.02m, Theta = -0.06m, Vega = 0.18m }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region 10. Ratio Spread (Defined Risk)
-        
+
         public static StrategyPosition CreateRatioSpread(
             decimal underlyingPrice,
             string optionType = "Call",
@@ -453,14 +449,14 @@ namespace ODTE.Strategy.MultiLegStrategies
             MarketCondition condition = MarketCondition.Calm)
         {
             var position = new StrategyPosition { Type = StrategyType.RatioSpread };
-            
+
             var vixMultiplier = Math.Max(0.8m, Math.Min(2.0m, vix / 20m));
-            
+
             // Defined Risk Ratio: Buy 1 ITM, Sell 2 OTM, Buy 1 Far OTM (cap)
             var longStrike1 = underlyingPrice - 10; // ITM
             var shortStrike = underlyingPrice + 15;  // OTM
             var longStrike2 = underlyingPrice + 50;  // Far OTM cap
-            
+
             position.Legs = new List<OptionLeg>
             {
                 new() { Type = optionType, Action = "Buy", Strike = longStrike1,
@@ -473,21 +469,21 @@ namespace ODTE.Strategy.MultiLegStrategies
                         Premium = CalculateOptionPremium(underlyingPrice, longStrike2, 0.0m, vix, optionType) * vixMultiplier,
                         Quantity = 1, Delta = optionType == "Call" ? 0.10m : -0.90m, Gamma = 0.01m, Theta = -0.03m, Vega = 0.08m }
             };
-            
+
             return CalculateStrategyMetrics(position, condition);
         }
-        
+
         #endregion
-        
+
         #region Helper Methods
-        
+
         private static decimal CalculateCallPremium(decimal spot, decimal strike, decimal rate, decimal vix, int dte = 45)
         {
             // Simplified Black-Scholes approximation
             var moneyness = spot / strike;
             var timeValue = (decimal)Math.Sqrt((double)(dte / 365.0m));
             var volatility = vix / 100m;
-            
+
             if (moneyness >= 1.0m)
             {
                 // ITM: Intrinsic + time value
@@ -499,13 +495,13 @@ namespace ODTE.Strategy.MultiLegStrategies
                 return strike * volatility * timeValue * (0.3m + (moneyness * 0.3m));
             }
         }
-        
+
         private static decimal CalculatePutPremium(decimal spot, decimal strike, decimal rate, decimal vix, int dte = 45)
         {
             var moneyness = strike / spot;
             var timeValue = (decimal)Math.Sqrt((double)(dte / 365.0m));
             var volatility = vix / 100m;
-            
+
             if (moneyness >= 1.0m)
             {
                 // ITM: Intrinsic + time value
@@ -517,20 +513,20 @@ namespace ODTE.Strategy.MultiLegStrategies
                 return strike * volatility * timeValue * (0.3m + ((2.0m - moneyness) * 0.3m));
             }
         }
-        
+
         private static decimal CalculateOptionPremium(decimal spot, decimal strike, decimal rate, decimal vix, string type, int dte = 45)
         {
-            return type.ToUpper() == "CALL" 
+            return type.ToUpper() == "CALL"
                 ? CalculateCallPremium(spot, strike, rate, vix, dte)
                 : CalculatePutPremium(spot, strike, rate, vix, dte);
         }
-        
+
         private static StrategyPosition CalculateStrategyMetrics(StrategyPosition position, MarketCondition condition)
         {
             // Calculate net premium (credit/debit)
             var totalCredit = 0m;
             var totalDebit = 0m;
-            
+
             foreach (var leg in position.Legs)
             {
                 var premium = leg.Premium * leg.Quantity;
@@ -539,34 +535,34 @@ namespace ODTE.Strategy.MultiLegStrategies
                 else
                     totalDebit += premium;
             }
-            
+
             position.NetCredit = totalCredit;
             position.NetDebit = totalDebit;
-            
+
             // Calculate commissions and slippage
             position.TotalCommission = position.Legs.Sum(l => Math.Abs(l.Quantity)) * CommissionPerLeg;
             position.TotalSlippage = position.Legs.Sum(l => Math.Abs(l.Quantity)) * SlippagePerLeg;
-            
+
             // Calculate net Greeks
             position.NetDelta = position.Legs.Sum(l => l.Delta * l.Quantity * (l.Action == "Sell" ? -1 : 1));
             position.NetGamma = position.Legs.Sum(l => l.Gamma * l.Quantity * (l.Action == "Sell" ? -1 : 1));
             position.NetTheta = position.Legs.Sum(l => l.Theta * l.Quantity * (l.Action == "Sell" ? -1 : 1));
             position.NetVega = position.Legs.Sum(l => l.Vega * l.Quantity * (l.Action == "Sell" ? -1 : 1));
-            
+
             // Calculate max profit/loss (simplified)
             CalculateMaxProfitLoss(position);
-            
+
             // Set optimal condition
             position.OptimalCondition = condition;
-            
+
             return position;
         }
-        
+
         private static void CalculateMaxProfitLoss(StrategyPosition position)
         {
             var netPremium = position.NetCredit - position.NetDebit;
             var totalCosts = position.TotalCommission + position.TotalSlippage;
-            
+
             switch (position.Type)
             {
                 case StrategyType.IronCondor:
@@ -574,12 +570,12 @@ namespace ODTE.Strategy.MultiLegStrategies
                     position.MaxProfit = netPremium - totalCosts;
                     position.MaxLoss = Math.Abs(GetSpreadWidth(position)) - netPremium - totalCosts;
                     break;
-                    
+
                 case StrategyType.IronButterfly:
                     position.MaxProfit = netPremium - totalCosts;
                     position.MaxLoss = GetSpreadWidth(position) - netPremium - totalCosts;
                     break;
-                    
+
                 case StrategyType.Straddle:
                 case StrategyType.Strangle:
                     if (position.Legs[0].Action == "Buy")
@@ -593,22 +589,22 @@ namespace ODTE.Strategy.MultiLegStrategies
                         position.MaxLoss = decimal.MaxValue; // Unlimited (but we don't do naked)
                     }
                     break;
-                    
+
                 default:
                     position.MaxProfit = Math.Max(netPremium - totalCosts, GetSpreadWidth(position) - totalCosts);
                     position.MaxLoss = Math.Max(totalCosts, Math.Abs(netPremium) + totalCosts);
                     break;
             }
         }
-        
+
         private static decimal GetSpreadWidth(StrategyPosition position)
         {
             if (position.Legs.Count < 2) return 0;
-            
+
             var strikes = position.Legs.Select(l => l.Strike).OrderBy(s => s).ToList();
             return strikes.Last() - strikes.First();
         }
-        
+
         #endregion
     }
 }

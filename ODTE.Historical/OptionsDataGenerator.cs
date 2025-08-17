@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Historical;
 
 /// <summary>
@@ -63,18 +58,18 @@ public class OptionsDataGenerator : IDataSource
         // This would be extended for full market data with options
         var data = new List<MarketDataBar>();
         var startTime = tradingDay.Date.AddHours(9).AddMinutes(30);
-        
+
         // Generate sophisticated underlying data with regime-aware volatility
         var regime = _regimeDetector.DetectRegime(tradingDay);
         var baseVol = await GetRegimeAdjustedVolatility(tradingDay, regime);
-        
+
         for (int i = 0; i < 390; i++)
         {
             var timestamp = startTime.AddMinutes(i);
             var marketData = await GenerateMinuteBar(timestamp, symbol, baseVol, regime);
             data.Add(marketData);
         }
-        
+
         return data;
     }
 
@@ -83,19 +78,19 @@ public class OptionsDataGenerator : IDataSource
         // Advanced price generation with jump-diffusion
         var timeOfDay = timestamp.TimeOfDay;
         var intraDayVol = ApplyIntradayVolatilityPattern(baseVol, timeOfDay);
-        
+
         // Jump component for tail events
         var jumpComponent = _jumpModel.GenerateJump(timestamp, regime);
-        
+
         // Price evolution with stochastic volatility
         var price = GeneratePrice(timestamp, intraDayVol, jumpComponent);
-        
+
         // Generate proper OHLC relationships
         var open = price * 0.9995; // Realistic intrabar variation
         var close = price;
         var highAdjustment = Math.Max(0, jumpComponent) * 0.1;
         var lowAdjustment = Math.Max(0, -jumpComponent) * 0.1;
-        
+
         // Ensure proper OHLC relationships
         var high = Math.Max(price * (1.0 + highAdjustment), Math.Max(open, close));
         var low = Math.Min(price * (1.0 - lowAdjustment), Math.Min(open, close));
@@ -117,10 +112,10 @@ public class OptionsDataGenerator : IDataSource
         // Sophisticated price model with realistic autocorrelation
         var random = new Random(timestamp.GetHashCode());
         var dt = 1.0 / (390 * 252); // 1 minute in annual terms
-        
+
         var drift = -0.5 * vol * vol * dt; // Risk-neutral drift
         var diffusion = vol * Math.Sqrt(dt) * NormalRandom(random);
-        
+
         var basePrice = 450.0 + timestamp.DayOfYear * 0.1;
         return basePrice * Math.Exp(drift + diffusion + jump);
     }
@@ -130,7 +125,7 @@ public class OptionsDataGenerator : IDataSource
         // Empirically observed intraday volatility patterns
         // Higher volatility at open, close, and during news events
         double minutes = timeOfDay.TotalMinutes - 570; // Minutes since 9:30 AM
-        
+
         if (minutes < 30 || minutes > 360) // First/last 30 minutes
             return baseVol * 1.4;
         else if (minutes < 60 || minutes > 330) // First/last hour
@@ -150,10 +145,10 @@ public class OptionsDataGenerator : IDataSource
             MarketRegime.Crisis => 25000,
             _ => 8000
         };
-        
+
         var timeOfDay = timestamp.TimeOfDay;
         var volumeMultiplier = ApplyIntradayVolumePattern(timeOfDay);
-        
+
         var random = new Random(timestamp.GetHashCode());
         return (long)(baseVolume * volumeMultiplier * (0.7 + 0.6 * random.NextDouble()));
     }
@@ -161,7 +156,7 @@ public class OptionsDataGenerator : IDataSource
     private double ApplyIntradayVolumePattern(TimeSpan timeOfDay)
     {
         double minutes = timeOfDay.TotalMinutes - 570; // Minutes since 9:30 AM
-        
+
         if (minutes < 30) return 2.5; // Opening surge
         if (minutes > 360) return 2.0; // Closing surge
         if (minutes >= 120 && minutes <= 150) return 0.6; // Lunch lull
@@ -173,7 +168,7 @@ public class OptionsDataGenerator : IDataSource
         // Base volatility from VIX term structure
         var vixLevel = await _vixTermStructure.GetVixLevel(date);
         var baseVol = vixLevel / 100.0;
-        
+
         // Regime adjustments based on empirical research
         return regime switch
         {
@@ -205,10 +200,10 @@ public class VixTermStructure
         var dayOfYear = date.DayOfYear;
         var longTermMean = 18.5; // Historical VIX average
         var cyclicalComponent = 3.0 * Math.Sin(2 * Math.PI * dayOfYear / 365.0); // Seasonal pattern
-        
+
         // Regime-dependent volatility clustering
         var persistenceEffect = GetVolatilityPersistence(date);
-        
+
         return Math.Max(10.0, longTermMean + cyclicalComponent + persistenceEffect);
     }
 
@@ -230,13 +225,13 @@ public class VolatilitySurface
     {
         var moneyness = Math.Log(strike / spot);
         var regimeMultiplier = GetRegimeVolatilityMultiplier(regime);
-        
+
         // Volatility smile with strike dependency (based on SPX empirical data)
         var skew = CalculateVolatilitySkew(moneyness, timeToExpiry);
         var termStructure = CalculateTermStructureEffect(timeToExpiry);
-        
+
         var adjustedVol = baseVol * regimeMultiplier * (1.0 + skew) * termStructure;
-        
+
         return Math.Max(0.05, Math.Min(2.0, adjustedVol));
     }
 
@@ -246,10 +241,10 @@ public class VolatilitySurface
         var atmSkew = -0.05; // Slight negative skew at ATM
         var skewSlope = -0.15; // Put skew (higher vol for lower strikes)
         var convexity = 0.02; // Smile curvature
-        
+
         // Time decay of skew
         var timeDecay = Math.Exp(-timeToExpiry * 4.0);
-        
+
         return (atmSkew + skewSlope * logMoneyness + convexity * logMoneyness * logMoneyness) * timeDecay;
     }
 
@@ -288,9 +283,9 @@ public class MarketRegimeDetector
         var volatilityIndicator = GetVolatilityRegimeIndicator(date);
         var trendIndicator = GetTrendRegimeIndicator(date);
         var seasonalIndicator = GetSeasonalIndicator(date);
-        
+
         var regimeScore = (volatilityIndicator + trendIndicator + seasonalIndicator) / 3.0;
-        
+
         return regimeScore switch
         {
             < 0.3 => MarketRegime.Calm,
@@ -303,11 +298,11 @@ public class MarketRegimeDetector
     {
         // Simulate VIX-based regime detection
         var random = new Random(date.GetHashCode());
-        
+
         // Higher probability of stress during certain periods
         if (IsEarningsWeek(date) || IsOpexWeek(date))
             return 0.4 + random.NextDouble() * 0.4;
-        
+
         return random.NextDouble();
     }
 
@@ -349,7 +344,7 @@ public class JumpDiffusionModel
     public double GenerateJump(DateTime timestamp, MarketRegime regime)
     {
         var random = new Random(timestamp.GetHashCode());
-        
+
         // Jump intensity depends on market regime
         var jumpIntensity = regime switch
         {
@@ -358,16 +353,16 @@ public class JumpDiffusionModel
             MarketRegime.Crisis => 0.25,   // 25% chance per day
             _ => 0.05
         };
-        
+
         if (random.NextDouble() < jumpIntensity / 390.0) // Per minute probability
         {
             // Jump magnitude (typically negative for equity indices)
             var jumpSize = NormalRandom(random) * GetJumpVolatility(regime);
             var asymmetryBias = -0.002; // Slight negative bias (crashes more likely than rallies)
-            
+
             return jumpSize + asymmetryBias;
         }
-        
+
         return 0.0;
     }
 
@@ -400,17 +395,17 @@ public class BidAskSpreadModel
     {
         // Base spread from market microstructure research
         var baseSpread = CalculateBaseSpread(fairValue, volatility, regime);
-        
+
         // Time-to-close widening (critical for 0DTE options)
         var timeToClose = GetTimeToClose(timestamp);
         var timeMultiplier = CalculateTimeMultiplier(timeToClose);
-        
+
         // Final spread with minimum tick size
         var totalSpread = Math.Max(0.05, baseSpread * timeMultiplier);
-        
+
         var bid = fairValue - totalSpread / 2.0;
         var ask = fairValue + totalSpread / 2.0;
-        
+
         return (Math.Max(0.05, bid), ask);
     }
 
@@ -419,7 +414,7 @@ public class BidAskSpreadModel
         // Empirical relationship between option value, volatility, and spread
         var baseSpreadPct = 0.02; // 2% base spread
         var volatilityMultiplier = 1.0 + volatility * 2.0; // Higher vol = wider spreads
-        
+
         var regimeMultiplier = regime switch
         {
             MarketRegime.Calm => 0.8,
@@ -427,7 +422,7 @@ public class BidAskSpreadModel
             MarketRegime.Crisis => 2.0,
             _ => 1.0
         };
-        
+
         return fairValue * baseSpreadPct * volatilityMultiplier * regimeMultiplier;
     }
 

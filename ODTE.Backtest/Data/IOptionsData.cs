@@ -44,7 +44,7 @@ public interface IOptionsData
     /// - Proper handling of early/late session illiquidity
     /// </summary>
     IEnumerable<OptionQuote> GetQuotesAt(DateTime ts);
-    
+
     /// <summary>
     /// Determine expiry date for "today's" options (0DTE trading).
     /// SPX/XSP daily options expire on the same trading day with PM settlement.
@@ -61,7 +61,7 @@ public interface IOptionsData
     /// - Final hour (3-4 PM) shows extreme gamma effects
     /// </summary>
     DateOnly TodayExpiry(DateTime ts);
-    
+
     /// <summary>
     /// Get implied volatility proxies for regime detection.
     /// Returns (short-term IV, 30-day IV) typically from VIX9D and VIX.

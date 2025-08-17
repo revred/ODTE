@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Optimization
 {
     /// <summary>
@@ -33,7 +29,7 @@ namespace ODTE.Optimization
         {
             var results = new List<RunResult>();
             var random = new Random(42); // Fixed seed for reproducibility
-            
+
             Console.WriteLine("================================================================================");
             Console.WriteLine("REALISTIC 0DTE IRON CONDOR BACKTESTING");
             Console.WriteLine($"Total Runs: {totalRuns}");
@@ -83,10 +79,10 @@ namespace ODTE.Optimization
             {
                 var currentLimit = dailyLossLimits[Math.Min(consecutiveLossDays, 3)];
                 var dayPnL = SimulateRealistic0DTEDay(currentLimit, random);
-                
+
                 result.FinalCapital += dayPnL;
                 result.DailyPnL.Add(dayPnL);
-                
+
                 // Track drawdown
                 peak = Math.Max(peak, result.FinalCapital);
                 var currentDrawdown = result.FinalCapital - peak;
@@ -122,7 +118,7 @@ namespace ODTE.Optimization
         {
             // Realistic 0DTE Iron Condor behavior
             // Key insight: Most days are boring, market pins near max pain
-            
+
             var dayPnL = 0.0;
             var tradesPlaced = 0;
             var maxTrades = 5; // Limit trades per day to avoid overtrading
@@ -214,7 +210,7 @@ namespace ODTE.Optimization
             var avgNetPnL = results.Average(r => r.NetPnL);
             var profitableRuns = results.Count(r => r.NetPnL > 0);
             var avgWinRate = results.Average(r => r.WinRate);
-            
+
             Console.WriteLine();
             Console.WriteLine($"=== INTERIM STATS (After {results.Count} runs) ===");
             Console.WriteLine($"Average Gross P&L: ${avgPnL:F0}");

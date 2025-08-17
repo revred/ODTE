@@ -113,7 +113,7 @@ public record SpreadOrder(
         Decision.SingleSideCall => PositionType.CallSpread,
         _ => PositionType.Other
     };
-    
+
     // For iron condor strategies (4-leg), these would be the call spread legs
     public SpreadLeg? Short2 { get; init; }
     public SpreadLeg? Long2 { get; init; }
@@ -144,13 +144,13 @@ public record OpenPosition(SpreadOrder Order, double EntryPrice, DateTime EntryT
 {
     /// <summary>Position closed flag</summary>
     public bool Closed { get; set; }
-    
+
     /// <summary>Exit price (null if still open)</summary>
     public double? ExitPrice { get; set; }
-    
+
     /// <summary>Exit timestamp (null if still open)</summary>
     public DateTime? ExitTs { get; set; }
-    
+
     /// <summary>Exit reason: "Stop", "Target", "Expiry", "Risk Limit", etc.</summary>
     public string ExitReason { get; set; } = string.Empty;
 }
@@ -209,34 +209,34 @@ public sealed class RunReport
 {
     /// <summary>All completed trades in chronological order</summary>
     public List<TradeResult> Trades { get; } = new();
-    
+
     /// <summary>Total P&L before fees</summary>
     public double GrossPnL => Trades.Sum(t => t.PnL);
-    
+
     /// <summary>Total transaction costs</summary>
     public double Fees => Trades.Sum(t => t.Fees);
-    
+
     /// <summary>Net P&L after all costs (the number that matters)</summary>
     public double NetPnL => GrossPnL - Fees;
-    
+
     /// <summary>Number of profitable trades</summary>
     public int WinCount => Trades.Count(t => t.PnL > 0);
-    
+
     /// <summary>Number of losing trades</summary>
     public int LossCount => Trades.Count(t => t.PnL < 0);
-    
+
     /// <summary>Win rate as percentage (0.0 - 1.0)</summary>
     public double WinRate => Trades.Count > 0 ? (double)WinCount / Trades.Count : 0;
-    
+
     /// <summary>Average profit per winning trade</summary>
     public double AvgWin => WinCount > 0 ? Trades.Where(t => t.PnL > 0).Average(t => t.PnL) : 0;
-    
+
     /// <summary>Average loss per losing trade (negative number)</summary>
     public double AvgLoss => LossCount > 0 ? Trades.Where(t => t.PnL < 0).Average(t => t.PnL) : 0;
-    
+
     /// <summary>Sharpe ratio: risk-adjusted return measure</summary>
     public double Sharpe { get; set; }
-    
+
     /// <summary>Maximum drawdown: worst peak-to-trough loss</summary>
     public double MaxDrawdown { get; set; }
 }
@@ -283,8 +283,8 @@ public record TradeLog(
 /// Spread type classification for different option strategies.
 /// Used for risk calculation and performance analysis.
 /// </summary>
-public enum SpreadType 
-{ 
+public enum SpreadType
+{
     CreditSpread,    // Single-sided put or call spread
     IronCondor,      // Double-sided condor spread  
     Butterfly,       // Butterfly spread (future)

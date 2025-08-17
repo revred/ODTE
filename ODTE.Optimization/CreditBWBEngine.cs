@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ODTE.Optimization.Core;
-using ODTE.Optimization.RiskManagement;
 
 namespace ODTE.Optimization
 {
@@ -47,25 +43,25 @@ namespace ODTE.Optimization
         /// Simulate a Credit BWB trade with realistic 0DTE behavior
         /// </summary>
         public BWBResult SimulateCreditBWB(
-            DateTime tradeDate, 
-            string marketRegime, 
-            double vix, 
+            DateTime tradeDate,
+            string marketRegime,
+            double vix,
             StrategyParameters parameters)
         {
             // Step 1: Determine BWB side based on mild bias
             var bwbSide = DetermineBWBSide(marketRegime, _random);
-            
+
             // Step 2: Construct BWB structure
             var structure = ConstructBWBStructure(bwbSide, vix, parameters);
-            
+
             // Step 3: Apply gates (credit and delta)
             if (!structure.PassesCreditGate || !structure.PassesDeltaGate)
             {
-                return new BWBResult 
-                { 
-                    PnL = 0, 
+                return new BWBResult
+                {
+                    PnL = 0,
                     ExitReason = "Failed entry gates",
-                    Structure = structure 
+                    Structure = structure
                 };
             }
 
@@ -120,7 +116,7 @@ namespace ODTE.Optimization
 
             // Simulate strikes (simplified for backtesting)
             var spotPrice = 4800; // Approximate XSP level
-            
+
             if (side == "Put")
             {
                 structure.ShortStrike = spotPrice - (structure.BodyDelta * 300); // Approximate delta to strike conversion
@@ -136,7 +132,7 @@ namespace ODTE.Optimization
 
             // Calculate net credit (simplified options pricing)
             structure.NetCredit = CalculateBWBCredit(structure, vix);
-            
+
             // Calculate max loss
             structure.MaxLoss = Math.Max(
                 structure.NarrowWidth - structure.NetCredit,
@@ -161,19 +157,19 @@ namespace ODTE.Optimization
         {
             // Enhanced credit calculation for 0DTE BWB
             var baseCredit = structure.NarrowWidth * 0.35; // Higher base credit (35% vs 25%)
-            
+
             // Volatility adjustment - 0DTE has higher theta decay
             var volAdjustment = 1.0 + (vix - 15) * 0.015; // More sensitive to vol
-            
+
             // Delta adjustment - BWB collects more credit closer to money
             var deltaAdjustment = 1.0 + structure.BodyDelta * 0.8; // Higher multiplier
-            
+
             // 0DTE time decay bonus
             var thetaBonus = 1.2; // 20% bonus for accelerated decay
-            
+
             // BWB structural advantage (asymmetric risk profile)
             var bwbAdvantage = 1.3; // 30% credit advantage vs IC
-            
+
             return baseCredit * volAdjustment * deltaAdjustment * thetaBonus * bwbAdvantage;
         }
 
@@ -205,11 +201,11 @@ namespace ODTE.Optimization
             // VIX-based filtering - skip trades in extreme volatility
             if (vix > 40)
             {
-                return new BWBResult 
-                { 
-                    PnL = 0, 
+                return new BWBResult
+                {
+                    PnL = 0,
                     ExitReason = "VIX too high - trade skipped",
-                    Structure = structure 
+                    Structure = structure
                 };
             }
 
@@ -330,16 +326,16 @@ namespace ODTE.Optimization
         public int CalculateBWBPositionSize(double dailyLimit, BWBStructure structure)
         {
             if (structure.MaxLoss <= 0) return 0;
-            
+
             // More conservative BWB sizing - use 60% of daily limit for single trade
             var conservativeLimit = dailyLimit * 0.6;
-            
+
             // contracts = floor(ConservativeLimit / MaxLossBWB)
             var contracts = (int)Math.Floor(conservativeLimit / structure.MaxLoss);
-            
+
             // Additional safety: cap at 3 contracts max per trade
             contracts = Math.Min(contracts, 3);
-            
+
             // Skip if < 1 contract
             return Math.Max(0, contracts);
         }
@@ -351,10 +347,10 @@ namespace ODTE.Optimization
         public int EstimateBWBTradesPerDay(StrategyParameters parameters)
         {
             var baseTradesPerDay = 4; // Higher than IC due to better risk management
-            
+
             if (parameters.UseVWAPFilter) baseTradesPerDay += 1;
             if (parameters.UseATRFilter) baseTradesPerDay += 1;
-            
+
             return Math.Min(baseTradesPerDay, 12); // Cap at reasonable level
         }
     }

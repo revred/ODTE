@@ -33,13 +33,13 @@ public interface IMarketData
     /// Used by regime scorer for technical analysis.
     /// </summary>
     IEnumerable<Bar> GetBars(DateOnly start, DateOnly end);
-    
+
     /// <summary>
     /// Time interval between bars (e.g., 1 minute, 5 minutes).
     /// Used for calculations that depend on bar frequency.
     /// </summary>
     TimeSpan BarInterval { get; }
-    
+
     /// <summary>
     /// Calculate 20-period Average True Range at specific timestamp.
     /// ATR measures volatility by considering gaps between sessions.
@@ -53,7 +53,7 @@ public interface IMarketData
     /// THRESHOLD: ATR vs daily range comparison for regime classification.
     /// </summary>
     double Atr20Minutes(DateTime ts);
-    
+
     /// <summary>
     /// Calculate Volume Weighted Average Price over specified time window.
     /// VWAP = Σ(Price × Volume) / Σ(Volume)
@@ -68,7 +68,7 @@ public interface IMarketData
     /// - Confirm trend persistence with price action
     /// </summary>
     double Vwap(DateTime now, TimeSpan window);
-    
+
     /// <summary>
     /// Get current spot price of underlying at specific timestamp.
     /// Used for options pricing, strike selection, and moneyness calculations.

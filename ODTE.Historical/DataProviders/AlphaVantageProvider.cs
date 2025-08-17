@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ODTE.Historical.DataProviders
 {
@@ -18,15 +12,15 @@ namespace ODTE.Historical.DataProviders
         private readonly SemaphoreSlim _rateLimiter;
         private readonly string _apiKey;
         private const int MAX_REQUESTS_PER_MINUTE = 5; // Alpha Vantage free tier limit
-        
+
         public AlphaVantageProvider(string apiKey = "demo")
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", 
+            _httpClient.DefaultRequestHeaders.Add("User-Agent",
                 "ODTE-DataAcquisition/1.0 Educational Research");
             _apiKey = apiKey;
             _rateLimiter = new SemaphoreSlim(MAX_REQUESTS_PER_MINUTE, MAX_REQUESTS_PER_MINUTE);
-            
+
             // Reset rate limiter every minute
             _ = Task.Run(async () =>
             {
@@ -37,7 +31,7 @@ namespace ODTE.Historical.DataProviders
                 }
             });
         }
-        
+
         /// <summary>
         /// Download historical data for a symbol and date range
         /// Note: Alpha Vantage returns full historical data, not date-ranged
@@ -48,19 +42,19 @@ namespace ODTE.Historical.DataProviders
             DateTime endDate)
         {
             await _rateLimiter.WaitAsync();
-            
+
             try
             {
                 // Alpha Vantage API URL for daily adjusted data
                 var url = $"https://www.alphavantage.co/query?" +
                          $"function=TIME_SERIES_DAILY_ADJUSTED&symbol={symbol}" +
                          $"&outputsize=full&apikey={_apiKey}";
-                
+
                 Console.WriteLine($"🔄 Downloading {symbol} from Alpha Vantage (full history)...");
-                
+
                 var response = await _httpClient.GetStringAsync(url);
                 var bars = ParseAlphaVantageJson(response, symbol, startDate, endDate);
-                
+
                 Console.WriteLine($"✅ Downloaded {bars.Count} bars for {symbol} in date range");
                 return bars;
             }
@@ -70,50 +64,50 @@ namespace ODTE.Historical.DataProviders
                 return new List<HistoricalDataBar>();
             }
         }
-        
+
         /// <summary>
         /// Parse Alpha Vantage JSON format and filter by date range
         /// </summary>
         private List<HistoricalDataBar> ParseAlphaVantageJson(
-            string jsonData, 
-            string symbol, 
-            DateTime startDate, 
+            string jsonData,
+            string symbol,
+            DateTime startDate,
             DateTime endDate)
         {
             var bars = new List<HistoricalDataBar>();
-            
+
             try
             {
                 using var document = JsonDocument.Parse(jsonData);
                 var root = document.RootElement;
-                
+
                 // Check for API errors
                 if (root.TryGetProperty("Error Message", out _))
                 {
                     Console.WriteLine($"⚠️ Alpha Vantage API error for {symbol}");
                     return bars;
                 }
-                
+
                 if (root.TryGetProperty("Note", out _))
                 {
                     Console.WriteLine($"⚠️ Alpha Vantage rate limit hit for {symbol}");
                     return bars;
                 }
-                
+
                 // Get time series data
                 if (!root.TryGetProperty("Time Series (Daily)", out var timeSeries))
                 {
                     Console.WriteLine($"⚠️ No time series data found for {symbol}");
                     return bars;
                 }
-                
+
                 foreach (var dayData in timeSeries.EnumerateObject())
                 {
                     if (DateTime.TryParse(dayData.Name, out var date) &&
                         date >= startDate && date <= endDate)
                     {
                         var values = dayData.Value;
-                        
+
                         if (values.TryGetProperty("1. open", out var openElement) &&
                             values.TryGetProperty("2. high", out var highElement) &&
                             values.TryGetProperty("3. low", out var lowElement) &&
@@ -143,10 +137,10 @@ namespace ODTE.Historical.DataProviders
                         }
                     }
                 }
-                
+
                 // Sort by date (oldest first)
                 bars.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
-                
+
                 Console.WriteLine($"✅ Parsed {bars.Count} Alpha Vantage bars for {symbol}");
                 return bars;
             }
@@ -156,7 +150,7 @@ namespace ODTE.Historical.DataProviders
                 return bars;
             }
         }
-        
+
         public void Dispose()
         {
             _httpClient?.Dispose();

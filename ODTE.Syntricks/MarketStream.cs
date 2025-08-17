@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-
 namespace ODTE.Syntricks;
 
 /// <summary>
@@ -28,17 +25,17 @@ public interface IMarketStream : IAsyncEnumerable<SpotTick>
     /// Start the market stream
     /// </summary>
     Task StartAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Stop the market stream
     /// </summary>
     Task StopAsync();
-    
+
     /// <summary>
     /// Current replay speed multiplier (1.0 = real-time, 5.0 = 5x speed)
     /// </summary>
     double ReplaySpeed { get; set; }
-    
+
     /// <summary>
     /// Check if stream is currently active
     /// </summary>
@@ -82,7 +79,7 @@ public class HistoricalMarketStream : IMarketStream
             yield break;
 
         var combined = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, 
+            cancellationToken,
             _cancellationTokenSource?.Token ?? CancellationToken.None);
 
         try
@@ -149,9 +146,9 @@ public class BootstrapMarketStream : IMarketStream
 
         // Generate synthetic day using block bootstrap
         var syntheticTicks = await _bootstrap.GenerateDayAsync(_archetype, _random);
-        
+
         var baseInterval = TimeSpan.FromMinutes(1); // Assume 1-minute bars
-        
+
         foreach (var tick in syntheticTicks)
         {
             if (cancellationToken.IsCancellationRequested)

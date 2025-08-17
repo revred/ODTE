@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
-using ODTE.Historical;
 using ODTE.Historical.DataProviders;
+using Xunit;
 
 namespace ODTE.Historical.Tests
 {
@@ -70,12 +64,12 @@ namespace ODTE.Historical.Tests
             {
                 // Use the actual API method that exists
                 var data = await _dataManager.GetMarketDataAsync(symbol, startDate, endDate);
-                
+
                 // The API should handle the request gracefully even if no data is available
                 data.Should().NotBeNull($"API should return non-null result for {symbol}");
-                
+
                 Console.WriteLine($"   ✅ {symbol}: Clean API responded successfully");
-                
+
                 if (data.Any())
                 {
                     Console.WriteLine($"   📊 Retrieved {data.Count()} data points");
@@ -128,7 +122,7 @@ namespace ODTE.Historical.Tests
 
                 Console.WriteLine($"✅ Symbol discovery API working");
                 Console.WriteLine($"   Available symbols: {availableSymbols.Count}");
-                
+
                 if (availableSymbols.Any())
                 {
                     Console.WriteLine($"   First few: {string.Join(", ", availableSymbols.Take(5))}");
@@ -195,7 +189,7 @@ namespace ODTE.Historical.Tests
 
                 Console.WriteLine($"✅ Backtest data API working");
                 Console.WriteLine($"   Data points: {backtestData.Count}");
-                
+
                 if (backtestData.Any())
                 {
                     Console.WriteLine($"   First: {backtestData.First().Timestamp:yyyy-MM-dd HH:mm}");
@@ -280,7 +274,7 @@ namespace ODTE.Historical.Tests
                 // Test range export
                 var exportResult = await _dataManager.ExportRangeAsync(
                     startDate, endDate, tempExportFile, ExportFormat.CSV);
-                
+
                 exportResult.Should().NotBeNull("Range export should return result");
                 Console.WriteLine($"✅ Range export API working");
                 Console.WriteLine($"   Export file: {tempExportFile}");
@@ -340,7 +334,7 @@ namespace ODTE.Historical.Tests
 
             Console.WriteLine($"✅ Tested {commoditySymbols.Length} commodity/forex symbols");
             Console.WriteLine($"   API calls successful: {successCount}/{commoditySymbols.Length}");
-            
+
             Assert.True(true, "Commodities and forex API endpoints are accessible");
         }
 
@@ -377,7 +371,7 @@ namespace ODTE.Historical.Tests
             Console.WriteLine($"✅ Batch operations completed");
             Console.WriteLine($"   Processed {symbols.Length} symbols in {stopwatch.ElapsedMilliseconds}ms");
             Console.WriteLine($"   Average time per symbol: {stopwatch.ElapsedMilliseconds / symbols.Length}ms");
-            
+
             var totalDataPoints = results.Sum(r => r.Count());
             Console.WriteLine($"   Total data points retrieved: {totalDataPoints}");
         }
@@ -395,13 +389,13 @@ namespace ODTE.Historical.Tests
             var getMethods = dataManagerType.GetMethods()
                 .Where(m => m.Name.Contains("Get") && (m.Name.Contains("Data") || m.Name.Contains("Stats")))
                 .ToList();
-            
+
             getMethods.Should().NotBeEmpty("Should have discoverable data retrieval methods");
 
             Console.WriteLine($"✅ API discoverability confirmed");
             Console.WriteLine($"   Main class: {dataManagerType.Name}");
             Console.WriteLine($"   Data methods discovered: {getMethods.Count}");
-            
+
             foreach (var method in getMethods.Take(5))
             {
                 Console.WriteLine($"   • {method.Name}()");
@@ -411,7 +405,7 @@ namespace ODTE.Historical.Tests
             var asyncMethods = dataManagerType.GetMethods()
                 .Where(m => m.Name.EndsWith("Async"))
                 .ToList();
-                
+
             asyncMethods.Should().NotBeEmpty("Should have async methods for clean API design");
             Console.WriteLine($"   Async methods: {asyncMethods.Count} (clean async pattern confirmed)");
         }
@@ -419,7 +413,7 @@ namespace ODTE.Historical.Tests
         public void Dispose()
         {
             _dataManager?.Dispose();
-            
+
             // Cleanup test database
             try
             {

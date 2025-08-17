@@ -1,7 +1,6 @@
+using Microsoft.Extensions.Logging;
 using ODTE.Execution.Interfaces;
 using ODTE.Execution.Models;
-using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
 
 namespace ODTE.Execution.Engine;
 
@@ -14,14 +13,14 @@ public class RealisticFillEngine : IFillEngine
     private readonly ILogger<RealisticFillEngine> _logger;
     private readonly Random _random;
     private readonly Dictionary<DateTime, ExecutionMetrics> _dailyMetrics = new();
-    
+
     public ExecutionProfile CurrentProfile { get; private set; }
 
     public RealisticFillEngine(ExecutionProfile profile, ILogger<RealisticFillEngine>? logger = null)
     {
         CurrentProfile = profile;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RealisticFillEngine>.Instance;
-        
+
         // Use cryptographically secure random for deterministic testing with seeds
         _random = new Random();
     }
@@ -34,14 +33,14 @@ public class RealisticFillEngine : IFillEngine
         try
         {
             _logger.LogDebug("Simulating fill for order {OrderId} symbol {Symbol}", order.OrderId, order.Symbol);
-            
+
             // Step 1: Compute spread and ToB size
             var spread = Math.Max(0, quote.Ask - quote.Bid);
             var tobSize = Math.Max(1, quote.TopOfBookSize); // Defensive minimum
-            
+
             // Step 2: Split sizing to enforce participation limits
             var childOrders = SplitOrderForParticipation(order, tobSize, profile);
-            
+
             var childFills = new List<ChildFill>();
             var diagnostics = new ExecutionDiagnostics
             {
@@ -49,14 +48,14 @@ public class RealisticFillEngine : IFillEngine
                 ExecutionProfile = profile.Name,
                 StartQuote = quote
             };
-            
+
             // Step 3: Process each child order
             for (int i = 0; i < childOrders.Count; i++)
             {
                 var childOrder = childOrders[i];
                 var childFill = await ProcessChildOrder(childOrder, quote, profile, marketState, i);
                 childFills.Add(childFill);
-                
+
                 // Update diagnostics
                 diagnostics = diagnostics with
                 {
@@ -68,16 +67,16 @@ public class RealisticFillEngine : IFillEngine
                     TotalSlippageFloor = diagnostics.TotalSlippageFloor + childFill.SlippageApplied
                 };
             }
-            
+
             // Calculate final results
             var result = CreateFillResult(order, childFills, diagnostics, quote);
-            
+
             // Update daily metrics
             UpdateDailyMetrics(result);
-            
-            _logger.LogDebug("Fill simulation complete: {AveragePrice} (intended: {IntendedPrice})", 
+
+            _logger.LogDebug("Fill simulation complete: {AveragePrice} (intended: {IntendedPrice})",
                 result.AverageFillPrice, diagnostics.IntendedPrice);
-                
+
             return result;
         }
         catch (Exception ex)
@@ -95,18 +94,18 @@ public class RealisticFillEngine : IFillEngine
     {
         var basePrice = order.Side == OrderSide.Buy ? quote.Ask : quote.Bid;
         var spread = quote.Spread;
-        
+
         // Apply all penalties at maximum levels
-        var slippageFloor = Math.Max(profile.SlippageFloor.PerContract, 
+        var slippageFloor = Math.Max(profile.SlippageFloor.PerContract,
                                    profile.SlippageFloor.PctOfSpread * spread);
         var adverseSelection = (decimal)profile.AdverseSelectionBps / 10000m * spread;
         var sizePenalty = (decimal)profile.SizePenalty.BpPerExtraTobMultiple / 10000m * spread;
-        
+
         // Worst case: all penalties apply
-        var worstCase = order.Side == OrderSide.Buy 
+        var worstCase = order.Side == OrderSide.Buy
             ? basePrice + slippageFloor + adverseSelection + sizePenalty
             : basePrice - slippageFloor - adverseSelection - sizePenalty;
-            
+
         return Math.Max(0.01m, worstCase); // Minimum tick size
     }
 
@@ -129,51 +128,51 @@ public class RealisticFillEngine : IFillEngine
         {
             return new List<Order> { order };
         }
-        
+
         var childOrders = new List<Order>();
         var remainingQuantity = order.Quantity;
         var sequenceNumber = 0;
-        
+
         while (remainingQuantity > 0)
         {
             var childQuantity = Math.Min(remainingQuantity, maxChildSize);
-            var childOrder = order with 
-            { 
+            var childOrder = order with
+            {
                 OrderId = $"{order.OrderId}-{sequenceNumber++}",
                 Quantity = childQuantity
             };
             childOrders.Add(childOrder);
             remainingQuantity -= childQuantity;
         }
-        
+
         return childOrders;
     }
 
     /// <summary>
     /// Process individual child order following the fill simulation algorithm.
     /// </summary>
-    private async Task<ChildFill> ProcessChildOrder(Order childOrder, Quote quote, ExecutionProfile profile, 
+    private async Task<ChildFill> ProcessChildOrder(Order childOrder, Quote quote, ExecutionProfile profile,
                                                    MarketState marketState, int sequenceNumber)
     {
         var spread = quote.Spread;
         var spreadCents = spread * 100m;
-        
+
         // Step 3.1: Decide attempt@mid
         var midProbability = profile.MidFill.GetMidFillProbability(profile.Name, spreadCents);
-        
+
         // Apply market state adjustments
         if (marketState.IsEventRisk)
             midProbability *= 0.5m; // Reduce mid-fill chance during events
-            
+
         var attemptMid = _random.NextDouble() < (double)midProbability;
-        
+
         // Step 3.2: Simulate latency
         var latency = SimulateLatency(profile.LatencyMs);
         var newQuote = SimulateQuoteAfterLatency(quote, latency, marketState);
-        
+
         var fillPrice = quote.Mid; // Default to mid
         var wasMidAccepted = false;
-        
+
         // Step 3.3: Mid attempt logic
         if (attemptMid)
         {
@@ -193,18 +192,18 @@ public class RealisticFillEngine : IFillEngine
             // Direct to touch
             fillPrice = childOrder.Side == OrderSide.Buy ? newQuote.Ask : newQuote.Bid;
         }
-        
+
         // Step 3.4: Apply slippage floor
-        var slippageFloor = Math.Max(profile.SlippageFloor.PerContract, 
+        var slippageFloor = Math.Max(profile.SlippageFloor.PerContract,
                                    profile.SlippageFloor.PctOfSpread * spread);
-        
+
         // Step 3.5: Apply adverse selection
         var adverseSelectionCost = 0m;
         if (QuoteMovedAgainst(quote, newQuote, childOrder.Side))
         {
             adverseSelectionCost = (decimal)profile.AdverseSelectionBps / 10000m * spread;
         }
-        
+
         // Step 3.6: Apply size penalty for large orders
         var sizePenaltyCost = 0m;
         var tobMultiples = (decimal)childOrder.Quantity / quote.TopOfBookSize;
@@ -213,17 +212,17 @@ public class RealisticFillEngine : IFillEngine
             var extraMultiples = tobMultiples - 1.0m;
             sizePenaltyCost = extraMultiples * (decimal)profile.SizePenalty.BpPerExtraTobMultiple / 10000m * spread;
         }
-        
+
         // Apply all costs (only if not mid-accepted)
         if (!wasMidAccepted)
         {
             var direction = childOrder.Side == OrderSide.Buy ? 1m : -1m;
             fillPrice += direction * (slippageFloor + adverseSelectionCost + sizePenaltyCost);
         }
-        
+
         // Ensure minimum tick size
         fillPrice = Math.Max(0.01m, fillPrice);
-        
+
         return new ChildFill
         {
             SequenceNumber = sequenceNumber,
@@ -256,12 +255,12 @@ public class RealisticFillEngine : IFillEngine
     {
         // For simplicity, assume quote remains stable during short latency periods
         // In production, this would fetch actual quote at T+latency
-        
+
         // Small random quote movement based on market volatility
         var volatilityFactor = marketState.StressLevel * 0.01m; // Up to 1% movement in extreme stress
         var bidMovement = ((decimal)_random.NextDouble() - 0.5m) * volatilityFactor;
         var askMovement = ((decimal)_random.NextDouble() - 0.5m) * volatilityFactor;
-        
+
         return originalQuote with
         {
             Bid = Math.Max(0.01m, originalQuote.Bid + bidMovement),
@@ -293,9 +292,9 @@ public class RealisticFillEngine : IFillEngine
     {
         var avgPrice = childFills.Sum(f => f.Price * f.Quantity) / childFills.Sum(f => f.Quantity);
         var intendedPrice = order.Side == OrderSide.Buy ? originalQuote.Ask : originalQuote.Bid;
-        
+
         diagnostics = diagnostics with { AchievedPrice = avgPrice };
-        
+
         return new FillResult
         {
             OrderId = order.OrderId,
@@ -324,7 +323,7 @@ public class RealisticFillEngine : IFillEngine
     {
         var date = result.FillTimestamp.Date;
         var existing = _dailyMetrics.GetValueOrDefault(date, new ExecutionMetrics { Date = date });
-        
+
         _dailyMetrics[date] = existing with
         {
             TotalFills = existing.TotalFills + 1,

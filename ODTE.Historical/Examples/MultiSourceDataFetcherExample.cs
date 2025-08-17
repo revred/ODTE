@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ODTE.Historical.DataProviders;
 
@@ -14,19 +12,19 @@ public class MultiSourceDataFetcherExample
     {
         Console.WriteLine("🚀 ODTE Multi-Source Data Fetcher Example");
         Console.WriteLine("==========================================");
-        
+
         // Set up logging
         using var loggerFactory = LoggerFactory.Create(builder =>
             builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-        
+
         var logger = loggerFactory.CreateLogger<EnhancedHistoricalDataFetcher>();
-        
+
         // Initialize the enhanced data fetcher
         using var fetcher = new EnhancedHistoricalDataFetcher(logger: logger);
-        
+
         Console.WriteLine("\n📊 Checking Provider Status...");
         var providers = await fetcher.GetProviderStatusAsync();
-        
+
         if (providers.Count == 0)
         {
             Console.WriteLine("⚠️  No data providers configured!");
@@ -39,16 +37,16 @@ public class MultiSourceDataFetcherExample
             await RunMockExample();
             return;
         }
-        
+
         foreach (var provider in providers)
         {
             var status = provider.IsHealthy ? "✅ Healthy" : "❌ Unhealthy";
             Console.WriteLine($"   {provider.ProviderName}: {status} " +
                             $"({provider.RequestsRemaining} requests remaining)");
         }
-        
+
         Console.WriteLine("\n📈 Fetching market data...");
-        
+
         // Example 1: Get data quality report
         var qualityReport = await fetcher.ValidateDataQualityAsync("SPY", DateTime.Today.AddDays(-1));
         if (qualityReport.IsValid)
@@ -57,22 +55,22 @@ public class MultiSourceDataFetcherExample
             Console.WriteLine($"   Sources: {string.Join(", ", qualityReport.Sources)}");
             Console.WriteLine($"   Underlying Price: ${qualityReport.UnderlyingPrice:F2}");
             Console.WriteLine($"   Options Available: {qualityReport.TotalOptions}");
-            
+
             if (qualityReport.QualityMetrics != null)
             {
                 Console.WriteLine($"   Avg Bid-Ask Spread: {qualityReport.QualityMetrics.AverageBidAskSpread:P2}");
                 Console.WriteLine($"   Avg Implied Vol: {qualityReport.QualityMetrics.AverageImpliedVolatility:P1}");
             }
         }
-        
+
         // Example 2: Fetch historical data for multiple days
         Console.WriteLine("\n📥 Fetching historical data range...");
-        
+
         var result = await fetcher.FetchAndConsolidateDataAsync(
-            "SPY", 
-            DateTime.Today.AddDays(-5), 
+            "SPY",
+            DateTime.Today.AddDays(-5),
             DateTime.Today.AddDays(-1));
-        
+
         if (result.Success)
         {
             Console.WriteLine($"✅ Data fetch completed successfully!");
@@ -80,7 +78,7 @@ public class MultiSourceDataFetcherExample
             Console.WriteLine($"   Success Rate: {result.SuccessRate:P1}");
             Console.WriteLine($"   Days Processed: {result.TotalDaysProcessed}");
             Console.WriteLine($"   Failed Days: {result.FailedDays.Count}");
-            
+
             if (result.FailedDays.Any())
             {
                 Console.WriteLine("   Failed dates:");
@@ -94,7 +92,7 @@ public class MultiSourceDataFetcherExample
         {
             Console.WriteLine($"❌ Data fetch failed: {result.ErrorMessage}");
         }
-        
+
         Console.WriteLine("\n🔄 Final provider status:");
         var finalProviders = await fetcher.GetProviderStatusAsync();
         foreach (var provider in finalProviders)
@@ -105,31 +103,31 @@ public class MultiSourceDataFetcherExample
             Console.WriteLine($"     Total Requests: {provider.TotalRequests}");
             Console.WriteLine($"     Avg Response Time: {provider.AverageResponseTime:F0}ms");
         }
-        
+
         Console.WriteLine("\n🎉 Example completed!");
     }
-    
+
     private static async Task RunMockExample()
     {
         Console.WriteLine("\n🧪 Mock Data Example:");
-        
+
         // Create a multi-source fetcher with mock provider
         using var fetcher = new MultiSourceDataFetcher();
         fetcher.AddProvider(new MockDataProvider());
-        
+
         // Test intraday bars
         var bars = await fetcher.GetIntradayBarsAsync(
-            "SPY", 
-            DateTime.Today.AddDays(-1), 
+            "SPY",
+            DateTime.Today.AddDays(-1),
             DateTime.Today);
-        
+
         Console.WriteLine($"✅ Retrieved {bars.Count} mock data bars");
         foreach (var bar in bars)
         {
             Console.WriteLine($"   {bar.Timestamp:HH:mm:ss} O:{bar.Open:F2} H:{bar.High:F2} " +
                             $"L:{bar.Low:F2} C:{bar.Close:F2} V:{bar.Volume:N0}");
         }
-        
+
         // Test options chain
         var optionsData = await fetcher.GetOptionsChainAsync("SPY", DateTime.Today);
         if (optionsData != null)
@@ -149,7 +147,7 @@ internal class MockDataProvider : IOptionsDataProvider
     public string ProviderName => "Mock Provider (Demo)";
     public int Priority => 1;
     public bool IsAvailable => true;
-    
+
     public Task<OptionsChainData?> GetOptionsChainAsync(string symbol, DateTime date, CancellationToken cancellationToken = default)
     {
         var chainData = new OptionsChainData
@@ -161,10 +159,10 @@ internal class MockDataProvider : IOptionsDataProvider
             Calls = GenerateOptions(symbol, "CALL", 5),
             Puts = GenerateOptions(symbol, "PUT", 5)
         };
-        
+
         return Task.FromResult<OptionsChainData?>(chainData);
     }
-    
+
     public Task<List<MarketDataBar>> GetIntradayBarsAsync(string symbol, DateTime startDate, DateTime endDate, TimeSpan? interval = null, CancellationToken cancellationToken = default)
     {
         var bars = new List<MarketDataBar>();
@@ -172,16 +170,16 @@ internal class MockDataProvider : IOptionsDataProvider
         var currentTime = startDate.Date.AddHours(9.5); // 9:30 AM
         var endTime = startDate.Date.AddHours(16); // 4:00 PM
         var price = 150.0 + (random.NextDouble() * 10 - 5); // Start around $150
-        
+
         while (currentTime < endTime)
         {
             var change = (random.NextDouble() - 0.5) * 0.5; // Small random moves
             price += change;
-            
+
             var high = price + Math.Abs(random.NextGaussian()) * 0.2;
             var low = price - Math.Abs(random.NextGaussian()) * 0.2;
             var close = low + (high - low) * random.NextDouble();
-            
+
             bars.Add(new MarketDataBar
             {
                 Timestamp = currentTime,
@@ -192,14 +190,14 @@ internal class MockDataProvider : IOptionsDataProvider
                 Volume = random.Next(100000, 1000000),
                 VWAP = (price + high + low + close) / 4
             });
-            
+
             price = close;
             currentTime = currentTime.AddMinutes(1);
         }
-        
+
         return Task.FromResult(bars);
     }
-    
+
     public Task<ProviderHealthStatus> CheckHealthAsync()
     {
         return Task.FromResult(new ProviderHealthStatus
@@ -210,7 +208,7 @@ internal class MockDataProvider : IOptionsDataProvider
             ConsecutiveFailures = 0
         });
     }
-    
+
     public RateLimitStatus GetRateLimitStatus()
     {
         return new RateLimitStatus
@@ -221,18 +219,18 @@ internal class MockDataProvider : IOptionsDataProvider
             IsThrottled = false
         };
     }
-    
+
     private List<OptionsContract> GenerateOptions(string symbol, string type, int count)
     {
         var options = new List<OptionsContract>();
         var random = new Random();
         var basePrice = 150m;
-        
+
         for (int i = 0; i < count; i++)
         {
             var strike = basePrice + (i - 2) * 5; // Strikes from $140 to $160
             var isITM = (type == "CALL" && strike < basePrice) || (type == "PUT" && strike > basePrice);
-            
+
             options.Add(new OptionsContract
             {
                 Symbol = $"{symbol}_{type}_{strike:F0}",
@@ -245,13 +243,13 @@ internal class MockDataProvider : IOptionsDataProvider
                 OpenInterest = random.Next(100, 5000),
                 ImpliedVolatility = (decimal)(0.15 + random.NextDouble() * 0.3) // 15%-45% IV
             });
-            
+
             // Set ask based on bid with realistic spread
             var lastOption = options.Last();
             lastOption.Ask = lastOption.Bid * 1.05m; // 5% spread
             lastOption.Last = (lastOption.Bid + lastOption.Ask) / 2;
         }
-        
+
         return options;
     }
 }

@@ -1,6 +1,6 @@
-using System.Data;
 using Microsoft.Data.Sqlite;
 using ODTE.Backtest.Core;
+using System.Data;
 
 namespace ODTE.Backtest.Data;
 
@@ -48,7 +48,7 @@ public class TradeLogDatabase : IDisposable
     {
         var tradeDate = DateOnly.FromDateTime(tradeLog.Timestamp);
         var connection = await GetConnectionAsync(tradeDate);
-        
+
         const string sql = @"
             INSERT INTO trade_logs (
                 timestamp, symbol, expiry, right, strike, spread_type,
@@ -83,7 +83,7 @@ public class TradeLogDatabase : IDisposable
     public async Task<List<TradeLog>> GetTradesByDateAsync(DateOnly date)
     {
         var connection = await GetConnectionAsync(date);
-        
+
         const string sql = @"
             SELECT timestamp, symbol, expiry, right, strike, spread_type,
                    max_loss, exit_pnl, exit_reason, market_regime
@@ -92,7 +92,7 @@ public class TradeLogDatabase : IDisposable
 
         using var command = new SqliteCommand(sql, connection);
         using var reader = await command.ExecuteReaderAsync();
-        
+
         var trades = new List<TradeLog>();
         while (await reader.ReadAsync())
         {
@@ -109,7 +109,7 @@ public class TradeLogDatabase : IDisposable
                 MarketRegime: reader.GetString("market_regime")
             ));
         }
-        
+
         return trades;
     }
 
@@ -120,7 +120,7 @@ public class TradeLogDatabase : IDisposable
     public async Task<List<TradeLog>> GetLosingTradesAsync(DateOnly date, decimal minLoss = -1m)
     {
         var connection = await GetConnectionAsync(date);
-        
+
         const string sql = @"
             SELECT timestamp, symbol, expiry, right, strike, spread_type,
                    max_loss, exit_pnl, exit_reason, market_regime
@@ -131,7 +131,7 @@ public class TradeLogDatabase : IDisposable
         using var command = new SqliteCommand(sql, connection);
         command.Parameters.AddWithValue("@min_loss", minLoss);
         using var reader = await command.ExecuteReaderAsync();
-        
+
         var trades = new List<TradeLog>();
         while (await reader.ReadAsync())
         {
@@ -148,7 +148,7 @@ public class TradeLogDatabase : IDisposable
                 MarketRegime: reader.GetString("market_regime")
             ));
         }
-        
+
         return trades;
     }
 
@@ -159,7 +159,7 @@ public class TradeLogDatabase : IDisposable
     public async Task<DailyTradingSummary> GetDailySummaryAsync(DateOnly date)
     {
         var connection = await GetConnectionAsync(date);
-        
+
         const string sql = @"
             SELECT 
                 COUNT(*) as total_trades,
@@ -173,12 +173,12 @@ public class TradeLogDatabase : IDisposable
 
         using var command = new SqliteCommand(sql, connection);
         using var reader = await command.ExecuteReaderAsync();
-        
+
         if (await reader.ReadAsync())
         {
             var totalTrades = reader.GetInt32("total_trades");
             var winningTrades = reader.GetInt32("winning_trades");
-            
+
             return new DailyTradingSummary(
                 Date: date,
                 TotalTrades: totalTrades,
@@ -191,7 +191,7 @@ public class TradeLogDatabase : IDisposable
                 TotalRiskDeployed: reader.IsDBNull("total_risk_deployed") ? 0 : reader.GetDecimal("total_risk_deployed")
             );
         }
-        
+
         return new DailyTradingSummary(date, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
@@ -202,7 +202,7 @@ public class TradeLogDatabase : IDisposable
     public async Task ExportToJsonlAsync(DateOnly date, string filePath)
     {
         var trades = await GetTradesByDateAsync(date);
-        
+
         using var writer = new StreamWriter(filePath);
         foreach (var trade in trades)
         {
@@ -223,13 +223,13 @@ public class TradeLogDatabase : IDisposable
 
         var dbPath = Path.Combine(_basePath, $"trades_{date:yyyy-MM-dd}.db");
         var connectionString = $"Data Source={dbPath}";
-        
+
         var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync();
-        
+
         // Create tables if they don't exist
         await CreateTablesAsync(connection);
-        
+
         _connections[date] = connection;
         return connection;
     }
@@ -265,7 +265,7 @@ public class TradeLogDatabase : IDisposable
 
         using var command = new SqliteCommand(createTradeLogsTable, connection);
         await command.ExecuteNonQueryAsync();
-        
+
         using var indexCommand = new SqliteCommand(createIndexes, connection);
         await indexCommand.ExecuteNonQueryAsync();
     }

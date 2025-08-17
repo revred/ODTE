@@ -1,6 +1,3 @@
-using System;
-using ODTE.Strategy.Models;
-
 namespace ODTE.Strategy.RiskManagement
 {
     /// <summary>
@@ -104,12 +101,12 @@ namespace ODTE.Strategy.RiskManagement
                 // Step 1: Get loss allowance from Tier A-1 system with dynamic fraction
                 var remainingBudget = _rfibManager.GetRemainingDailyBudget(tradingDay);
                 var dailyCap = _rfibManager.GetDailyBudgetLimit(tradingDay);
-                
+
                 // H2: Dynamic fraction f based on daily cap size
-                var fraction = EnableLowCapBoost && dailyCap <= LOW_CAP_THRESHOLD 
-                    ? LOW_CAP_FRACTION 
+                var fraction = EnableLowCapBoost && dailyCap <= LOW_CAP_THRESHOLD
+                    ? LOW_CAP_FRACTION
                     : _perTradeRiskManager.MaxTradeRiskFraction;
-                    
+
                 var maxLossAllowance = remainingBudget * (decimal)fraction;
 
                 if (maxLossAllowance <= 0)
@@ -151,7 +148,7 @@ namespace ODTE.Strategy.RiskManagement
                 var bufferAdjustedContracts = (int)Math.Floor(cappedContracts * (double)(1.0m - SAFETY_BUFFER));
 
                 // Step 6: Ensure minimum is 1 (if any trading is allowed)
-                var finalContracts = Math.Max(bufferAdjustedContracts, 
+                var finalContracts = Math.Max(bufferAdjustedContracts,
                     cappedContracts > 0 ? MIN_CONTRACTS : 0);
 
                 // H3: Scale-to-Fit - try narrower width once if zero contracts
@@ -161,7 +158,7 @@ namespace ODTE.Strategy.RiskManagement
                     // Try with minimum width
                     var narrowStrategySpec = CreateNarrowedStrategy(strategySpec);
                     var narrowMaxLossPerContract = MaxLossCalculator.CalculateGenericMaxLoss(narrowStrategySpec, 1).MaxLossAmount;
-                    
+
                     if (narrowMaxLossPerContract > 0 && narrowMaxLossPerContract < maxLossPerContract)
                     {
                         // Recalculate with narrower strategy
@@ -169,7 +166,7 @@ namespace ODTE.Strategy.RiskManagement
                         var narrowCappedContracts = Math.Min(narrowDerivedMaxContracts, HARD_CAP_CONTRACTS);
                         var narrowBufferAdjustedContracts = (int)Math.Floor(narrowCappedContracts * (double)(1.0m - SAFETY_BUFFER));
                         var narrowFinalContracts = Math.Max(narrowBufferAdjustedContracts, narrowCappedContracts > 0 ? MIN_CONTRACTS : 0);
-                        
+
                         if (narrowFinalContracts >= MIN_CONTRACTS)
                         {
                             finalContracts = narrowFinalContracts;
@@ -187,7 +184,7 @@ namespace ODTE.Strategy.RiskManagement
                 {
                     var hasOpenPositions = GetOpenPositionCount(tradingDay) > 0;
                     var canProbe = !ProbeOnlyWhenNoPositions || !hasOpenPositions;
-                    
+
                     if (canProbe && maxLossPerContract <= remainingBudget)
                     {
                         finalContracts = MIN_CONTRACTS;

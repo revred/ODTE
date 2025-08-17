@@ -1,6 +1,6 @@
 
-using System.Data;
 using Microsoft.Data.Sqlite;
+using System.Data;
 
 namespace ODTE.Historical;
 
@@ -12,14 +12,14 @@ public class TimeSeriesDatabase : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly string _dbPath;
-    
+
     public TimeSeriesDatabase(string dbPath = @"C:\code\ODTE\Data\ODTE_TimeSeries_5Y.db")
     {
         _dbPath = dbPath;
         var connectionString = $"Data Source={dbPath};Cache=Shared;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
-        
+
         // Enable performance optimizations
         ExecuteNonQuery("PRAGMA journal_mode=WAL");          // Write-Ahead Logging
         ExecuteNonQuery("PRAGMA synchronous=NORMAL");        // Faster writes
@@ -90,14 +90,14 @@ public class TimeSeriesDatabase : IDisposable
     {
         var result = new ImportResult { StartTime = DateTime.UtcNow };
         var symbolId = await GetOrCreateSymbolAsync("XSP", "SPDR S&P 500 Mini ETF");
-        
+
         var files = Directory.GetFiles(sourceDirectory, "*.parquet", SearchOption.AllDirectories)
             .OrderBy(f => f).ToList();
-        
+
         result.TotalFiles = files.Count;
-        
+
         var transaction = _connection.BeginTransaction();
-        
+
         try
         {
             var insertCmd = _connection.CreateCommand();
@@ -105,7 +105,7 @@ public class TimeSeriesDatabase : IDisposable
                 INSERT OR REPLACE INTO market_data 
                 (timestamp, symbol_id, open_price, high_price, low_price, close_price, volume, vwap_price)
                 VALUES (@timestamp, @symbol_id, @open, @high, @low, @close, @volume, @vwap)";
-            
+
             // Prepare parameters for bulk insert
             insertCmd.Parameters.Add("@timestamp", SqliteType.Integer);
             insertCmd.Parameters.Add("@symbol_id", SqliteType.Integer);
@@ -115,10 +115,10 @@ public class TimeSeriesDatabase : IDisposable
             insertCmd.Parameters.Add("@close", SqliteType.Integer);
             insertCmd.Parameters.Add("@volume", SqliteType.Integer);
             insertCmd.Parameters.Add("@vwap", SqliteType.Integer);
-            
+
             int batchSize = 0;
             const int COMMIT_BATCH_SIZE = 10000;
-            
+
             foreach (var file in files)
             {
                 try
@@ -127,7 +127,7 @@ public class TimeSeriesDatabase : IDisposable
                     // In production, this would use actual Parquet.Net reading
                     var date = ExtractDateFromPath(file);
                     var dayData = GenerateSampleDayData(date, symbolId);
-                    
+
                     foreach (var bar in dayData)
                     {
                         insertCmd.Parameters["@timestamp"].Value = ((DateTimeOffset)bar.Timestamp).ToUnixTimeSeconds();
@@ -138,11 +138,11 @@ public class TimeSeriesDatabase : IDisposable
                         insertCmd.Parameters["@close"].Value = (int)(bar.Close * 10000);
                         insertCmd.Parameters["@volume"].Value = bar.Volume;
                         insertCmd.Parameters["@vwap"].Value = (int)(bar.VWAP * 10000);
-                        
+
                         await insertCmd.ExecuteNonQueryAsync();
                         result.RecordsImported++;
                         batchSize++;
-                        
+
                         // Commit in batches for performance
                         if (batchSize >= COMMIT_BATCH_SIZE)
                         {
@@ -152,7 +152,7 @@ public class TimeSeriesDatabase : IDisposable
                             batchSize = 0;
                         }
                     }
-                    
+
                     result.FilesProcessed++;
                     progress?.Report(new ImportProgress
                     {
@@ -167,20 +167,20 @@ public class TimeSeriesDatabase : IDisposable
                     result.Errors.Add($"{file}: {ex.Message}");
                 }
             }
-            
+
             transaction.Commit();
             transaction.Dispose();
-            
+
             // Update metadata
             await UpdateMetadataAsync("last_import", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"));
             await UpdateMetadataAsync("total_records", result.RecordsImported.ToString());
             await UpdateMetadataAsync("date_range_start", result.StartDate?.ToString("yyyy-MM-dd") ?? "");
             await UpdateMetadataAsync("date_range_end", result.EndDate?.ToString("yyyy-MM-dd") ?? "");
-            
+
             // Optimize database after import
             await ExecuteNonQueryAsync("ANALYZE");
             await ExecuteNonQueryAsync("VACUUM");
-            
+
             result.Success = true;
         }
         catch (Exception ex)
@@ -190,10 +190,10 @@ public class TimeSeriesDatabase : IDisposable
             result.Success = false;
             result.ErrorMessage = ex.Message;
         }
-        
+
         result.EndTime = DateTime.UtcNow;
         result.Duration = result.EndTime - result.StartTime;
-        
+
         return result;
     }
 
@@ -203,17 +203,17 @@ public class TimeSeriesDatabase : IDisposable
     public async Task ImportBarsAsync(List<MarketDataBar> bars, string symbol = "XSP")
     {
         if (bars == null || bars.Count == 0) return;
-        
+
         var symbolId = await GetOrCreateSymbolAsync(symbol, symbol);
-        
+
         using var transaction = _connection.BeginTransaction();
         using var insertCmd = _connection.CreateCommand();
-        
+
         insertCmd.CommandText = @"
             INSERT OR REPLACE INTO market_data 
             (timestamp, symbol_id, open_price, high_price, low_price, close_price, volume, vwap_price)
             VALUES (@timestamp, @symbol_id, @open, @high, @low, @close, @volume, @vwap)";
-        
+
         insertCmd.Parameters.Add("@timestamp", SqliteType.Integer);
         insertCmd.Parameters.Add("@symbol_id", SqliteType.Integer, symbolId);
         insertCmd.Parameters.Add("@open", SqliteType.Integer);
@@ -222,7 +222,7 @@ public class TimeSeriesDatabase : IDisposable
         insertCmd.Parameters.Add("@close", SqliteType.Integer);
         insertCmd.Parameters.Add("@volume", SqliteType.Integer);
         insertCmd.Parameters.Add("@vwap", SqliteType.Integer);
-        
+
         foreach (var bar in bars)
         {
             insertCmd.Parameters["@timestamp"].Value = ((DateTimeOffset)bar.Timestamp).ToUnixTimeSeconds();
@@ -232,28 +232,28 @@ public class TimeSeriesDatabase : IDisposable
             insertCmd.Parameters["@close"].Value = (int)(bar.Close * 10000);
             insertCmd.Parameters["@volume"].Value = bar.Volume;
             insertCmd.Parameters["@vwap"].Value = (int)(bar.VWAP * 10000);
-            
+
             await insertCmd.ExecuteNonQueryAsync();
         }
-        
+
         await transaction.CommitAsync();
     }
-    
+
     /// <summary>
     /// Fast range query with optional sampling
     /// </summary>
     public async Task<List<MarketDataBar>> GetRangeAsync(
-        DateTime startTime, 
-        DateTime endTime, 
+        DateTime startTime,
+        DateTime endTime,
         string symbol = "XSP",
         TimeSpan? sampleInterval = null)
     {
         var symbolId = await GetSymbolIdAsync(symbol);
         if (symbolId == null) return new List<MarketDataBar>();
-        
+
         var startUnix = ((DateTimeOffset)startTime).ToUnixTimeSeconds();
         var endUnix = ((DateTimeOffset)endTime).ToUnixTimeSeconds();
-        
+
         string sql;
         if (sampleInterval.HasValue)
         {
@@ -283,16 +283,16 @@ public class TimeSeriesDatabase : IDisposable
                   AND symbol_id = @symbol_id
                 ORDER BY timestamp";
         }
-        
+
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
         cmd.Parameters.AddWithValue("@start", startUnix);
         cmd.Parameters.AddWithValue("@end", endUnix);
         cmd.Parameters.AddWithValue("@symbol_id", symbolId);
-        
+
         var results = new List<MarketDataBar>();
         using var reader = await cmd.ExecuteReaderAsync();
-        
+
         while (await reader.ReadAsync())
         {
             results.Add(new MarketDataBar
@@ -306,7 +306,7 @@ public class TimeSeriesDatabase : IDisposable
                 VWAP = reader.GetInt32(6) / 10000.0
             });
         }
-        
+
         return results;
     }
 
@@ -314,7 +314,7 @@ public class TimeSeriesDatabase : IDisposable
     /// Export range to various formats
     /// </summary>
     public async Task<ExportResult> ExportRangeAsync(
-        DateTime startTime, 
+        DateTime startTime,
         DateTime endTime,
         string outputPath,
         ExportFormat format,
@@ -322,14 +322,14 @@ public class TimeSeriesDatabase : IDisposable
         TimeSpan? sampleInterval = null)
     {
         var data = await GetRangeAsync(startTime, endTime, symbol, sampleInterval);
-        var result = new ExportResult 
-        { 
+        var result = new ExportResult
+        {
             OutputPath = outputPath,
             RecordsExported = data.Count
         };
-        
+
         var exportStartTime = DateTime.UtcNow;
-        
+
         try
         {
             switch (format)
@@ -346,7 +346,7 @@ public class TimeSeriesDatabase : IDisposable
                 default:
                     throw new ArgumentException($"Unsupported export format: {format}");
             }
-            
+
             result.Success = true;
             result.FileSizeBytes = new FileInfo(outputPath).Length;
         }
@@ -355,9 +355,9 @@ public class TimeSeriesDatabase : IDisposable
             result.Success = false;
             result.ErrorMessage = ex.Message;
         }
-        
+
         result.ExportDuration = DateTime.UtcNow - exportStartTime;
-        
+
         return result;
     }
 
@@ -367,12 +367,12 @@ public class TimeSeriesDatabase : IDisposable
     public async Task<DatabaseStats> GetStatsAsync()
     {
         var stats = new DatabaseStats();
-        
+
         // Record counts
         using var countCmd = _connection.CreateCommand();
         countCmd.CommandText = "SELECT COUNT(*) FROM market_data";
         stats.TotalRecords = Convert.ToInt64(await countCmd.ExecuteScalarAsync());
-        
+
         // Date range
         using var rangeCmd = _connection.CreateCommand();
         rangeCmd.CommandText = @"
@@ -390,16 +390,16 @@ public class TimeSeriesDatabase : IDisposable
             stats.StartDate = DateTime.MinValue;
             stats.EndDate = DateTime.MinValue;
         }
-        
+
         // Database size
         var fileInfo = new FileInfo(_dbPath);
         stats.DatabaseSizeBytes = fileInfo.Exists ? fileInfo.Length : 0;
         stats.DatabaseSizeMB = stats.DatabaseSizeBytes / (1024.0 * 1024.0);
-        
+
         // Compression ratio estimate
         var uncompressedSize = stats.TotalRecords * 64; // ~64 bytes per record uncompressed
         stats.CompressionRatio = uncompressedSize > 0 ? (double)uncompressedSize / stats.DatabaseSizeBytes : 0;
-        
+
         return stats;
     }
 
@@ -408,26 +408,26 @@ public class TimeSeriesDatabase : IDisposable
     {
         var id = await GetSymbolIdAsync(symbol);
         if (id.HasValue) return id.Value;
-        
+
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "INSERT INTO symbols (symbol, description) VALUES (@symbol, @desc); SELECT last_insert_rowid()";
         cmd.Parameters.AddWithValue("@symbol", symbol);
         cmd.Parameters.AddWithValue("@desc", description);
-        
+
         var result = await cmd.ExecuteScalarAsync();
         return Convert.ToInt32(result);
     }
-    
+
     private async Task<int?> GetSymbolIdAsync(string symbol)
     {
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "SELECT id FROM symbols WHERE symbol = @symbol";
         cmd.Parameters.AddWithValue("@symbol", symbol);
-        
+
         var result = await cmd.ExecuteScalarAsync();
         return result != null ? Convert.ToInt32(result) : null;
     }
-    
+
     private async Task UpdateMetadataAsync(string key, string value)
     {
         using var cmd = _connection.CreateCommand();
@@ -437,10 +437,10 @@ public class TimeSeriesDatabase : IDisposable
         cmd.Parameters.AddWithValue("@key", key);
         cmd.Parameters.AddWithValue("@value", value);
         cmd.Parameters.AddWithValue("@timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        
+
         await cmd.ExecuteNonQueryAsync();
     }
-    
+
     private DateTime ExtractDateFromPath(string filePath)
     {
         var fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -448,39 +448,39 @@ public class TimeSeriesDatabase : IDisposable
             return date;
         return DateTime.MinValue;
     }
-    
+
     private List<MarketDataBar> GenerateSampleDayData(DateTime date, int symbolId)
     {
         // Generate ~390 minute bars for a trading day (9:30 AM - 4:00 PM EST)
         var data = new List<MarketDataBar>();
         var startTime = date.Date.AddHours(9).AddMinutes(30); // 9:30 AM
         var basePrice = 450.0; // Approximate XSP price
-        
+
         for (int i = 0; i < 390; i++) // 390 minutes in trading day
         {
             var timestamp = startTime.AddMinutes(i);
             var randomChange = (new Random().NextDouble() - 0.5) * 2.0; // ±$1 random walk
-            
+
             data.Add(new MarketDataBar
             {
                 Timestamp = timestamp,
                 Open = basePrice + randomChange,
                 High = basePrice + randomChange + 0.25,
-                Low = basePrice + randomChange - 0.25, 
+                Low = basePrice + randomChange - 0.25,
                 Close = basePrice + randomChange + 0.1,
                 Volume = new Random().NextInt64(1000, 10000),
                 VWAP = basePrice + randomChange + 0.05
             });
         }
-        
+
         return data;
     }
-    
+
     private async Task ExportToCsvAsync(List<MarketDataBar> data, string outputPath)
     {
         using var writer = new StreamWriter(outputPath);
         await writer.WriteLineAsync("Timestamp,Open,High,Low,Close,Volume,VWAP");
-        
+
         foreach (var bar in data)
         {
             await writer.WriteLineAsync($"{bar.Timestamp:yyyy-MM-dd HH:mm:ss}," +
@@ -488,16 +488,16 @@ public class TimeSeriesDatabase : IDisposable
                                       $"{bar.Close:F4},{bar.Volume},{bar.VWAP:F4}");
         }
     }
-    
+
     private async Task ExportToJsonAsync(List<MarketDataBar> data, string outputPath)
     {
-        var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions 
-        { 
-            WriteIndented = true 
+        var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
         });
         await File.WriteAllTextAsync(outputPath, json);
     }
-    
+
     private async Task ExportToParquetAsync(List<MarketDataBar> data, string outputPath)
     {
         await Task.Delay(0); // Simulate async delay for testing purposes
@@ -505,14 +505,14 @@ public class TimeSeriesDatabase : IDisposable
         // For now, throw not implemented
         throw new NotImplementedException("Parquet export requires Parquet.Net library");
     }
-    
+
     private void ExecuteNonQuery(string sql)
     {
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
     }
-    
+
     private async Task ExecuteNonQueryAsync(string sql)
     {
         using var cmd = _connection.CreateCommand();
@@ -545,7 +545,7 @@ public class ImportResult
     public DateTime EndTime { get; set; }
     public TimeSpan Duration { get; set; }
     public string? ErrorMessage { get; set; }
-    
+
     public int TotalFiles { get; set; }
     public int FilesProcessed { get; set; }
     public long RecordsImported { get; set; }

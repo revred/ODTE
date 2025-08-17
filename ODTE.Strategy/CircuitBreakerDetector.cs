@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy;
 
 /// <summary>
@@ -30,14 +26,14 @@ public class CircuitBreakerDetector
     private readonly TimeZoneInfo _eastCoastTime;
     private decimal _marketOpenPrice;
     private bool _marketOpenSet;
-    
+
     public CircuitBreakerDetector()
     {
         _eventHistory = new List<CircuitBreakerEvent>();
         _eastCoastTime = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
         _marketOpenSet = false;
     }
-    
+
     /// <summary>
     /// Set market opening price for circuit breaker calculations
     /// </summary>
@@ -45,10 +41,10 @@ public class CircuitBreakerDetector
     {
         _marketOpenPrice = openPrice;
         _marketOpenSet = true;
-        
+
         Console.WriteLine($"📊 Market Open Set: ${openPrice:F2} at {openTime:HH:mm} EST");
     }
-    
+
     /// <summary>
     /// Check for circuit breaker conditions
     /// </summary>
@@ -63,22 +59,22 @@ public class CircuitBreakerDetector
                 Message = "Market open price not set"
             };
         }
-        
+
         // Calculate percentage decline from market open
         var declinePercentage = (_marketOpenPrice - currentPrice) / _marketOpenPrice * 100;
-        
+
         // Convert to Eastern Time for circuit breaker rules
         var estTime = TimeZoneInfo.ConvertTime(currentTime, _eastCoastTime);
         var cutoffTime = new DateTime(estTime.Year, estTime.Month, estTime.Day, 15, 25, 0); // 3:25 PM EST
         var isBeforeCutoff = estTime < cutoffTime;
-        
+
         // Determine circuit breaker level
         var level = DetermineCircuitBreakerLevel(declinePercentage, isBeforeCutoff);
         var wouldTrigger = level != CircuitBreakerLevel.None;
-        
+
         // Check for near-trigger conditions (within 0.5% of circuit breaker)
         var nearTrigger = CheckNearTriggerConditions(declinePercentage, isBeforeCutoff);
-        
+
         var result = new CircuitBreakerResult
         {
             IsTriggered = wouldTrigger,
@@ -91,7 +87,7 @@ public class CircuitBreakerDetector
             TradingHaltDuration = GetHaltDuration(level, isBeforeCutoff),
             MarketReopenEstimate = estTime.Add(GetHaltDuration(level, isBeforeCutoff))
         };
-        
+
         // Log circuit breaker events
         if (wouldTrigger || nearTrigger)
         {
@@ -99,10 +95,10 @@ public class CircuitBreakerDetector
             Console.WriteLine($"⚡ CIRCUIT BREAKER ALERT: {result.Message}");
             Console.WriteLine($"   Decline: {declinePercentage:F2}% | Action: {result.RecommendedAction}");
         }
-        
+
         return result;
     }
-    
+
     /// <summary>
     /// Determine circuit breaker level based on decline percentage
     /// </summary>
@@ -112,12 +108,12 @@ public class CircuitBreakerDetector
         {
             return CircuitBreakerLevel.Level3; // Always triggers regardless of time
         }
-        
+
         if (!isBeforeCutoff) // After 3:25 PM EST, only Level 3 can trigger
         {
             return CircuitBreakerLevel.None;
         }
-        
+
         return decline switch
         {
             >= 13m => CircuitBreakerLevel.Level2, // 13% decline
@@ -125,23 +121,23 @@ public class CircuitBreakerDetector
             _ => CircuitBreakerLevel.None
         };
     }
-    
+
     /// <summary>
     /// Check for near-trigger conditions (within 0.5% of circuit breaker)
     /// </summary>
     private bool CheckNearTriggerConditions(decimal decline, bool isBeforeCutoff)
     {
         if (decline >= 19.5m) return true; // Near Level 3
-        
+
         if (isBeforeCutoff)
         {
             if (decline >= 12.5m) return true; // Near Level 2
             if (decline >= 6.5m) return true;  // Near Level 1
         }
-        
+
         return false;
     }
-    
+
     /// <summary>
     /// Calculate percentage points to next circuit breaker
     /// </summary>
@@ -152,7 +148,7 @@ public class CircuitBreakerDetector
         if (currentDecline >= 7m) return 13m - currentDecline;  // To Level 2
         return 7m - currentDecline; // To Level 1
     }
-    
+
     /// <summary>
     /// Generate descriptive message for circuit breaker status
     /// </summary>
@@ -167,7 +163,7 @@ public class CircuitBreakerDetector
             _ => $"Market decline: {decline:F2}% - Monitoring for circuit breakers"
         };
     }
-    
+
     /// <summary>
     /// Get recommended action based on circuit breaker conditions
     /// </summary>
@@ -183,7 +179,7 @@ public class CircuitBreakerDetector
             _ => "Normal monitoring - continue operations"
         };
     }
-    
+
     /// <summary>
     /// Get expected halt duration
     /// </summary>
@@ -197,7 +193,7 @@ public class CircuitBreakerDetector
             _ => TimeSpan.Zero
         };
     }
-    
+
     /// <summary>
     /// Log circuit breaker event for historical analysis
     /// </summary>
@@ -211,23 +207,23 @@ public class CircuitBreakerDetector
             WasTriggered = result.IsTriggered,
             Message = result.Message
         };
-        
+
         _eventHistory.Add(cbEvent);
-        
+
         // Keep only last 100 events
         if (_eventHistory.Count > 100)
         {
             _eventHistory.RemoveAt(0);
         }
     }
-    
+
     /// <summary>
     /// Get circuit breaker statistics
     /// </summary>
     public CircuitBreakerStatistics GetStatistics()
     {
         var triggeredEvents = _eventHistory.Where(e => e.WasTriggered).ToArray();
-        
+
         return new CircuitBreakerStatistics
         {
             TotalEvents = _eventHistory.Count,
@@ -236,8 +232,8 @@ public class CircuitBreakerDetector
             Level3Triggers = triggeredEvents.Count(e => e.Level == CircuitBreakerLevel.Level3),
             AverageDeclineAtTrigger = triggeredEvents.Any() ? triggeredEvents.Average(e => e.DeclinePercentage) : 0,
             MostRecentTrigger = triggeredEvents.LastOrDefault()?.Timestamp,
-            DaysSinceLastTrigger = triggeredEvents.Any() ? 
-                (DateTime.Now - triggeredEvents.Last().Timestamp).TotalDays : 
+            DaysSinceLastTrigger = triggeredEvents.Any() ?
+                (DateTime.Now - triggeredEvents.Last().Timestamp).TotalDays :
                 double.MaxValue
         };
     }

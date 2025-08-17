@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace ODTE.Historical
 {
@@ -21,8 +16,8 @@ namespace ODTE.Historical
         private readonly DataPipelineConfig _config;
 
         public ProfessionalDataPipeline(
-            ILogger<ProfessionalDataPipeline> logger, 
-            HttpClient httpClient, 
+            ILogger<ProfessionalDataPipeline> logger,
+            HttpClient httpClient,
             string connectionString,
             DataPipelineConfig config)
         {
@@ -40,23 +35,23 @@ namespace ODTE.Historical
             // CBOE DataShop Configuration
             public string CboeApiKey { get; set; } = "";
             public string CboeBaseUrl { get; set; } = "https://www.cboe.com/us/options/market_statistics/historical_data/";
-            
+
             // Polygon.io Configuration
             public string PolygonApiKey { get; set; } = "";
             public string PolygonBaseUrl { get; set; } = "https://api.polygon.io";
-            
+
             // FRED Economic Data
             public string FredApiKey { get; set; } = "";
             public string FredBaseUrl { get; set; } = "https://api.stlouisfed.org/fred";
-            
+
             // Data range
             public DateTime StartDate { get; set; } = DateTime.Now.AddYears(-20);
             public DateTime EndDate { get; set; } = DateTime.Now;
-            
+
             // Symbols to fetch
             public List<string> Symbols { get; set; } = new() { "SPY", "SPX", "XSP" };
             public List<string> VixSymbols { get; set; } = new() { "VIX", "VIX9D", "VIX3M" };
-            
+
             // Quality settings
             public int MaxRetries { get; set; } = 3;
             public int RateLimitDelayMs { get; set; } = 1000;
@@ -152,7 +147,7 @@ namespace ODTE.Historical
                     result.VixRecordsProcessed += records.Count;
 
                     _logger.LogInformation("Acquired {Count} {Symbol} records from FRED", records.Count, vixSymbol);
-                    
+
                     // Rate limiting
                     await Task.Delay(_config.RateLimitDelayMs);
                 }
@@ -171,7 +166,7 @@ namespace ODTE.Historical
         {
             // CBOE DataShop typically provides bulk historical data downloads
             // This would require specific API integration based on subscription
-            
+
             var startDate = _config.StartDate;
             while (startDate <= _config.EndDate)
             {
@@ -179,17 +174,17 @@ namespace ODTE.Historical
                 {
                     // Example: Daily SPX options data request
                     var dateStr = startDate.ToString("yyyy-MM-dd");
-                    
+
                     // Note: Actual CBOE DataShop integration would require
                     // specific authentication and data format handling
-                    
+
                     _logger.LogInformation("Processing CBOE data for {Date}", dateStr);
-                    
+
                     // Placeholder for actual CBOE integration
                     // await ProcessCboeDataFile(dateStr, result);
-                    
+
                     result.CboeRecordsProcessed += 1000; // Placeholder
-                    
+
                     startDate = startDate.AddDays(1);
                     await Task.Delay(_config.RateLimitDelayMs);
                 }
@@ -209,13 +204,13 @@ namespace ODTE.Historical
             foreach (var symbol in _config.Symbols.Where(s => s == "SPY")) // Focus on SPY for Polygon
             {
                 var currentDate = _config.StartDate;
-                
+
                 while (currentDate <= _config.EndDate)
                 {
                     try
                     {
                         var dateStr = currentDate.ToString("yyyy-MM-dd");
-                        
+
                         // Polygon.io options data endpoint
                         var url = $"{_config.PolygonBaseUrl}/v3/snapshot/options/{symbol}" +
                                  $"?date={dateStr}" +
@@ -252,7 +247,7 @@ namespace ODTE.Historical
                             await SaveOptionsData(records);
                             result.PolygonRecordsProcessed += records.Count;
 
-                            _logger.LogInformation("Acquired {Count} options records for {Symbol} on {Date}", 
+                            _logger.LogInformation("Acquired {Count} options records for {Symbol} on {Date}",
                                 records.Count, symbol, dateStr);
                         }
 
@@ -261,10 +256,10 @@ namespace ODTE.Historical
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to acquire Polygon data for {Symbol} on {Date}: {Error}", 
+                        _logger.LogError(ex, "Failed to acquire Polygon data for {Symbol} on {Date}: {Error}",
                             symbol, currentDate, ex.Message);
                         result.Errors.Add($"Polygon {symbol} {currentDate:yyyy-MM-dd}: {ex.Message}");
-                        
+
                         currentDate = currentDate.AddDays(1);
                     }
                 }
@@ -312,11 +307,11 @@ namespace ODTE.Historical
             }
 
             // Calculate overall quality metrics
-            result.OverallQualityScore = result.QualityChecks.Any() 
-                ? result.QualityChecks.Average(q => q.QualityScore) 
+            result.OverallQualityScore = result.QualityChecks.Any()
+                ? result.QualityChecks.Average(q => q.QualityScore)
                 : 0;
 
-            _logger.LogInformation("Data quality validation completed. Overall score: {Score:F2}%", 
+            _logger.LogInformation("Data quality validation completed. Overall score: {Score:F2}%",
                 result.OverallQualityScore);
         }
 
@@ -341,9 +336,9 @@ namespace ODTE.Historical
 
             var reportJson = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
             var reportPath = Path.Combine("C:\\code\\ODTE\\data", $"quality_report_{result.ProcessId}.json");
-            
+
             await File.WriteAllTextAsync(reportPath, reportJson);
-            
+
             _logger.LogInformation("Quality report generated: {Path}", reportPath);
         }
 
@@ -409,7 +404,7 @@ namespace ODTE.Historical
                     using var command = connection.CreateCommand();
                     command.Transaction = transaction;
                     command.CommandText = sql;
-                    
+
                     // Add all parameters
                     command.Parameters.AddWithValue("@Timestamp", record.Timestamp);
                     command.Parameters.AddWithValue("@Symbol", record.Symbol);
@@ -524,11 +519,11 @@ namespace ODTE.Historical
             public string ProcessId { get; set; } = "";
             public bool Success { get; set; }
             public string ErrorMessage { get; set; } = "";
-            
+
             public int VixRecordsProcessed { get; set; }
             public int CboeRecordsProcessed { get; set; }
             public int PolygonRecordsProcessed { get; set; }
-            
+
             public List<DataQualityCheck> QualityChecks { get; set; } = new();
             public decimal OverallQualityScore { get; set; }
             public List<string> Errors { get; set; } = new();

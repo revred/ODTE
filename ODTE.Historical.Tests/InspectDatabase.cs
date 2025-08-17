@@ -1,7 +1,5 @@
-using System;
-using System.Data.SQLite;
-using System.Threading.Tasks;
 using Dapper;
+using System.Data.SQLite;
 
 namespace ODTE.Historical.Tests
 {
@@ -25,14 +23,14 @@ namespace ODTE.Historical.Tests
             foreach (var table in tables)
             {
                 Console.WriteLine($"  • {table}");
-                
+
                 // Get column info
                 var columns = await conn.QueryAsync(@$"PRAGMA table_info({table})");
                 foreach (var col in columns)
                 {
                     Console.WriteLine($"    - {col.name} ({col.type})");
                 }
-                
+
                 // Get row count
                 var count = await conn.QuerySingleAsync<int>($"SELECT COUNT(*) FROM {table}");
                 Console.WriteLine($"    Rows: {count:N0}");

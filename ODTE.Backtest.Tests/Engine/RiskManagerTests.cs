@@ -28,7 +28,7 @@ public class RiskManagerTests
             },
             NoNewRiskMinutesToClose = 40
         };
-        
+
         _riskManager = new RiskManager(_config);
     }
 
@@ -389,7 +389,7 @@ public class RiskManagerTests
         // Arrange - Set up scenario with multiple constraints
         var lateTimeEt = new DateTime(2024, 2, 1, 15, 25, 0); // 3:25 PM ET = 35 minutes to close
         var lateTime = lateTimeEt.AddHours(5).ToUtc(); // Convert ET to UTC (8:25 PM UTC)
-        
+
         _riskManager.RegisterOpen(Decision.SingleSidePut);
         _riskManager.RegisterOpen(Decision.SingleSidePut); // Max put positions
         _riskManager.RegisterClose(Decision.SingleSideCall, -400.0); // Partial daily loss
@@ -413,7 +413,7 @@ public class RiskManagerTests
             Risk = new RiskCfg { DailyLossStop = 100 } // Only $100 daily budget
         };
         var riskManager = new RiskManager(config);
-        
+
         // Large order that exceeds budget
         var order = new SpreadOrder(
             Ts: DateTime.Now,
@@ -442,7 +442,7 @@ public class RiskManagerTests
             Risk = new RiskCfg { DailyLossStop = 500 } // $500 daily budget
         };
         var riskManager = new RiskManager(config);
-        
+
         // Small order within budget
         var order = new SpreadOrder(
             Ts: DateTime.Now,
@@ -471,10 +471,10 @@ public class RiskManagerTests
             Risk = new RiskCfg { DailyLossStop = 200 } // $200 daily budget
         };
         var riskManager = new RiskManager(config);
-        
+
         // Simulate some losses already realized today
         riskManager.RegisterClose(Decision.SingleSidePut, -150.0); // Lost $150
-        
+
         // Order that would exceed remaining budget
         var order = new SpreadOrder(
             Ts: DateTime.Now,
@@ -508,7 +508,7 @@ public class RiskManagerTests
             Risk = new RiskCfg { DailyLossStop = 1000 } // Large budget to focus on calculation
         };
         var riskManager = new RiskManager(config);
-        
+
         var order = new SpreadOrder(
             Ts: DateTime.Now,
             Underlying: "XSP",
@@ -526,17 +526,17 @@ public class RiskManagerTests
             Risk = new RiskCfg { DailyLossStop = (double)expectedMaxLoss - 1 } // $1 under limit
         };
         var limitRiskManager = new RiskManager(configAtLimit);
-        
+
         limitRiskManager.CanAddOrder(order).Should().BeFalse(
             $"Order with {spreadType} should calculate max loss as ${expectedMaxLoss}");
-        
+
         // Should pass with budget just above the limit
         var configAboveLimit = new SimConfig
         {
             Risk = new RiskCfg { DailyLossStop = (double)expectedMaxLoss + 1 } // $1 over limit
         };
         var aboveLimitRiskManager = new RiskManager(configAboveLimit);
-        
+
         aboveLimitRiskManager.CanAddOrder(order).Should().BeTrue(
             $"Order should pass when budget (${expectedMaxLoss + 1}) exceeds max loss (${expectedMaxLoss})");
     }

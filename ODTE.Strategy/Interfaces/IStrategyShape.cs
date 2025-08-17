@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ODTE.Strategy.Interfaces
 {
     /// <summary>
@@ -12,12 +9,12 @@ namespace ODTE.Strategy.Interfaces
         /// Name of the strategy (e.g., "IronCondor", "CreditBWB")
         /// </summary>
         string Name { get; }
-        
+
         /// <summary>
         /// Exercise style for pricing (European/American)
         /// </summary>
         ExerciseStyle Style { get; }
-        
+
         /// <summary>
         /// Option legs that compose this strategy
         /// </summary>

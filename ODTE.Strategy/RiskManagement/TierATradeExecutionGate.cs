@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using ODTE.Strategy.Models;
-
 namespace ODTE.Strategy.RiskManagement
 {
     /// <summary>
@@ -30,32 +26,32 @@ namespace ODTE.Strategy.RiskManagement
     public class TierATradeExecutionGate
     {
         #region Dependencies
-        
+
         private readonly PerTradeRiskManager _perTradeRiskManager;
         private readonly BudgetCapValidator _budgetCapValidator;
         private readonly IntegerPositionSizer _integerPositionSizer;
         private readonly ReverseFibonacciRiskManager _rfibManager;
         private readonly Dictionary<DateTime, List<TradeGateRecord>> _gateHistory;
         private readonly List<ComprehensiveAuditRecord> _auditLog;
-        
+
         #endregion
-        
+
         #region Configuration
-        
+
         /// <summary>
         /// Enable/disable individual validation components for A/B testing
         /// </summary>
         public TierAValidationConfig ValidationConfig { get; set; } = new();
-        
+
         /// <summary>
         /// Trade execution statistics for monitoring effectiveness
         /// </summary>
         public TradeGateStatistics Statistics { get; private set; } = new();
-        
+
         #endregion
-        
+
         #region Constructor
-        
+
         public TierATradeExecutionGate(
             PerTradeRiskManager perTradeRiskManager,
             BudgetCapValidator budgetCapValidator,
@@ -69,11 +65,11 @@ namespace ODTE.Strategy.RiskManagement
             _gateHistory = new Dictionary<DateTime, List<TradeGateRecord>>();
             _auditLog = new List<ComprehensiveAuditRecord>();
         }
-        
+
         #endregion
-        
+
         #region Primary Trade Validation
-        
+
         /// <summary>
         /// Master validation method: Run all Tier A checks on proposed trade
         /// </summary>
@@ -90,34 +86,34 @@ namespace ODTE.Strategy.RiskManagement
                 IsApproved = true,
                 ValidationResults = new List<IndividualValidationResult>()
             };
-            
+
             try
             {
                 // VALIDATION STAGE 1: Calculate maximum loss at entry
                 var maxLossResult = CalculateMaxLoss(tradeCandidate);
                 result.MaxLossAtEntry = maxLossResult.MaxLossAmount;
                 result.ValidationResults.Add(CreateValidationResult("MaxLossCalculation", maxLossResult.IsValid, maxLossResult.Summary));
-                
+
                 if (!maxLossResult.IsValid)
                 {
                     result.IsApproved = false;
                     result.PrimaryRejectReason = "MAX_LOSS_CALCULATION_FAILED";
                     return result;
                 }
-                
+
                 // VALIDATION STAGE 2: Per-trade risk manager validation
                 if (ValidationConfig.EnablePerTradeRiskValidation)
                 {
                     var riskValidation = _perTradeRiskManager.ValidateTradeRisk(
-                        tradingDay, 
-                        result.MaxLossAtEntry, 
+                        tradingDay,
+                        result.MaxLossAtEntry,
                         tradeCandidate.Contracts);
-                        
+
                     result.ValidationResults.Add(CreateValidationResult(
-                        "PerTradeRiskManager", 
-                        riskValidation.IsApproved, 
+                        "PerTradeRiskManager",
+                        riskValidation.IsApproved,
                         riskValidation.GetSummary()));
-                        
+
                     if (!riskValidation.IsApproved)
                     {
                         result.IsApproved = false;
@@ -126,7 +122,7 @@ namespace ODTE.Strategy.RiskManagement
                         return result;
                     }
                 }
-                
+
                 // VALIDATION STAGE 3: Budget cap validation (f=0.40 factor)
                 if (ValidationConfig.EnableBudgetCapValidation)
                 {
@@ -134,12 +130,12 @@ namespace ODTE.Strategy.RiskManagement
                         tradingDay,
                         result.MaxLossAtEntry,
                         tradeCandidate.Contracts);
-                        
+
                     result.ValidationResults.Add(CreateValidationResult(
                         "BudgetCapValidator",
                         budgetValidation.IsApproved,
                         budgetValidation.GetSummary()));
-                        
+
                     if (!budgetValidation.IsApproved)
                     {
                         result.IsApproved = false;
@@ -149,7 +145,7 @@ namespace ODTE.Strategy.RiskManagement
                         return result;
                     }
                 }
-                
+
                 // VALIDATION STAGE 4: Integer position sizing validation (A2.4)
                 if (ValidationConfig.EnableIntegerSizingValidation)
                 {
@@ -163,17 +159,17 @@ namespace ODTE.Strategy.RiskManagement
                         BodyWidth = tradeCandidate.BodyWidth,
                         WingWidth = tradeCandidate.WingWidth
                     };
-                    
+
                     var integerValidation = _integerPositionSizer.ValidateContractCount(
-                        tradingDay, 
-                        strategySpec, 
+                        tradingDay,
+                        strategySpec,
                         tradeCandidate.Contracts);
-                        
+
                     result.ValidationResults.Add(CreateValidationResult(
                         "IntegerPositionSizer",
                         integerValidation.IsValid,
                         integerValidation.ValidationDetails));
-                        
+
                     if (!integerValidation.IsValid)
                     {
                         result.IsApproved = false;
@@ -183,7 +179,7 @@ namespace ODTE.Strategy.RiskManagement
                         return result;
                     }
                 }
-                
+
                 // VALIDATION STAGE 5: Liquidity quality validation
                 if (ValidationConfig.EnableLiquidityValidation)
                 {
@@ -192,7 +188,7 @@ namespace ODTE.Strategy.RiskManagement
                         "LiquidityQuality",
                         liquidityValidation.IsValid,
                         liquidityValidation.Message));
-                        
+
                     if (!liquidityValidation.IsValid)
                     {
                         result.IsApproved = false;
@@ -201,14 +197,14 @@ namespace ODTE.Strategy.RiskManagement
                         return result;
                     }
                 }
-                
+
                 // VALIDATION STAGE 6: Final sanity checks
                 var sanityValidation = ValidateSanityChecks(tradeCandidate, result.MaxLossAtEntry);
                 result.ValidationResults.Add(CreateValidationResult(
                     "SanityChecks",
                     sanityValidation.IsValid,
                     sanityValidation.Message));
-                    
+
                 if (!sanityValidation.IsValid)
                 {
                     result.IsApproved = false;
@@ -216,19 +212,19 @@ namespace ODTE.Strategy.RiskManagement
                     result.DetailedRejectReason = sanityValidation.Message;
                     return result;
                 }
-                
+
                 // SUCCESS: All validations passed
                 result.PrimaryRejectReason = "APPROVED";
                 result.DetailedRejectReason = $"All {result.ValidationResults.Count} Tier A validations passed";
-                
+
                 // Update statistics
                 Statistics.TotalValidations++;
                 Statistics.ApprovedTrades++;
-                
+
                 // H4: Record comprehensive audit trail
                 RecordComprehensiveAudit(result);
                 RecordGateDecision(result);
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -237,19 +233,19 @@ namespace ODTE.Strategy.RiskManagement
                 result.PrimaryRejectReason = "VALIDATION_SYSTEM_ERROR";
                 result.DetailedRejectReason = $"Exception during validation: {ex.Message}";
                 result.ValidationResults.Add(CreateValidationResult("SystemError", false, ex.Message));
-                
+
                 Statistics.SystemErrors++;
                 RecordComprehensiveAudit(result);
                 RecordGateDecision(result);
-                
+
                 return result;
             }
         }
-        
+
         #endregion
-        
+
         #region Individual Validation Methods
-        
+
         private MaxLossValidationResult CalculateMaxLoss(TradeCandidate candidate)
         {
             try
@@ -264,9 +260,9 @@ namespace ODTE.Strategy.RiskManagement
                     BodyWidth = candidate.BodyWidth,
                     WingWidth = candidate.WingWidth
                 };
-                
+
                 var maxLossResult = MaxLossCalculator.CalculateGenericMaxLoss(strategySpec, candidate.Contracts);
-                
+
                 return new MaxLossValidationResult
                 {
                     IsValid = maxLossResult.MaxLossAmount > 0,
@@ -284,8 +280,8 @@ namespace ODTE.Strategy.RiskManagement
                 };
             }
         }
-        
-        
+
+
         private SimpleValidationResult ValidateLiquidityQuality(TradeCandidate candidate)
         {
             // Simplified liquidity validation - full implementation would integrate with real market data
@@ -297,7 +293,7 @@ namespace ODTE.Strategy.RiskManagement
                     Message = $"Liquidity score {candidate.LiquidityScore:F2} below minimum 0.50 threshold"
                 };
             }
-            
+
             if (candidate.BidAskSpread > 0.25m)
             {
                 return new SimpleValidationResult
@@ -306,14 +302,14 @@ namespace ODTE.Strategy.RiskManagement
                     Message = $"Bid-ask spread {candidate.BidAskSpread:P2} exceeds 25% maximum"
                 };
             }
-            
+
             return new SimpleValidationResult
             {
                 IsValid = true,
                 Message = $"Liquidity validated: Score {candidate.LiquidityScore:F2}, Spread {candidate.BidAskSpread:P2}"
             };
         }
-        
+
         private SimpleValidationResult ValidateSanityChecks(TradeCandidate candidate, decimal maxLoss)
         {
             // Sanity check 1: Net credit should be positive for credit strategies
@@ -325,7 +321,7 @@ namespace ODTE.Strategy.RiskManagement
                     Message = $"Invalid net credit: ${candidate.NetCredit:F2}. Credit strategies require positive credit."
                 };
             }
-            
+
             // Sanity check 2: Max loss should be reasonable relative to credit
             var riskRewardRatio = maxLoss / (candidate.NetCredit * 100m * candidate.Contracts);
             if (riskRewardRatio > 10m) // Risk > 10x reward is suspicious
@@ -336,7 +332,7 @@ namespace ODTE.Strategy.RiskManagement
                     Message = $"Excessive risk/reward ratio: {riskRewardRatio:F1}x. Max loss ${maxLoss:F2} vs credit ${candidate.NetCredit * 100m * candidate.Contracts:F2}"
                 };
             }
-            
+
             // Sanity check 3: Position size should be reasonable
             if (candidate.Contracts > 10)
             {
@@ -346,18 +342,18 @@ namespace ODTE.Strategy.RiskManagement
                     Message = $"Excessive position size: {candidate.Contracts} contracts exceeds 10 contract safety limit"
                 };
             }
-            
+
             return new SimpleValidationResult
             {
                 IsValid = true,
                 Message = $"Sanity checks passed: R/R {riskRewardRatio:F1}x, {candidate.Contracts} contracts"
             };
         }
-        
+
         #endregion
-        
+
         #region Helper Methods
-        
+
         private IndividualValidationResult CreateValidationResult(string validator, bool passed, string message)
         {
             return new IndividualValidationResult
@@ -368,7 +364,7 @@ namespace ODTE.Strategy.RiskManagement
                 Timestamp = DateTime.UtcNow
             };
         }
-        
+
         private void RecordGateDecision(TierAValidationResult result)
         {
             var day = result.TradingDay.Date;
@@ -376,7 +372,7 @@ namespace ODTE.Strategy.RiskManagement
             {
                 _gateHistory[day] = new List<TradeGateRecord>();
             }
-            
+
             _gateHistory[day].Add(new TradeGateRecord
             {
                 Timestamp = result.ValidationTimestamp,
@@ -386,17 +382,17 @@ namespace ODTE.Strategy.RiskManagement
                 ProposedContracts = result.TradeCandidate.Contracts,
                 ValidationCount = result.ValidationResults.Count
             });
-            
+
             if (!result.IsApproved)
             {
                 Statistics.RejectedTrades++;
             }
         }
-        
+
         #endregion
-        
+
         #region Analytics & Reporting
-        
+
         /// <summary>
         /// Get daily gate statistics for performance monitoring
         /// </summary>
@@ -404,7 +400,7 @@ namespace ODTE.Strategy.RiskManagement
         {
             var day = tradingDay.Date;
             var records = _gateHistory.ContainsKey(day) ? _gateHistory[day] : new List<TradeGateRecord>();
-            
+
             return new DailyGateStatistics
             {
                 TradingDay = day,
@@ -421,7 +417,7 @@ namespace ODTE.Strategy.RiskManagement
                                         .ToDictionary(g => g.Key, g => g.Count())
             };
         }
-        
+
         /// <summary>
         /// H4: Record comprehensive audit trail for all trade decisions
         /// </summary>
@@ -429,7 +425,7 @@ namespace ODTE.Strategy.RiskManagement
         {
             var remainingBudget = _rfibManager.GetRemainingDailyBudget(result.TradingDay);
             var dailyCap = _rfibManager.GetDailyBudgetLimit(result.TradingDay);
-            
+
             var auditRecord = new ComprehensiveAuditRecord
             {
                 Timestamp = result.ValidationTimestamp,
@@ -450,16 +446,16 @@ namespace ODTE.Strategy.RiskManagement
                 ValidationCount = result.ValidationResults.Count,
                 PassedValidations = result.ValidationResults.Count(v => v.Passed)
             };
-            
+
             _auditLog.Add(auditRecord);
-            
+
             // Keep audit log size manageable (last 1000 entries)
             if (_auditLog.Count > 1000)
             {
                 _auditLog.RemoveRange(0, _auditLog.Count - 1000);
             }
         }
-        
+
         private string GetTradeDescription(StrategyType strategyType)
         {
             return strategyType switch
@@ -470,7 +466,7 @@ namespace ODTE.Strategy.RiskManagement
                 _ => strategyType.ToString().ToLowerInvariant()
             };
         }
-        
+
         /// <summary>
         /// Get recent audit records for analysis
         /// </summary>
@@ -478,27 +474,27 @@ namespace ODTE.Strategy.RiskManagement
         {
             return _auditLog.TakeLast(maxRecords).ToList();
         }
-        
+
         /// <summary>
         /// Export audit records as JSON for external analysis
         /// </summary>
         public string ExportAuditToJson(DateTime? fromDate = null)
         {
-            var records = fromDate.HasValue 
+            var records = fromDate.HasValue
                 ? _auditLog.Where(r => r.Timestamp >= fromDate.Value).ToList()
                 : _auditLog;
-                
-            return System.Text.Json.JsonSerializer.Serialize(records, new System.Text.Json.JsonSerializerOptions 
-            { 
-                WriteIndented = true 
+
+            return System.Text.Json.JsonSerializer.Serialize(records, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
             });
         }
 
         #endregion
     }
-    
+
     #region Supporting Data Types
-    
+
     /// <summary>
     /// Configuration for Tier A validation components
     /// </summary>
@@ -510,7 +506,7 @@ namespace ODTE.Strategy.RiskManagement
         public bool EnableLiquidityValidation { get; set; } = true;
         public bool EnableSanityChecks { get; set; } = true;
     }
-    
+
     /// <summary>
     /// Overall statistics for trade gate performance
     /// </summary>
@@ -520,11 +516,11 @@ namespace ODTE.Strategy.RiskManagement
         public int ApprovedTrades { get; set; }
         public int RejectedTrades { get; set; }
         public int SystemErrors { get; set; }
-        
+
         public double ApprovalRate => TotalValidations > 0 ? (double)ApprovedTrades / TotalValidations : 0;
         public double ErrorRate => TotalValidations > 0 ? (double)SystemErrors / TotalValidations : 0;
     }
-    
+
     /// <summary>
     /// Complete validation result from Tier A gate
     /// </summary>
@@ -539,18 +535,18 @@ namespace ODTE.Strategy.RiskManagement
         public string DetailedRejectReason { get; set; } = "";
         public string SuggestedContractReduction { get; set; } = "";
         public List<IndividualValidationResult> ValidationResults { get; set; } = new();
-        
+
         public string GetExecutiveSummary()
         {
             var status = IsApproved ? "✅ APPROVED" : "❌ REJECTED";
             var passedCount = ValidationResults.Count(v => v.Passed);
             var totalCount = ValidationResults.Count;
-            
+
             return $"{status}: {TradeCandidate.Contracts} contracts, ${MaxLossAtEntry:F2} max loss. " +
                    $"Validations: {passedCount}/{totalCount} passed. {PrimaryRejectReason}";
         }
     }
-    
+
     /// <summary>
     /// Individual validation component result
     /// </summary>
@@ -561,7 +557,7 @@ namespace ODTE.Strategy.RiskManagement
         public string Message { get; set; } = "";
         public DateTime Timestamp { get; set; }
     }
-    
+
     /// <summary>
     /// Simple validation result for basic checks
     /// </summary>
@@ -570,7 +566,7 @@ namespace ODTE.Strategy.RiskManagement
         public bool IsValid { get; set; }
         public string Message { get; set; } = "";
     }
-    
+
     /// <summary>
     /// Max loss calculation validation result
     /// </summary>
@@ -580,7 +576,7 @@ namespace ODTE.Strategy.RiskManagement
         public decimal MaxLossAmount { get; set; }
         public string Summary { get; set; } = "";
     }
-    
+
     /// <summary>
     /// Internal record for gate decision history
     /// </summary>
@@ -593,7 +589,7 @@ namespace ODTE.Strategy.RiskManagement
         public int ProposedContracts { get; set; }
         public int ValidationCount { get; set; }
     }
-    
+
     /// <summary>
     /// Daily gate performance statistics
     /// </summary>
@@ -607,7 +603,7 @@ namespace ODTE.Strategy.RiskManagement
         public decimal TotalRiskRequested { get; set; }
         public decimal TotalRiskApproved { get; set; }
         public Dictionary<string, int> TopRejectReasons { get; set; } = new();
-        
+
         public string GetSummary()
         {
             var topReason = TopRejectReasons.FirstOrDefault();
@@ -615,7 +611,7 @@ namespace ODTE.Strategy.RiskManagement
                    $"Top reject reason: {topReason.Key} ({topReason.Value} occurrences)";
         }
     }
-    
+
     /// <summary>
     /// Trade candidate for validation
     /// </summary>
@@ -633,7 +629,7 @@ namespace ODTE.Strategy.RiskManagement
         public decimal BidAskSpread { get; set; }
         public DateTime ProposedExecutionTime { get; set; }
     }
-    
+
     /// <summary>
     /// H4: Comprehensive audit record following roadmap specification
     /// </summary>
@@ -656,7 +652,7 @@ namespace ODTE.Strategy.RiskManagement
         public string DetailedReason { get; set; } = "";
         public int ValidationCount { get; set; }
         public int PassedValidations { get; set; }
-        
+
         /// <summary>
         /// Convert to JSON format as specified in roadmap
         /// </summary>
@@ -680,6 +676,6 @@ namespace ODTE.Strategy.RiskManagement
 }}";
         }
     }
-    
+
     #endregion
 }

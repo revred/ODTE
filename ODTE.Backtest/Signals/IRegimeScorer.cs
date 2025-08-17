@@ -28,7 +28,7 @@ public interface IRegimeScorer
     /// <param name="cal">Economic calendar for event proximity</param>
     /// <returns>Tuple of (score, calmRange, trendBiasUp, trendBiasDown)</returns>
     (int score, bool calmRange, bool trendBiasUp, bool trendBiasDown) Score(
-        DateTime now, 
-        IMarketData md, 
+        DateTime now,
+        IMarketData md,
         IEconCalendar cal);
 }

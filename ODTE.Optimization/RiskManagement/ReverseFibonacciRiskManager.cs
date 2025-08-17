@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Optimization.RiskManagement
 {
     public class ReverseFibonacciRiskManager
@@ -12,11 +8,11 @@ namespace ODTE.Optimization.RiskManagement
         private double _currentDayPnL = 0;
         private double _currentMaxLoss = BASE_MAX_LOSS;
         private readonly List<DailyRiskRecord> _riskHistory = new List<DailyRiskRecord>();
-        
+
         public double CurrentMaxLoss => _currentMaxLoss;
         public int CurrentRiskLevel => _currentLevel;
         public bool IsTradingAllowed => _currentMaxLoss > 0 && Math.Abs(_currentDayPnL) < _currentMaxLoss;
-        
+
         public class DailyRiskRecord
         {
             public DateTime Date { get; set; }
@@ -26,7 +22,7 @@ namespace ODTE.Optimization.RiskManagement
             public bool MaxLossBreached { get; set; }
             public string Action { get; set; }
         }
-        
+
         public void StartNewDay(DateTime date)
         {
             // Save yesterday's record if exists
@@ -35,13 +31,13 @@ namespace ODTE.Optimization.RiskManagement
                 var lastRecord = _riskHistory.Last();
                 lastRecord.ActualPnL = _currentDayPnL;
             }
-            
+
             // Determine today's max loss based on yesterday's performance
             UpdateRiskLevel();
-            
+
             // Reset daily P&L counter
             _currentDayPnL = 0;
-            
+
             // Record today's risk parameters
             _riskHistory.Add(new DailyRiskRecord
             {
@@ -52,7 +48,7 @@ namespace ODTE.Optimization.RiskManagement
                 Action = GetRiskLevelDescription()
             });
         }
-        
+
         private void UpdateRiskLevel()
         {
             if (!_riskHistory.Any())
@@ -62,9 +58,9 @@ namespace ODTE.Optimization.RiskManagement
                 _currentMaxLoss = _fibonacciSeries[0];
                 return;
             }
-            
+
             var yesterday = _riskHistory.Last();
-            
+
             if (yesterday.ActualPnL > 0)
             {
                 // Made profit - reset to base level
@@ -83,25 +79,25 @@ namespace ODTE.Optimization.RiskManagement
                 _currentMaxLoss = _fibonacciSeries[_currentLevel];
             }
         }
-        
+
         public bool ValidatePosition(double potentialLoss)
         {
             // Check if taking this position would exceed daily max loss
             double projectedDayLoss = _currentDayPnL - Math.Abs(potentialLoss);
-            
+
             if (Math.Abs(projectedDayLoss) > _currentMaxLoss)
             {
                 // Would exceed max loss - reject position
                 return false;
             }
-            
+
             return true;
         }
-        
+
         public void UpdateDailyPnL(double pnl)
         {
             _currentDayPnL += pnl;
-            
+
             // Check if we've breached max loss
             if (Math.Abs(_currentDayPnL) >= _currentMaxLoss && _riskHistory.Any())
             {
@@ -109,7 +105,7 @@ namespace ODTE.Optimization.RiskManagement
                 _riskHistory.Last().ActualPnL = _currentDayPnL;
             }
         }
-        
+
         public bool ShouldStopTrading()
         {
             // Stop trading if:
@@ -118,7 +114,7 @@ namespace ODTE.Optimization.RiskManagement
             return Math.Abs(_currentDayPnL) >= _currentMaxLoss ||
                    (_currentLevel >= _fibonacciSeries.Count - 1 && _currentDayPnL < 0);
         }
-        
+
         private string GetRiskLevelDescription()
         {
             return _currentLevel switch
@@ -131,7 +127,7 @@ namespace ODTE.Optimization.RiskManagement
                 _ => "Trading Suspended"
             };
         }
-        
+
         public RiskAnalytics GetAnalytics()
         {
             return new RiskAnalytics
@@ -146,14 +142,14 @@ namespace ODTE.Optimization.RiskManagement
                 RiskHistory = _riskHistory.ToList()
             };
         }
-        
+
         private int CalculateCurrentStreak()
         {
             if (!_riskHistory.Any()) return 0;
-            
+
             int streak = 0;
             bool isWinning = _riskHistory.Last().ActualPnL > 0;
-            
+
             for (int i = _riskHistory.Count - 1; i >= 0; i--)
             {
                 bool dayWasWinning = _riskHistory[i].ActualPnL > 0;
@@ -162,10 +158,10 @@ namespace ODTE.Optimization.RiskManagement
                 else
                     break;
             }
-            
+
             return isWinning ? streak : -streak;
         }
-        
+
         public class RiskAnalytics
         {
             public int TotalDays { get; set; }
@@ -177,21 +173,21 @@ namespace ODTE.Optimization.RiskManagement
             public int CurrentStreak { get; set; }
             public List<DailyRiskRecord> RiskHistory { get; set; }
         }
-        
+
         public void SaveToFile(string path)
         {
             var lines = new List<string>
             {
                 "Date,MaxLossAllowed,ActualPnL,RiskLevel,MaxLossBreached,Action"
             };
-            
+
             foreach (var record in _riskHistory)
             {
                 lines.Add($"{record.Date:yyyy-MM-dd},{record.MaxLossAllowed:F2}," +
                          $"{record.ActualPnL:F2},{record.RiskLevel}," +
                          $"{record.MaxLossBreached},{record.Action}");
             }
-            
+
             System.IO.File.WriteAllLines(path, lines);
         }
     }

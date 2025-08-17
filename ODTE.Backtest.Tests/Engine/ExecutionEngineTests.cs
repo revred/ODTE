@@ -33,7 +33,7 @@ public class ExecutionEngineTests
                 DeltaBreach = 0.33
             }
         };
-        
+
         _executionEngine = new ExecutionEngine(_config);
     }
 
@@ -64,7 +64,7 @@ public class ExecutionEngineTests
         result.Should().NotBeNull();
         result!.Order.Should().Be(spreadOrder);
         result.EntryTs.Should().Be(_testTime);
-        
+
         // Entry price should be credit minus slippage (0.5 ticks * $0.05 = $0.025)
         var expectedEntryPrice = Math.Max(0.05, credit - 0.025);
         result.EntryPrice.Should().BeApproximately(expectedEntryPrice, 0.001);
@@ -101,7 +101,7 @@ public class ExecutionEngineTests
 
         // Assert
         var stopLevel = entryPrice * stopMultiple;
-        
+
         if (currentSpreadValue >= stopLevel)
         {
             shouldExit.Should().BeTrue();
@@ -257,7 +257,7 @@ public class ExecutionEngineTests
         // Arrange
         _config.Slippage.EntryHalfSpreadTicks = 1.0; // Higher slippage
         _config.Slippage.TickValue = 0.10; // Larger tick size
-        
+
         var spreadOrder = CreateTestSpreadOrder(1.00);
 
         // Act
@@ -309,7 +309,7 @@ public class ExecutionEngineTests
     {
         var shortLeg = new SpreadLeg(_testExpiry, 100.0, Right.Put, -1);
         var longLeg = new SpreadLeg(_testExpiry, 99.0, Right.Put, 1);
-        
+
         return new SpreadOrder(
             _testTime,
             "XSP",

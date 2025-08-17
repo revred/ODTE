@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy;
 
 /// <summary>
@@ -22,13 +18,13 @@ public class GapDetector
 {
     private readonly Queue<PriceDataPoint> _priceHistory;
     private readonly int _maxHistoryDays;
-    
+
     public GapDetector(int maxHistoryDays = 10)
     {
         _maxHistoryDays = maxHistoryDays;
         _priceHistory = new Queue<PriceDataPoint>();
     }
-    
+
     /// <summary>
     /// Detect gap opening and classify severity
     /// </summary>
@@ -36,7 +32,7 @@ public class GapDetector
     {
         // Calculate gap percentage
         var gapPercentage = (openPrice - previousClose) / previousClose * 100;
-        
+
         // Add to history
         var dataPoint = new PriceDataPoint
         {
@@ -47,22 +43,22 @@ public class GapDetector
             Close = previousClose, // Previous close for gap calculation
             GapPercentage = gapPercentage
         };
-        
+
         _priceHistory.Enqueue(dataPoint);
         while (_priceHistory.Count > _maxHistoryDays)
         {
             _priceHistory.Dequeue();
         }
-        
+
         // Classify gap severity
         var gapSeverity = ClassifyGapSeverity(gapPercentage);
         var gapDirection = gapPercentage > 0 ? GapDirection.Up : GapDirection.Down;
-        
+
         // Check for gap patterns
         var isGapAndRun = CheckGapAndRun(openPrice, highPrice, lowPrice, gapDirection);
         var isGapFill = CheckPotentialGapFill(gapPercentage, openPrice, previousClose);
         var isBreakaway = CheckBreakawayPattern(gapPercentage);
-        
+
         var result = new GapResult
         {
             IsGap = Math.Abs(gapPercentage) > 0.5m, // >0.5% considered a gap
@@ -74,23 +70,23 @@ public class GapDetector
             PositionAdjustment = GetPositionAdjustment(gapSeverity, gapDirection),
             ConfidenceOverride = GetConfidenceOverride(gapSeverity)
         };
-        
+
         if (result.IsGap && Math.Abs(gapPercentage) > 1.0m)
         {
             Console.WriteLine($"📊 GAP DETECTED: {gapPercentage:F2}% {gapDirection} - {result.PatternType}");
             Console.WriteLine($"   Severity: {gapSeverity} | Action: {result.RecommendedAction}");
         }
-        
+
         return result;
     }
-    
+
     /// <summary>
     /// Classify gap severity based on percentage
     /// </summary>
     private GapSeverity ClassifyGapSeverity(decimal gapPercentage)
     {
         var absGap = Math.Abs(gapPercentage);
-        
+
         return absGap switch
         {
             > 5.0m => GapSeverity.BlackSwan,    // >5% gap - circuit breaker territory
@@ -101,7 +97,7 @@ public class GapDetector
             _ => GapSeverity.None               // <0.5% not considered a gap
         };
     }
-    
+
     /// <summary>
     /// Check for gap-and-run pattern (gap continues in same direction)
     /// </summary>
@@ -118,7 +114,7 @@ public class GapDetector
             return low < open * 0.995m; // Continued lower by >0.5%
         }
     }
-    
+
     /// <summary>
     /// Check potential for gap fill (return to previous close)
     /// </summary>
@@ -126,23 +122,23 @@ public class GapDetector
     {
         // Small gaps more likely to fill
         var absGap = Math.Abs(gapPercentage);
-        
+
         if (absGap < 1.0m) return true;  // Small gaps often fill
         if (absGap < 2.0m) return false; // Medium gaps may or may not fill
         return false; // Large gaps rarely fill same day
     }
-    
+
     /// <summary>
     /// Check for breakaway gap pattern (strong momentum continuation)
     /// </summary>
     private bool CheckBreakawayPattern(decimal gapPercentage)
     {
         var absGap = Math.Abs(gapPercentage);
-        
+
         // Breakaway gaps are typically >2% with strong volume
         return absGap > 2.0m;
     }
-    
+
     /// <summary>
     /// Determine overall gap pattern type
     /// </summary>
@@ -151,7 +147,7 @@ public class GapDetector
         if (isBreakaway) return GapPattern.Breakaway;
         if (isGapAndRun) return GapPattern.GapAndRun;
         if (isGapFill) return GapPattern.GapFill;
-        
+
         return Math.Abs(gapPercentage) switch
         {
             > 3.0m => GapPattern.Crisis,
@@ -159,7 +155,7 @@ public class GapDetector
             _ => GapPattern.Normal
         };
     }
-    
+
     /// <summary>
     /// Get recommended action based on gap characteristics
     /// </summary>
@@ -175,7 +171,7 @@ public class GapDetector
             _ => "Normal opening - continue standard operations"
         };
     }
-    
+
     /// <summary>
     /// Get position adjustment recommendations
     /// </summary>
@@ -190,7 +186,7 @@ public class GapDetector
             _ => "No immediate adjustment needed"
         };
     }
-    
+
     /// <summary>
     /// Get confidence threshold override for gap conditions
     /// </summary>
@@ -205,17 +201,17 @@ public class GapDetector
             _ => 0.6m                       // Normal threshold
         };
     }
-    
+
     /// <summary>
     /// Get gap statistics from recent history
     /// </summary>
     public GapStatistics GetGapStatistics()
     {
         if (!_priceHistory.Any()) return new GapStatistics();
-        
+
         var gaps = _priceHistory.Where(p => Math.Abs(p.GapPercentage) > 0.5m).ToArray();
         var recentGaps = gaps.TakeLast(5).ToArray();
-        
+
         return new GapStatistics
         {
             TotalGaps = gaps.Length,

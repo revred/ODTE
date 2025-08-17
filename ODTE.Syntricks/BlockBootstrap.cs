@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ODTE.Syntricks;
 
 /// <summary>
@@ -48,12 +46,12 @@ public class BlockBootstrap : IBlockBootstrap
             // Adjust timestamps and add to result
             foreach (var tick in blockTicks)
             {
-                var adjustedTick = tick with 
-                { 
+                var adjustedTick = tick with
+                {
                     Timestamp = sessionStart.AddMinutes(currentMinutes),
                     SessionPct = (double)currentMinutes / targetMinutes
                 };
-                
+
                 result.Add(adjustedTick);
                 currentMinutes++;
             }
@@ -117,8 +115,8 @@ public class BlockBootstrap : IBlockBootstrap
                 }
 
                 // Get archetype for this date
-                var archetype = archetypeLabels.ContainsKey(fileDate) 
-                    ? archetypeLabels[fileDate] 
+                var archetype = archetypeLabels.ContainsKey(fileDate)
+                    ? archetypeLabels[fileDate]
                     : "unknown";
 
                 // Load historical ticks from file (simplified - would use actual Parquet reader)
@@ -151,7 +149,7 @@ public class BlockBootstrap : IBlockBootstrap
         }
 
         Console.WriteLine($"Loaded blocks: {string.Join(", ", archetypeBlocks.Select(kv => $"{kv.Key}={kv.Value.Count}"))}");
-        
+
         return new BlockBootstrap(archetypeBlocks);
     }
 

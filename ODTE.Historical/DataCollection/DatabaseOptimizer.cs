@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
@@ -13,51 +11,51 @@ public class DatabaseOptimizer
 {
     private readonly string _connectionString;
     private readonly ILogger<DatabaseOptimizer>? _logger;
-    
+
     public DatabaseOptimizer(string databasePath, ILogger<DatabaseOptimizer>? logger = null)
     {
         _connectionString = $"Data Source={databasePath};Version=3;";
         _logger = logger;
     }
-    
+
     /// <summary>
     /// Optimize database for bulk insert operations during data collection
     /// </summary>
     public async Task OptimizeForBulkInsertAsync()
     {
         _logger?.LogInformation("🔧 Optimizing database for bulk insert operations...");
-        
+
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         using var transaction = connection.BeginTransaction();
-        
+
         try
         {
             // Disable synchronous writes for speed (data integrity handled by transactions)
             await ExecuteCommandAsync(connection, "PRAGMA synchronous = OFF");
-            
+
             // Use WAL mode for better concurrency
             await ExecuteCommandAsync(connection, "PRAGMA journal_mode = WAL");
-            
+
             // Increase cache size to 100MB for better performance
             await ExecuteCommandAsync(connection, "PRAGMA cache_size = 25600"); // 100MB / 4KB pages
-            
+
             // Set memory temp store
             await ExecuteCommandAsync(connection, "PRAGMA temp_store = MEMORY");
-            
+
             // Increase page size for better I/O (must be done before any tables are created)
             await ExecuteCommandAsync(connection, "PRAGMA page_size = 8192");
-            
+
             // Optimize for bulk operations
             await ExecuteCommandAsync(connection, "PRAGMA count_changes = OFF");
             await ExecuteCommandAsync(connection, "PRAGMA auto_vacuum = NONE");
-            
+
             transaction.Commit();
-            
+
             _logger?.LogInformation("✅ Database optimized for bulk insert");
             _logger?.LogInformation("   - Synchronous writes disabled");
-            _logger?.LogInformation("   - WAL journal mode enabled"); 
+            _logger?.LogInformation("   - WAL journal mode enabled");
             _logger?.LogInformation("   - Cache size increased to 100MB");
             _logger?.LogInformation("   - Page size set to 8KB");
         }
@@ -68,38 +66,38 @@ public class DatabaseOptimizer
             throw;
         }
     }
-    
+
     /// <summary>
     /// Optimize database for querying operations after data collection
     /// </summary>
     public async Task OptimizeForQueryingAsync()
     {
         _logger?.LogInformation("🔧 Optimizing database for querying operations...");
-        
+
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         using var transaction = connection.BeginTransaction();
-        
+
         try
         {
             // Re-enable synchronous writes for data safety
             await ExecuteCommandAsync(connection, "PRAGMA synchronous = NORMAL");
-            
+
             // Create comprehensive indexes for fast querying
             await CreateOptimizedIndexesAsync(connection);
-            
+
             // Analyze tables for query optimization
             await ExecuteCommandAsync(connection, "ANALYZE");
-            
+
             // Compact database to remove fragmentation
             await ExecuteCommandAsync(connection, "VACUUM");
-            
+
             // Set optimal cache size for querying
             await ExecuteCommandAsync(connection, "PRAGMA cache_size = 10000"); // 40MB
-            
+
             transaction.Commit();
-            
+
             _logger?.LogInformation("✅ Database optimized for querying");
             _logger?.LogInformation("   - Synchronous writes re-enabled");
             _logger?.LogInformation("   - Comprehensive indexes created");
@@ -112,26 +110,26 @@ public class DatabaseOptimizer
             throw;
         }
     }
-    
+
     /// <summary>
     /// Create optimized table schema for 20-year dataset
     /// </summary>
     public async Task CreateOptimizedSchemaAsync()
     {
         _logger?.LogInformation("🏗️ Creating optimized schema for 20-year dataset...");
-        
+
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         using var transaction = connection.BeginTransaction();
-        
+
         try
         {
             // Drop existing tables if they exist
             await ExecuteCommandAsync(connection, "DROP TABLE IF EXISTS market_data");
             await ExecuteCommandAsync(connection, "DROP TABLE IF EXISTS symbols");
             await ExecuteCommandAsync(connection, "DROP TABLE IF EXISTS data_quality");
-            
+
             // Create symbols lookup table for normalization
             var createSymbolsTable = @"
                 CREATE TABLE symbols (
@@ -141,9 +139,9 @@ public class DatabaseOptimizer
                     sector TEXT,
                     created_at INTEGER DEFAULT (strftime('%s', 'now'))
                 )";
-            
+
             await ExecuteCommandAsync(connection, createSymbolsTable);
-            
+
             // Create main market data table with optimized structure
             var createMarketDataTable = @"
                 CREATE TABLE market_data (
@@ -167,9 +165,9 @@ public class DatabaseOptimizer
                     -- Compound primary key alternative for better performance
                     UNIQUE(symbol_id, timestamp)
                 ) WITHOUT ROWID";
-            
+
             await ExecuteCommandAsync(connection, createMarketDataTable);
-            
+
             // Create data quality tracking table
             var createQualityTable = @"
                 CREATE TABLE data_quality (
@@ -185,14 +183,14 @@ public class DatabaseOptimizer
                     FOREIGN KEY (symbol_id) REFERENCES symbols(id),
                     UNIQUE(symbol_id, date_key)
                 )";
-            
+
             await ExecuteCommandAsync(connection, createQualityTable);
-            
+
             // Insert common symbols
             await InsertCommonSymbolsAsync(connection);
-            
+
             transaction.Commit();
-            
+
             _logger?.LogInformation("✅ Optimized schema created");
             _logger?.LogInformation("   - Normalized symbol references");
             _logger?.LogInformation("   - Integer-based price storage for precision");
@@ -206,14 +204,14 @@ public class DatabaseOptimizer
             throw;
         }
     }
-    
+
     /// <summary>
     /// Create comprehensive indexes for fast data access
     /// </summary>
     private async Task CreateOptimizedIndexesAsync(SqliteConnection connection)
     {
         _logger?.LogDebug("Creating optimized indexes...");
-        
+
         var indexes = new[]
         {
             // Primary access patterns for backtesting
@@ -237,15 +235,15 @@ public class DatabaseOptimizer
             // For VIX analysis
             "CREATE INDEX IF NOT EXISTS idx_market_data_vix ON market_data(vix_value) WHERE vix_value IS NOT NULL"
         };
-        
+
         foreach (var indexSql in indexes)
         {
             await ExecuteCommandAsync(connection, indexSql);
         }
-        
+
         _logger?.LogDebug($"Created {indexes.Length} optimized indexes");
     }
-    
+
     /// <summary>
     /// Insert common trading symbols for normalization
     /// </summary>
@@ -269,24 +267,24 @@ public class DatabaseOptimizer
             ("NVDA", "NVIDIA Corporation", "Technology"),
             ("META", "Meta Platforms Inc.", "Technology")
         };
-        
+
         foreach (var (symbol, name, sector) in symbols)
         {
             var insertSql = @"
                 INSERT OR IGNORE INTO symbols (symbol, name, sector) 
                 VALUES (@symbol, @name, @sector)";
-            
+
             using var command = new SqliteCommand(insertSql, connection);
             command.Parameters.AddWithValue("@symbol", symbol);
             command.Parameters.AddWithValue("@name", name);
             command.Parameters.AddWithValue("@sector", sector);
-            
+
             await command.ExecuteNonQueryAsync();
         }
-        
+
         _logger?.LogDebug($"Inserted {symbols.Length} common symbols");
     }
-    
+
     /// <summary>
     /// Get database performance statistics
     /// </summary>
@@ -294,26 +292,26 @@ public class DatabaseOptimizer
     {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         var stats = new DatabasePerformanceStats();
-        
+
         // Database size
         using (var command = new SqliteCommand("PRAGMA page_count", connection))
         {
             var pageCount = Convert.ToInt64(await command.ExecuteScalarAsync());
-            
+
             using var pageSizeCommand = new SqliteCommand("PRAGMA page_size", connection);
             var pageSize = Convert.ToInt32(await pageSizeCommand.ExecuteScalarAsync());
-            
+
             stats.DatabaseSizeBytes = pageCount * pageSize;
         }
-        
+
         // Record count
         using (var command = new SqliteCommand("SELECT COUNT(*) FROM market_data", connection))
         {
             stats.TotalRecords = Convert.ToInt64(await command.ExecuteScalarAsync());
         }
-        
+
         // Date range
         using (var command = new SqliteCommand(@"
             SELECT MIN(date_key), MAX(date_key) 
@@ -326,13 +324,13 @@ public class DatabaseOptimizer
                 {
                     var minDateKey = reader.GetInt32(0);
                     var maxDateKey = reader.GetInt32(1);
-                    
+
                     stats.EarliestDate = ParseDateKey(minDateKey);
                     stats.LatestDate = ParseDateKey(maxDateKey);
                 }
             }
         }
-        
+
         // Index statistics
         using (var command = new SqliteCommand(@"
             SELECT name FROM sqlite_master 
@@ -344,22 +342,22 @@ public class DatabaseOptimizer
                 stats.IndexCount++;
             }
         }
-        
+
         return stats;
     }
-    
+
     private async Task ExecuteCommandAsync(SqliteConnection connection, string sql)
     {
         using var command = new SqliteCommand(sql, connection);
         await command.ExecuteNonQueryAsync();
     }
-    
+
     private DateTime ParseDateKey(int dateKey)
     {
         var year = dateKey / 10000;
         var month = (dateKey % 10000) / 100;
         var day = dateKey % 100;
-        
+
         return new DateTime(year, month, day);
     }
 }
@@ -374,7 +372,7 @@ public class DatabasePerformanceStats
     public DateTime EarliestDate { get; set; }
     public DateTime LatestDate { get; set; }
     public int IndexCount { get; set; }
-    
+
     public double DatabaseSizeMB => DatabaseSizeBytes / (1024.0 * 1024.0);
     public double DatabaseSizeGB => DatabaseSizeMB / 1024.0;
     public int TotalYears => (LatestDate - EarliestDate).Days / 365;

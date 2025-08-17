@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using ODTE.Optimization.Core;
 
 namespace ODTE.Optimization
@@ -60,7 +57,7 @@ namespace ODTE.Optimization
 
             var results = new DetailedResults();
             var random = new Random(42); // Consistent seed for reproducible analysis
-            
+
             // Simulate 5 years of detailed trading (1,294 trading days)
             var startDate = new DateTime(2019, 1, 2); // Start of 5-year period
             var currentDate = startDate;
@@ -69,7 +66,7 @@ namespace ODTE.Optimization
             var equity = 5000.0;
             var currentDrawdown = 0.0;
             var drawdownStartDate = DateTime.MinValue;
-            
+
             // Track daily loss limits (Reverse Fibonacci)
             var dailyLossLimits = new[] { 500.0, 300.0, 200.0, 100.0 };
             var consecutiveLossDays = 0;
@@ -77,7 +74,7 @@ namespace ODTE.Optimization
             for (int day = 0; day < 1294; day++)
             {
                 // Skip weekends
-                while (currentDate.DayOfWeek == DayOfWeek.Saturday || 
+                while (currentDate.DayOfWeek == DayOfWeek.Saturday ||
                        currentDate.DayOfWeek == DayOfWeek.Sunday)
                 {
                     currentDate = currentDate.AddDays(1);
@@ -89,7 +86,7 @@ namespace ODTE.Optimization
                 // Update equity and drawdown tracking
                 var dailyPnL = dailyResult.Trades.Sum(t => t.PnL);
                 equity += dailyPnL;
-                
+
                 if (equity > peak)
                 {
                     peak = equity;
@@ -111,7 +108,7 @@ namespace ODTE.Optimization
                         drawdownStartDate = currentDate;
                     }
                     currentDrawdown = newDrawdown;
-                    
+
                     if (newDrawdown < -1000) // Significant drawdown
                     {
                         results.WorstDrawdownPeriods.Add(currentDate);
@@ -160,7 +157,7 @@ namespace ODTE.Optimization
             var result = new DailyTradingResult { Trades = new List<TradeResult>() };
             var dailyLossLimits = new[] { 500.0, 300.0, 200.0, 100.0 };
             var currentLimit = dailyLossLimits[Math.Min(consecutiveLossDays, 3)];
-            
+
             var dayPnL = 0.0;
             var tradesPlaced = 0;
             var maxTradesPerDay = 8; // Realistic trading frequency
@@ -174,7 +171,7 @@ namespace ODTE.Optimization
                 var trade = SimulateDetailedTrade(date, marketRegime, vix, tradesPlaced, random);
                 trade.DailyPnL = dayPnL + trade.PnL;
                 trade.TradesThisDay = tradesPlaced + 1;
-                
+
                 result.Trades.Add(trade);
                 dayPnL += trade.PnL;
                 tradesPlaced++;
@@ -207,18 +204,18 @@ namespace ODTE.Optimization
             var bwbEngine = new CreditBWBEngine(random);
             var convexOverlay = new ConvexTailOverlay(random);
             var parameters = new StrategyParameters(); // Default parameters for simulation
-            
+
             var bwbResult = bwbEngine.SimulateCreditBWB(date, regime, vix, parameters);
 
             // Apply Convex Tail Overlay when conditions warrant
             var overlayConditions = ConvexTailOverlay.GenerateMarketConditions(regime, random);
             overlayConditions.VIX = vix;
-            
+
             var marketMove = SimulateMarketMove(regime, random);
             var overlayResult = convexOverlay.ApplyConvexOverlay(
-                bwbResult.PnL, 
-                bwbResult.Structure, 
-                overlayConditions, 
+                bwbResult.PnL,
+                bwbResult.Structure,
+                overlayConditions,
                 marketMove);
 
             // Map failure reasons to analysis categories (include overlay information)
@@ -232,7 +229,7 @@ namespace ODTE.Optimization
                     "Partial trend breach" => $"BWB Trend breach - partial{overlayInfo}",
                     "Full trend breach" => $"BWB Trend breach - full{overlayInfo}",
                     "Small volatility breach" => $"BWB Volatility breach - small{overlayInfo}",
-                    "Medium volatility breach" => $"BWB Volatility breach - medium{overlayInfo}", 
+                    "Medium volatility breach" => $"BWB Volatility breach - medium{overlayInfo}",
                     "Large volatility breach" => $"BWB Volatility breach - large{overlayInfo}",
                     _ => $"BWB Unknown failure{overlayInfo}"
                 };
@@ -249,7 +246,7 @@ namespace ODTE.Optimization
 
             return trade;
         }
-        
+
         private double SimulateMarketMove(string marketRegime, Random random)
         {
             // Simulate daily market moves for convex overlay testing
@@ -266,7 +263,7 @@ namespace ODTE.Optimization
         {
             // Simulate realistic market regime distribution
             // Add bias for known historical events
-            
+
             if (IsVolatileEvent(date))
             {
                 return "Volatile";
@@ -274,7 +271,7 @@ namespace ODTE.Optimization
 
             var regime = random.NextDouble();
             if (regime < 0.15) return "Volatile";
-            else if (regime < 0.25) return "Trending"; 
+            else if (regime < 0.25) return "Trending";
             else return "Calm";
         }
 
@@ -308,7 +305,7 @@ namespace ODTE.Optimization
         private void AnalyzeFailurePatterns(DetailedResults results)
         {
             var losses = results.AllTrades.Where(t => !t.IsWin).ToList();
-            
+
             foreach (var loss in losses)
             {
                 if (!results.FailurePatterns.ContainsKey(loss.FailureReason))
@@ -322,7 +319,7 @@ namespace ODTE.Optimization
         private void AnalyzeMarketRegimePerformance(DetailedResults results)
         {
             var regimes = results.AllTrades.GroupBy(t => t.MarketRegime);
-            
+
             foreach (var regime in regimes)
             {
                 var totalPnL = regime.Sum(t => t.PnL);
@@ -333,7 +330,7 @@ namespace ODTE.Optimization
         private void AnalyzeLossStreaks(DetailedResults results)
         {
             var consecutiveLosses = 0;
-            
+
             foreach (var trade in results.AllTrades.OrderBy(t => t.Date))
             {
                 if (!trade.IsWin)
@@ -379,13 +376,13 @@ namespace ODTE.Optimization
         private string DeterminePattern(List<TradeResult> trades)
         {
             if (trades.Count < 5) return "Isolated incidents";
-            
+
             var avgVIX = trades.Average(t => t.VIX);
             if (avgVIX > 40) return "High volatility clustering";
-            
+
             var dateSpread = (trades.Max(t => t.Date) - trades.Min(t => t.Date)).TotalDays;
             if (dateSpread < 30) return "Clustered in time";
-            
+
             return "Distributed pattern";
         }
 
@@ -399,8 +396,8 @@ namespace ODTE.Optimization
 
             Console.WriteLine($"\n🔍 DEEP DIVE ANALYSIS RESULTS:");
             Console.WriteLine($"Total Trades: {totalTrades:N0}");
-            Console.WriteLine($"Winners: {wins:N0} ({(double)wins/totalTrades:P1})");
-            Console.WriteLine($"Losers: {losses:N0} ({(double)losses/totalTrades:P1})");
+            Console.WriteLine($"Winners: {wins:N0} ({(double)wins / totalTrades:P1})");
+            Console.WriteLine($"Losers: {losses:N0} ({(double)losses / totalTrades:P1})");
             Console.WriteLine($"Total P&L: ${totalPnL:N0}");
             Console.WriteLine($"Total Loss Amount: ${totalLossAmount:N0}");
             Console.WriteLine($"Worst Single Day: ${results.WorstSingleDayLoss:N0}");

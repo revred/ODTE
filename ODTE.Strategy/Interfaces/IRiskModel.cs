@@ -1,5 +1,3 @@
-using System;
-
 namespace ODTE.Strategy.Interfaces
 {
     /// <summary>
@@ -15,14 +13,14 @@ namespace ODTE.Strategy.Interfaces
         /// <param name="multiplier">Contract multiplier (100 for equities, 10 for minis, 1 for micros)</param>
         /// <returns>Maximum potential loss in dollars</returns>
         decimal MaxPotentialLoss(IStrategyShape shape, decimal netCredit, int multiplier = 100);
-        
+
         /// <summary>
         /// Calculate margin requirement for a strategy shape
         /// </summary>
         /// <param name="shape">Strategy geometry definition</param>
         /// <returns>Required margin in dollars</returns>
         decimal MarginRequired(IStrategyShape shape);
-        
+
         /// <summary>
         /// Generate risk profile for strategy
         /// </summary>

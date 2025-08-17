@@ -1,6 +1,6 @@
-using System.Text;
 using ODTE.Backtest.Config;
 using ODTE.Backtest.Core;
+using System.Text;
 
 namespace ODTE.Backtest.Reporting;
 
@@ -90,21 +90,21 @@ public static class Reporter
         sb.AppendLine($"Underlying: {cfg.Underlying}");
         sb.AppendLine($"Mode: {cfg.Mode}");
         sb.AppendLine();
-        
+
         sb.AppendLine("=== CORE PERFORMANCE ===");
         sb.AppendLine($"Total Trades: {report.Trades.Count}");
         sb.AppendLine($"Win Rate: {report.WinRate:P2}");
         sb.AppendLine($"Wins: {report.WinCount} | Losses: {report.LossCount}");
         sb.AppendLine($"Avg Win: ${report.AvgWin:F2}");
         sb.AppendLine($"Avg Loss: ${report.AvgLoss:F2}");
-        
+
         // Calculate profit factor (key metric for trading strategies)
-        double profitFactor = report.LossCount > 0 && report.AvgLoss < 0 
+        double profitFactor = report.LossCount > 0 && report.AvgLoss < 0
             ? (report.AvgWin * report.WinCount) / (Math.Abs(report.AvgLoss) * report.LossCount)
             : double.PositiveInfinity;
         sb.AppendLine($"Profit Factor: {(profitFactor == double.PositiveInfinity ? "∞" : profitFactor.ToString("F2"))}");
         sb.AppendLine();
-        
+
         sb.AppendLine("=== P&L ATTRIBUTION ===");
         sb.AppendLine($"Gross PnL: ${report.GrossPnL:F2}");
         sb.AppendLine($"Total Fees: ${report.Fees:F2}");
@@ -112,22 +112,22 @@ public static class Reporter
         double feeRatio = report.GrossPnL > 0 ? (report.Fees / report.GrossPnL) : 0;
         sb.AppendLine($"Fee Drag: {feeRatio:P1} of gross profits");
         sb.AppendLine();
-        
+
         sb.AppendLine("=== RISK METRICS ===");
         sb.AppendLine($"Sharpe Ratio: {report.Sharpe:F2}");
         sb.AppendLine($"Max Drawdown: ${report.MaxDrawdown:F2}");
-        
+
         // Add some context for metric interpretation
         string sharpeAssessment = report.Sharpe switch
         {
             > 2.0 => "Excellent",
-            > 1.0 => "Good", 
+            > 1.0 => "Good",
             > 0.5 => "Fair",
             _ => "Poor"
         };
         sb.AppendLine($"Sharpe Assessment: {sharpeAssessment}");
         sb.AppendLine();
-        
+
         sb.AppendLine("=== STRATEGY BREAKDOWN ===");
         var byType = report.Trades.GroupBy(t => t.Pos.Order.Type);
         foreach (var g in byType)
@@ -139,7 +139,7 @@ public static class Reporter
                          $"Win Rate: {typeWinRate:P2}");
         }
         sb.AppendLine();
-        
+
         // Add footer with generation timestamp
         sb.AppendLine($"Report generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine("Detailed trade log available in CSV format.");
@@ -197,16 +197,16 @@ public static class Reporter
     public static void WriteTrades(SimConfig cfg, RunReport report)
     {
         var csvPath = Path.Combine(cfg.Paths.ReportsDir, $"trades_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-        
+
         using var writer = new StreamWriter(csvPath);
-        
+
         // Write header with detailed column descriptions
         writer.WriteLine("EntryTime,ExitTime,Type,ShortStrike,LongStrike,Width,EntryPrice,ExitPrice,PnL,Fees,MAE,MFE,ExitReason");
-        
+
         foreach (var trade in report.Trades.OrderBy(t => t.Pos.EntryTs))
         {
             double width = Math.Abs(trade.Pos.Order.Long.Strike - trade.Pos.Order.Short.Strike);
-            
+
             writer.WriteLine($"{trade.Pos.EntryTs:yyyy-MM-dd HH:mm:ss}," +
                            $"{trade.Pos.ExitTs:yyyy-MM-dd HH:mm:ss}," +
                            $"{trade.Pos.Order.Type}," +
@@ -221,7 +221,7 @@ public static class Reporter
                            $"{trade.MaxFavorableExcursion:F2}," +
                            $"\"{trade.Pos.ExitReason}\"");
         }
-        
+
         Console.WriteLine($"Trade details written to: {csvPath}");
         Console.WriteLine($"Total records: {report.Trades.Count}");
     }

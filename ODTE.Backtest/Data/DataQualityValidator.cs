@@ -65,7 +65,7 @@ public class DataQualityValidator
         {
             // Match quotes by strike, expiry, right
             var matched = MatchQuotes(synthetic, reference);
-            
+
             if (!matched.Any())
             {
                 violations.Add("No matching quotes found between synthetic and reference data");
@@ -74,16 +74,16 @@ public class DataQualityValidator
 
             // Validate pricing accuracy
             ValidatePricing(matched, violations, metrics);
-            
+
             // Validate spread quality  
             ValidateSpreads(matched, violations, metrics);
-            
+
             // Validate implied volatility surface
             ValidateImpliedVolatility(matched, violations, metrics);
-            
+
             // Validate no-arbitrage conditions
             ValidateArbitrage(synthetic, violations, metrics);
-            
+
             // Calculate coverage
             metrics.Coverage = (double)matched.Count / reference.Count;
             if (metrics.Coverage < 0.90) // 90% minimum coverage
@@ -114,13 +114,13 @@ public class DataQualityValidator
     {
         var synthMid = (synthetic.Bid + synthetic.Ask) / 2.0;
         var refMid = (reference.Bid + reference.Ask) / 2.0;
-        
+
         var midError = Math.Abs(synthMid - refMid);
         var midMape = refMid > 0 ? midError / refMid : double.MaxValue;
-        
+
         var synthSpread = (synthetic.Ask - synthetic.Bid) / Math.Max(0.01, synthMid);
         var refSpread = (reference.Ask - reference.Bid) / Math.Max(0.01, refMid);
-        
+
         return new QuoteValidation(
             MidError: midError,
             MidMape: midMape,
@@ -189,7 +189,7 @@ public class DataQualityValidator
         // TODO: Implement IV comparison when OptionMath.ImpliedVolatility is available
         // For now, use placeholder calculation
         metrics.IvMape = 0.02; // Assume 2% IV error as placeholder
-        
+
         if (metrics.IvMape > _ivMapeThreshold)
         {
             violations.Add($"IV MAPE {metrics.IvMape:P2} exceeds threshold {_ivMapeThreshold:P2}");

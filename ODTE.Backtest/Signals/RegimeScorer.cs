@@ -43,10 +43,10 @@ namespace ODTE.Backtest.Signals;
 public sealed class RegimeScorer : IRegimeScorer
 {
     private readonly SimConfig _cfg;
-    
-    public RegimeScorer(SimConfig cfg) 
-    { 
-        _cfg = cfg; 
+
+    public RegimeScorer(SimConfig cfg)
+    {
+        _cfg = cfg;
     }
 
     /// <summary>
@@ -80,23 +80,23 @@ public sealed class RegimeScorer : IRegimeScorer
     /// Score 2+: Favorable conditions for directional strategies
     /// </summary>
     public (int score, bool calmRange, bool trendBiasUp, bool trendBiasDown) Score(
-        DateTime now, 
-        IMarketData md, 
+        DateTime now,
+        IMarketData md,
         IEconCalendar cal)
     {
         // === 1. OPENING RANGE ANALYSIS ===
         var orMins = _cfg.Signals.OrMinutes;
         var sessionStart = now.SessionStart();
         var orEnd = sessionStart.AddMinutes(orMins);
-        
+
         var bars = md.GetBars(DateOnly.FromDateTime(now.Date), DateOnly.FromDateTime(now.Date))
             .Where(b => b.Ts >= sessionStart && b.Ts <= now)
             .ToList();
-        
+
         // Calculate OR high/low from first N minutes
         double orHigh = bars.Where(b => b.Ts <= orEnd).Select(b => b.H).DefaultIfEmpty().Max();
-        double orLow  = bars.Where(b => b.Ts <= orEnd).Select(b => b.L).DefaultIfEmpty().Min();
-        
+        double orLow = bars.Where(b => b.Ts <= orEnd).Select(b => b.L).DefaultIfEmpty().Min();
+
         // Check for breakout and persistence
         bool orBreakUp = bars.LastOrDefault()?.C > orHigh;
         bool orBreakDn = bars.LastOrDefault()?.C < orLow;
@@ -106,13 +106,13 @@ public sealed class RegimeScorer : IRegimeScorer
         var vwap = md.Vwap(now, TimeSpan.FromMinutes(_cfg.Signals.VwapWindowMinutes));
         var last30 = bars.Where(b => b.Ts > now.AddMinutes(-_cfg.Signals.VwapWindowMinutes)).ToList();
         int above = last30.Count(b => b.C >= vwap);
-        double sidePct = last30.Count>0 ? (double)above / last30.Count : 0.5;
-        bool vwapSlopeUp = last30.Count>1 && last30.Last().C > last30.First().C;
+        double sidePct = last30.Count > 0 ? (double)above / last30.Count : 0.5;
+        bool vwapSlopeUp = last30.Count > 1 && last30.Last().C > last30.First().C;
 
         // === 3. VOLATILITY REGIME ANALYSIS ===
-        double dayRange = bars.Count>0 ? (bars.Max(b=>b.H) - bars.Min(b=>b.L)) : 0;
+        double dayRange = bars.Count > 0 ? (bars.Max(b => b.H) - bars.Min(b => b.L)) : 0;
         double atr = md.Atr20Minutes(now);
-        double rngVsAtr = atr>0 && dayRange > 0 ? dayRange/atr : 0.5;
+        double rngVsAtr = atr > 0 && dayRange > 0 ? dayRange / atr : 0.5;
 
         // === 4. EVENT PROXIMITY CHECK ===
         var nextEvt = cal.NextEventAfter(now);
@@ -120,34 +120,34 @@ public sealed class RegimeScorer : IRegimeScorer
 
         // === 5. SCORE CALCULATION ===
         int score = 0;
-        
+
         // Trend signals
         if (orHolds) score += 2;  // Strong trend initiation signal
-        
+
         // VWAP persistence
         score += sidePct >= 0.7 ? 2 : sidePct >= 0.5 ? 1 : 0;
-        
+
         // Signal alignment bonus
         if (vwapSlopeUp == orBreakUp) score += 1;  // VWAP slope confirms OR direction
-        
+
         // Volatility regime bonuses (only if we have meaningful data)
         if (bars.Count > 0 || dayRange > 0)  // Skip only for completely empty scenarios
         {
             score += (rngVsAtr <= 0.8 ? 2 : 0);  // Calm conditions favor premium selling
             score += (rngVsAtr >= 1.0 ? 2 : 0);  // Expansion favors directional trades
         }
-        
+
         // Risk gates (negative points)
         if (minsToEvent < _cfg.Signals.EventBlockMinutesBefore) score -= 2;  // Event proximity
-        
+
         var minsToClose = (now.SessionEnd() - now).TotalMinutes;
         if (minsToClose < _cfg.NoNewRiskMinutesToClose) score -= 3;  // Gamma hour
 
         // === 6. REGIME CLASSIFICATION ===
         bool calmRange = (bars.Count > 0 && dayRange > 0) && rngVsAtr <= 0.8 && !orHolds;  // Quiet + no breakout = range
-        bool trendUp = orBreakUp && sidePct>=0.6;       // Breakout up + VWAP persistence
-        bool trendDn = orBreakDn && (1-sidePct)>=0.6;   // Breakout down + VWAP persistence
-        
+        bool trendUp = orBreakUp && sidePct >= 0.6;       // Breakout up + VWAP persistence
+        bool trendDn = orBreakDn && (1 - sidePct) >= 0.6;   // Breakout down + VWAP persistence
+
         return (score, calmRange, trendUp, trendDn);
     }
 }

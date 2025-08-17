@@ -1,16 +1,10 @@
 // StooqDataValidator.cs — Random validation checks for Stooq data quality and performance
 // Validates data integrity, query performance, and statistical correctness
 
-using System;
-using System.Collections.Generic;
+using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Data.SQLite;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Dapper;
 
 namespace ODTE.Historical.Validation
 {
@@ -38,7 +32,7 @@ namespace ODTE.Historical.Validation
         {
             _logger.LogInformation("Starting comprehensive Stooq data validation");
             var stopwatch = Stopwatch.StartNew();
-            
+
             var report = new ValidationReport
             {
                 StartTime = DateTime.UtcNow,
@@ -107,7 +101,7 @@ namespace ODTE.Historical.Validation
                 {
                     var count = await connection.QuerySingleAsync<int>(
                         $"SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='{table}'");
-                    
+
                     if (count == 0)
                     {
                         test.Errors.Add($"Required table '{table}' not found");
@@ -158,7 +152,7 @@ namespace ODTE.Historical.Validation
                 // Get random sample of quotes for validation
                 var sampleSize = 100;
                 var totalQuotes = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM underlying_quotes");
-                
+
                 if (totalQuotes < sampleSize)
                 {
                     test.Errors.Add($"Insufficient data: {totalQuotes} quotes, need at least {sampleSize}");
@@ -189,7 +183,7 @@ namespace ODTE.Historical.Validation
                     var isValid = true;
 
                     // Validate OHLC relationships
-                    if (sample.High < Math.Max(sample.Open, sample.Close) || 
+                    if (sample.High < Math.Max(sample.Open, sample.Close) ||
                         sample.Low > Math.Min(sample.Open, sample.Close))
                     {
                         priceErrors++;
@@ -578,7 +572,7 @@ namespace ODTE.Historical.Validation
                     var spyPrices = spyProgression.Where(s => s.SpyClose.HasValue)
                                                  .Select(s => s.SpyClose!.Value)
                                                  .ToArray();
-                    
+
                     if (spyPrices.Any())
                     {
                         var maxPrice = spyPrices.Max();
@@ -730,7 +724,7 @@ namespace ODTE.Historical.Validation
         {
             var array = values.ToArray();
             if (array.Length == 0) return 0;
-            
+
             var mean = array.Average();
             var sumSquaredDeviations = array.Sum(x => Math.Pow(x - mean, 2));
             return Math.Sqrt(sumSquaredDeviations / array.Length);

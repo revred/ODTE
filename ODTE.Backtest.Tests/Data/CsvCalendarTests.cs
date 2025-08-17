@@ -1,8 +1,6 @@
 using FluentAssertions;
-using ODTE.Backtest.Core;
 using ODTE.Backtest.Data;
 using Xunit;
-using System.IO;
 
 namespace ODTE.Backtest.Tests.Data;
 
@@ -114,7 +112,7 @@ public class CsvCalendarTests : IDisposable
         // Assert
         events.Should().NotBeEmpty();
         events.Should().HaveCount(3); // FOMC, CPI, NFP from test data
-        
+
         // Should be ordered by timestamp
         for (int i = 1; i < events.Count; i++)
         {
@@ -153,8 +151,8 @@ public class CsvCalendarTests : IDisposable
         var events = calendar.GetEvents(startDate, endDate);
 
         // Assert
-        events.Should().Contain(evt => 
-            evt.Kind == expectedKind && 
+        events.Should().Contain(evt =>
+            evt.Kind == expectedKind &&
             Math.Abs((evt.Ts - expectedTime).TotalMinutes) < 1); // Allow 1 minute tolerance for UTC conversion
     }
 
@@ -245,11 +243,11 @@ public class CsvCalendarTests : IDisposable
 
         // FOMC typically at 2 PM ET
         fomcEvent?.Ts.Hour.Should().Be(14);
-        
+
         // CPI typically at 8:30 AM ET
         cpiEvent?.Ts.Hour.Should().Be(8);
         cpiEvent?.Ts.Minute.Should().Be(30);
-        
+
         // NFP typically at 8:30 AM ET
         nfpEvent?.Ts.Hour.Should().Be(8);
         nfpEvent?.Ts.Minute.Should().Be(30);
@@ -274,25 +272,25 @@ public class CsvCalendarTests : IDisposable
     private void CreateTestCalendarFile()
     {
         var csvContent = "ts,kind\n";
-        
+
         // Add some typical high-impact economic events
         csvContent += "2024-02-01 14:00:00,FOMC\n";      // Fed announcement
         csvContent += "2024-02-02 08:30:00,CPI\n";       // Inflation data
         csvContent += "2024-02-03 08:30:00,NFP\n";       // Jobs report
-        
+
         File.WriteAllText(_testCsvPath, csvContent);
     }
 
     private void CreateUnorderedCalendarFile()
     {
         var csvContent = "ts,kind\n";
-        
+
         // Add events in non-chronological order
         csvContent += "2024-02-03 08:30:00,NFP\n";       // Jobs report (last)
         csvContent += "2024-02-01 14:00:00,FOMC\n";      // Fed announcement (first)
         csvContent += "2024-02-02 08:30:00,CPI\n";       // Inflation data (middle)
         csvContent += "2024-02-01 10:00:00,PPI\n";       // Earlier same day
-        
+
         File.WriteAllText(Path.Combine(_testDataDir, "unordered_calendar.csv"), csvContent);
     }
 

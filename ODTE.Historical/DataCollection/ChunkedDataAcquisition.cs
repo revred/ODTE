@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using ODTE.Historical.DataProviders;
 
 namespace ODTE.Historical.DataCollection
@@ -16,7 +11,7 @@ namespace ODTE.Historical.DataCollection
         private readonly MultiSourceDataProvider _dataProvider;
         private readonly TimeSeriesDatabase _database;
         private readonly string _stagingDirectory;
-        
+
         public ChunkedDataAcquisition(string databasePath = @"C:\code\ODTE\Data\ODTE_TimeSeries_5Y.db")
         {
             _dataProvider = new MultiSourceDataProvider(); // Will use demo Alpha Vantage key if Yahoo fails
@@ -24,7 +19,7 @@ namespace ODTE.Historical.DataCollection
             _stagingDirectory = Path.Combine(Path.GetDirectoryName(databasePath) ?? "", "Staging");
             Directory.CreateDirectory(_stagingDirectory);
         }
-        
+
         /// <summary>
         /// Execute the complete data acquisition plan with all 6 chunks
         /// </summary>
@@ -34,9 +29,9 @@ namespace ODTE.Historical.DataCollection
             Console.WriteLine("🚀 STARTING COMPLETE DATA ACQUISITION - 2005 TO PRESENT");
             Console.WriteLine("=".PadRight(60, '='));
             Console.WriteLine();
-            
+
             await _database.InitializeAsync();
-            
+
             // Define the 6-chunk strategy from gap analysis
             var chunks = new[]
             {
@@ -95,19 +90,19 @@ namespace ODTE.Historical.DataCollection
                     ChunkSizeMonths = 12 // Annual chunks
                 }
             };
-            
+
             var result = new DataAcquisitionResult
             {
                 StartTime = DateTime.UtcNow,
                 TotalChunks = chunks.Length
             };
-            
+
             // Process chunks in priority order
             var priorityOrder = chunks
                 .OrderByDescending(c => c.Priority)
                 .ThenByDescending(c => c.StartDate) // Recent first within same priority
                 .ToArray();
-            
+
             for (int i = 0; i < priorityOrder.Length; i++)
             {
                 var chunk = priorityOrder[i];
@@ -115,14 +110,14 @@ namespace ODTE.Historical.DataCollection
                 Console.WriteLine($"   Priority: {chunk.Priority}, Period: {chunk.StartDate:yyyy-MM-dd} to {chunk.EndDate:yyyy-MM-dd}");
                 Console.WriteLine($"   Symbols: {string.Join(", ", chunk.Symbols)}");
                 Console.WriteLine();
-                
+
                 try
                 {
                     var chunkResult = await ProcessChunkAsync(chunk, progress);
                     result.ChunkResults.Add(chunkResult);
                     result.TotalRecordsProcessed += chunkResult.RecordsProcessed;
                     result.SuccessfulChunks++;
-                    
+
                     progress?.Report(new ChunkProgress
                     {
                         ChunkName = chunk.Name,
@@ -138,19 +133,19 @@ namespace ODTE.Historical.DataCollection
                     result.FailedChunks++;
                     result.Errors.Add($"{chunk.Name}: {ex.Message}");
                 }
-                
+
                 Console.WriteLine();
             }
-            
+
             result.EndTime = DateTime.UtcNow;
             result.Success = result.FailedChunks == 0;
-            
+
             // Generate final report
             await GenerateAcquisitionReportAsync(result);
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Process a single acquisition chunk
         /// </summary>
@@ -163,13 +158,13 @@ namespace ODTE.Historical.DataCollection
                 ChunkName = chunk.Name,
                 StartTime = DateTime.UtcNow
             };
-            
+
             var chunkSizeSpan = TimeSpan.FromDays(chunk.ChunkSizeMonths * 30.44); // Average month length
-            
+
             foreach (var symbol in chunk.Symbols)
             {
                 Console.WriteLine($"  📈 Processing {symbol}...");
-                
+
                 var symbolProgress = new Progress<DataAcquisitionProgress>(p =>
                 {
                     progress?.Report(new ChunkProgress
@@ -180,29 +175,29 @@ namespace ODTE.Historical.DataCollection
                         Progress = p.ProgressPercent
                     });
                 });
-                
+
                 try
                 {
                     var symbolBars = await _dataProvider.GetHistoricalDataChunkedAsync(
-                        symbol, 
-                        chunk.StartDate, 
+                        symbol,
+                        chunk.StartDate,
                         chunk.EndDate,
                         chunkSizeSpan,
                         symbolProgress);
-                    
+
                     if (symbolBars.Any())
                     {
                         // Save to staging area first (Parquet format)
                         var stagingFile = Path.Combine(_stagingDirectory, $"{symbol}_{chunk.StartDate:yyyyMMdd}_{chunk.EndDate:yyyyMMdd}.csv");
                         await SaveToStagingAsync(symbolBars, stagingFile);
-                        
+
                         // Convert to MarketDataBar format and insert to SQLite
                         var marketDataBars = ConvertToMarketDataBars(symbolBars);
                         await _database.ImportBarsAsync(marketDataBars, symbol);
-                        
+
                         chunkResult.RecordsProcessed += symbolBars.Count;
                         chunkResult.SuccessfulSymbols.Add(symbol);
-                        
+
                         Console.WriteLine($"    ✅ {symbol}: {symbolBars.Count:N0} bars imported");
                     }
                     else
@@ -218,13 +213,13 @@ namespace ODTE.Historical.DataCollection
                     chunkResult.Errors.Add($"{symbol}: {ex.Message}");
                 }
             }
-            
+
             chunkResult.EndTime = DateTime.UtcNow;
             chunkResult.Success = chunkResult.FailedSymbols.Count == 0;
-            
+
             return chunkResult;
         }
-        
+
         /// <summary>
         /// Save raw data to staging area for backup/validation
         /// </summary>
@@ -234,15 +229,15 @@ namespace ODTE.Historical.DataCollection
             {
                 "Date,Open,High,Low,Close,Volume,AdjClose,VWAP"
             };
-            
+
             foreach (var bar in bars)
             {
                 csvLines.Add($"{bar.Timestamp:yyyy-MM-dd},{bar.Open},{bar.High},{bar.Low},{bar.Close},{bar.Volume},{bar.AdjustedClose},{bar.VWAP}");
             }
-            
+
             await File.WriteAllLinesAsync(filePath, csvLines);
         }
-        
+
         /// <summary>
         /// Convert HistoricalDataBar to MarketDataBar for database insertion
         /// </summary>
@@ -259,7 +254,7 @@ namespace ODTE.Historical.DataCollection
                 VWAP = h.VWAP
             }).ToList();
         }
-        
+
         /// <summary>
         /// Generate comprehensive acquisition report
         /// </summary>
@@ -285,7 +280,7 @@ namespace ODTE.Historical.DataCollection
                 "📦 CHUNK DETAILS:",
                 "-".PadRight(20, '-')
             };
-            
+
             foreach (var chunk in result.ChunkResults)
             {
                 lines.AddRange(new[]
@@ -299,24 +294,24 @@ namespace ODTE.Historical.DataCollection
                     ""
                 });
             }
-            
+
             if (result.Errors.Any())
             {
                 lines.AddRange(new[] { "❌ ERRORS:", "-".PadRight(10, '-') });
                 lines.AddRange(result.Errors);
             }
-            
+
             await File.WriteAllLinesAsync(reportPath, lines);
             Console.WriteLine($"📋 Report saved to: {reportPath}");
         }
-        
+
         public void Dispose()
         {
             _dataProvider?.Dispose();
             _database?.Dispose();
         }
     }
-    
+
     // Supporting types for chunked acquisition
     public class AcquisitionChunk
     {
@@ -327,14 +322,14 @@ namespace ODTE.Historical.DataCollection
         public string[] Symbols { get; set; } = Array.Empty<string>();
         public int ChunkSizeMonths { get; set; } = 12;
     }
-    
+
     public enum ChunkPriority
     {
         Low = 1,
         Medium = 2,
         High = 3
     }
-    
+
     public class ChunkProgress
     {
         public string ChunkName { get; set; } = "";
@@ -345,7 +340,7 @@ namespace ODTE.Historical.DataCollection
         public double OverallProgress { get; set; }
         public string Status { get; set; } = "";
     }
-    
+
     public class DataAcquisitionResult
     {
         public DateTime StartTime { get; set; }
@@ -359,7 +354,7 @@ namespace ODTE.Historical.DataCollection
         public List<ChunkResult> ChunkResults { get; set; } = new();
         public List<string> Errors { get; set; } = new();
     }
-    
+
     public class ChunkResult
     {
         public string ChunkName { get; set; } = "";

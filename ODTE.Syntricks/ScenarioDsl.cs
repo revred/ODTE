@@ -10,28 +10,28 @@ public class ScenarioConfig
 {
     [YamlMember(Alias = "name")]
     public string Name { get; set; } = string.Empty;
-    
+
     [YamlMember(Alias = "description")]
     public string Description { get; set; } = string.Empty;
-    
+
     [YamlMember(Alias = "archetype")]
     public string Archetype { get; set; } = "calm_range";
-    
+
     [YamlMember(Alias = "replay_speed")]
     public double ReplaySpeed { get; set; } = 1.0;
-    
+
     [YamlMember(Alias = "duration_minutes")]
     public int DurationMinutes { get; set; } = 390; // Full trading day
-    
+
     [YamlMember(Alias = "seed")]
     public int Seed { get; set; } = 42;
-    
+
     [YamlMember(Alias = "events")]
     public List<EventConfig> Events { get; set; } = new();
-    
+
     [YamlMember(Alias = "microstructure")]
     public MicrostructureConfig Microstructure { get; set; } = new();
-    
+
     [YamlMember(Alias = "adversarial")]
     public bool Adversarial { get; set; } = false;
 }
@@ -43,10 +43,10 @@ public class EventConfig
 {
     [YamlMember(Alias = "time")]
     public string Time { get; set; } = "14:30"; // UTC time
-    
+
     [YamlMember(Alias = "type")]
     public string Type { get; set; } = "CPI";
-    
+
     [YamlMember(Alias = "impact")]
     public EventImpact Impact { get; set; } = new();
 }
@@ -58,13 +58,13 @@ public class EventImpact
 {
     [YamlMember(Alias = "price_jump_sigma")]
     public double PriceJumpSigma { get; set; } = 2.0;
-    
+
     [YamlMember(Alias = "iv_jump_pct")]
     public double IvJumpPct { get; set; } = 20.0;
-    
+
     [YamlMember(Alias = "spread_widen_bps")]
     public double SpreadWidenBps { get; set; } = 50.0;
-    
+
     [YamlMember(Alias = "duration_minutes")]
     public int DurationMinutes { get; set; } = 30;
 }
@@ -76,16 +76,16 @@ public class MicrostructureConfig
 {
     [YamlMember(Alias = "u_shaped_volume")]
     public bool UShapedVolume { get; set; } = true;
-    
+
     [YamlMember(Alias = "lunch_lull")]
     public bool LunchLull { get; set; } = true;
-    
+
     [YamlMember(Alias = "late_session_widening")]
     public bool LateSessionWidening { get; set; } = true;
-    
+
     [YamlMember(Alias = "lunch_start")]
     public string LunchStart { get; set; } = "17:00"; // 12:00 ET = 17:00 UTC
-    
+
     [YamlMember(Alias = "lunch_end")]
     public string LunchEnd { get; set; } = "18:00"; // 13:00 ET = 18:00 UTC
 }
@@ -140,7 +140,7 @@ public static class ScenarioDsl
         }
 
         stream.ReplaySpeed = config.ReplaySpeed;
-        
+
         return stream;
     }
 
@@ -157,7 +157,7 @@ public static class ScenarioDsl
         for (int i = 0; i < config.DurationMinutes; i++)
         {
             var timestamp = startTime.AddMinutes(i);
-            
+
             // Simple random walk for testing
             var change = (random.NextDouble() - 0.5) * 2.0; // +/- $1 max per minute
             currentPrice = Math.Max(currentPrice + change, basePrice * 0.95); // Floor at 5% down

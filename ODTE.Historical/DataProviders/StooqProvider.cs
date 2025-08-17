@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ODTE.Historical.DataProviders
 {
@@ -18,18 +12,18 @@ namespace ODTE.Historical.DataProviders
         private readonly HttpClient _httpClient;
         private readonly SemaphoreSlim _rateLimiter;
         private const int MAX_REQUESTS_PER_MINUTE = 30; // Conservative rate limiting
-        
+
         public StooqProvider()
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", 
+            _httpClient.DefaultRequestHeaders.Add("User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
             _httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
             _httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.5");
             _httpClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate");
             _httpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
             _rateLimiter = new SemaphoreSlim(MAX_REQUESTS_PER_MINUTE, MAX_REQUESTS_PER_MINUTE);
-            
+
             // Reset rate limiter every minute
             _ = Task.Run(async () =>
             {
@@ -40,7 +34,7 @@ namespace ODTE.Historical.DataProviders
                 }
             });
         }
-        
+
         /// <summary>
         /// Download historical data for a symbol from Stooq
         /// Stooq returns ALL historical data available, then we filter by date range
@@ -51,7 +45,7 @@ namespace ODTE.Historical.DataProviders
             DateTime endDate)
         {
             await _rateLimiter.WaitAsync();
-            
+
             // Retry logic with exponential backoff
             for (int attempt = 1; attempt <= 3; attempt++)
             {
@@ -59,15 +53,15 @@ namespace ODTE.Historical.DataProviders
                 {
                     // Clean symbol for Stooq format
                     var stooqSymbol = ConvertToStooqSymbol(symbol);
-                    
+
                     // Stooq URL format: https://stooq.com/q/d/l/?s=SYMBOL&i=d
                     var url = $"https://stooq.com/q/d/l/?s={stooqSymbol}&i=d";
-                    
+
                     Console.WriteLine($"🔄 Downloading {symbol} from Stooq (attempt {attempt})...");
-                    
+
                     var response = await _httpClient.GetStringAsync(url);
                     var bars = ParseStooqCsv(response, symbol, startDate, endDate);
-                    
+
                     if (bars.Count > 0)
                     {
                         Console.WriteLine($"✅ Downloaded {bars.Count} bars from Stooq for {symbol}");
@@ -95,11 +89,11 @@ namespace ODTE.Historical.DataProviders
                     }
                 }
             }
-            
+
             Console.WriteLine($"💔 Stooq failed for {symbol} after 3 attempts");
             return new List<HistoricalDataBar>();
         }
-        
+
         /// <summary>
         /// Convert symbol to Stooq format
         /// US stocks require .US suffix, indices are different
@@ -120,7 +114,7 @@ namespace ODTE.Historical.DataProviders
                 _ => symbol.Contains("^") ? symbol : $"{symbol.ToUpper()}.US" // Add .US for US stocks
             };
         }
-        
+
         /// <summary>
         /// Parse Stooq CSV format and filter by date range
         /// Stooq CSV format: Date,Open,High,Low,Close,Volume
@@ -129,13 +123,13 @@ namespace ODTE.Historical.DataProviders
         {
             var bars = new List<HistoricalDataBar>();
             var lines = csvData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
+
             if (lines.Length <= 1)
             {
                 Console.WriteLine($"⚠️ No data in Stooq response for {symbol}");
                 return bars;
             }
-            
+
             // Skip header line (Date,Open,High,Low,Close,Volume)
             for (int i = 1; i < lines.Length; i++)
             {
@@ -150,7 +144,7 @@ namespace ODTE.Historical.DataProviders
                         var lowStr = parts[3].Trim();
                         var closeStr = parts[4].Trim();
                         var volumeStr = parts[5].Trim();
-                        
+
                         // Parse date (Stooq uses YYYY-MM-DD format)
                         if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) &&
                             date >= startDate && date <= endDate &&
@@ -179,14 +173,14 @@ namespace ODTE.Historical.DataProviders
                     Console.WriteLine($"⚠️ Error parsing Stooq line {i} for {symbol}: {ex.Message}");
                 }
             }
-            
+
             // Sort by date (oldest first)
             bars.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
-            
+
             Console.WriteLine($"✅ Parsed {bars.Count} Stooq bars for {symbol} in date range {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
             return bars;
         }
-        
+
         /// <summary>
         /// Download data in chunks to manage memory and rate limits
         /// Note: Stooq returns full history, so we download once and filter by chunks
@@ -200,7 +194,7 @@ namespace ODTE.Historical.DataProviders
         {
             // For Stooq, we get all data at once and filter
             var allBars = await GetHistoricalDataAsync(symbol, startDate, endDate);
-            
+
             // Report progress
             progress?.Report(new DataAcquisitionProgress
             {
@@ -212,13 +206,13 @@ namespace ODTE.Historical.DataProviders
                 RecordsProcessed = allBars.Count,
                 Status = $"Downloaded {allBars.Count} bars from Stooq"
             });
-            
+
             // Small delay to be respectful
             await Task.Delay(1000);
-            
+
             return allBars;
         }
-        
+
         public void Dispose()
         {
             _httpClient?.Dispose();

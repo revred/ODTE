@@ -36,9 +36,9 @@ public interface IExecutionEngine : IDisposable
     /// <param name="now">Current timestamp</param>
     /// <returns>Exit decision with price and reason</returns>
     (bool exit, double exitPrice, string reason) ShouldExit(
-        OpenPosition pos, 
-        double currentSpreadValue, 
-        double shortStrikeDelta, 
+        OpenPosition pos,
+        double currentSpreadValue,
+        double shortStrikeDelta,
         DateTime now);
 
     /// <summary>

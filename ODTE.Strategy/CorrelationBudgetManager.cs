@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -44,7 +40,7 @@ namespace ODTE.Strategy
                 var dailyCap = GetDailyCapForPosition(position);
                 var exposureFraction = position.MaxLoss / dailyCap;
                 var correlationWeight = CalculateCorrelationWeight(position, positions);
-                
+
                 var rhoWeightedContribution = exposureFraction * correlationWeight;
                 totalRhoWeightedExposure += rhoWeightedContribution;
 
@@ -61,10 +57,10 @@ namespace ODTE.Strategy
         {
             // Create hypothetical position from trade setup
             var newPosition = CreateHypotheticalPosition(setup, positionSize);
-            
+
             // Calculate exposure with new position added
             var positionsWithNew = new List<Position>(currentPositions) { newPosition };
-            
+
             return CalculateCurrentRhoWeightedExposure(positionsWithNew);
         }
 
@@ -92,7 +88,7 @@ namespace ODTE.Strategy
             while (maxSize - minSize > precision)
             {
                 decimal testSize = (minSize + maxSize) / 2m;
-                
+
                 if (WouldViolateCorrelationBudget(currentPositions, setup, testSize))
                 {
                     maxSize = testSize;
@@ -114,7 +110,7 @@ namespace ODTE.Strategy
         {
             var betaToSPY = GetBetaToSPY(position.Symbol);
             var maxPairwiseCorrelation = GetMaxPairwiseCorrelation(position, allPositions);
-            
+
             // Weight is max of absolute beta and max pairwise correlation
             return Math.Max(Math.Abs(betaToSPY), maxPairwiseCorrelation);
         }
@@ -151,7 +147,7 @@ namespace ODTE.Strategy
 
             var beta = _correlationProvider.GetBetaToSPY(symbol);
             _betaCache[symbol] = beta;
-            
+
             return beta;
         }
 
@@ -171,7 +167,7 @@ namespace ODTE.Strategy
 
             var correlation = _correlationProvider.GetCorrelationBetween(symbol1, symbol2);
             _correlationCache[key] = correlation;
-            
+
             return correlation;
         }
 
@@ -214,7 +210,7 @@ namespace ODTE.Strategy
                 _betaCache.Clear();
                 _correlationCache.Clear();
                 _lastCacheUpdate = DateTime.Now;
-                
+
                 Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Correlation cache refreshed");
             }
         }

@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using ODTE.Strategy.Interfaces;
 
 namespace ODTE.Strategy
@@ -20,17 +18,17 @@ namespace ODTE.Strategy
         /// <param name="multiplier">Contract multiplier (100 for equities)</param>
         /// <returns>Maximum potential loss in dollars</returns>
         public static decimal MaxPotentialLossIC(
-            decimal netCredit, 
-            decimal putWing, 
-            decimal callWing, 
+            decimal netCredit,
+            decimal putWing,
+            decimal callWing,
             int multiplier = 100)
         {
             // Call-side loss if price >> short call:
             var callLoss = (callWing - netCredit) * multiplier;
-            
+
             // Put-side loss if price << short put:
             var putLoss = (putWing - netCredit) * multiplier;
-            
+
             return Math.Max(callLoss, putLoss);
         }
 
@@ -44,13 +42,13 @@ namespace ODTE.Strategy
         /// <param name="multiplier">Contract multiplier (100 for equities)</param>
         /// <returns>Maximum potential loss in dollars (clamped to zero minimum)</returns>
         public static decimal MaxPotentialLossBwb(
-            decimal netCredit, 
-            decimal narrowWing, 
-            decimal farWing, 
+            decimal netCredit,
+            decimal narrowWing,
+            decimal farWing,
             int multiplier = 100)
         {
             var core = ((farWing - narrowWing) * multiplier) - (netCredit * multiplier);
-            
+
             // If geometry yields negative loss (rare), clamp to zero
             return Math.Max(0m, core);
         }
@@ -93,7 +91,7 @@ namespace ODTE.Strategy
         {
             // Simplified implementation - real version would calculate actual Greeks
             var profile = new RiskProfile();
-            
+
             // Calculate aggregate Greeks from legs
             foreach (var leg in shape.Legs)
             {
@@ -126,7 +124,7 @@ namespace ODTE.Strategy
         {
             // Extract BWB structure from legs
             var legs = shape.Legs.OrderBy(l => l.Strike).ToList();
-            
+
             if (legs.Count != 3)
                 throw new ArgumentException("Credit BWB must have exactly 3 legs");
 

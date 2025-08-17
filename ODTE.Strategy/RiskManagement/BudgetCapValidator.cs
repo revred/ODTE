@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace ODTE.Strategy.RiskManagement
 {
     /// <summary>
@@ -22,62 +19,62 @@ namespace ODTE.Strategy.RiskManagement
     public class BudgetCapValidator
     {
         #region Configuration
-        
+
         /// <summary>
         /// Default risk factor: 40% of remaining budget per trade
         /// Conservative and battle-tested across volatile market regimes
         /// </summary>
         public const double DEFAULT_RISK_FACTOR = 0.40;
-        
+
         /// <summary>
         /// Aggressive risk factor: 60% for higher utilization
         /// Use only in proven calm market conditions
         /// </summary>
         public const double AGGRESSIVE_RISK_FACTOR = 0.60;
-        
+
         /// <summary>
         /// Ultra-conservative risk factor: 25% for maximum safety
         /// Recommended during learning phases or uncertain periods
         /// </summary>
         public const double CONSERVATIVE_RISK_FACTOR = 0.25;
-        
+
         /// <summary>
         /// Minimum budget requirement for any trade
         /// Prevents micro-trades that provide insufficient profit potential
         /// </summary>
         public const decimal MINIMUM_BUDGET_THRESHOLD = 25.0m;
-        
+
         #endregion
-        
+
         #region Instance State
-        
+
         private readonly PerTradeRiskManager _riskManager;
         private readonly ReverseFibonacciRiskManager _rfibManager;
         private readonly Dictionary<DateTime, List<BudgetValidationRecord>> _validationHistory;
-        
+
         /// <summary>
         /// Current risk factor being used (default: 0.40)
         /// Can be adjusted based on market conditions or performance
         /// </summary>
         public double CurrentRiskFactor { get; set; } = DEFAULT_RISK_FACTOR;
-        
+
         #endregion
-        
+
         #region Constructor
-        
+
         public BudgetCapValidator(
-            PerTradeRiskManager riskManager, 
+            PerTradeRiskManager riskManager,
             ReverseFibonacciRiskManager rfibManager)
         {
             _riskManager = riskManager ?? throw new ArgumentNullException(nameof(riskManager));
             _rfibManager = rfibManager ?? throw new ArgumentNullException(nameof(rfibManager));
             _validationHistory = new Dictionary<DateTime, List<BudgetValidationRecord>>();
         }
-        
+
         #endregion
-        
+
         #region Core Validation Logic
-        
+
         /// <summary>
         /// Primary validation method: Check if trade passes budget cap test
         /// </summary>
@@ -96,7 +93,7 @@ namespace ODTE.Strategy.RiskManagement
             var remainingBudget = _rfibManager.GetRemainingDailyBudget(tradingDay);
             var dailyLimit = _rfibManager.GetDailyBudgetLimit(tradingDay);
             var allowedRisk = (decimal)riskFactor * remainingBudget;
-            
+
             var result = new BudgetCapValidationResult
             {
                 TradingDay = tradingDay,
@@ -108,7 +105,7 @@ namespace ODTE.Strategy.RiskManagement
                 AllowedRisk = allowedRisk,
                 ValidationTimestamp = DateTime.UtcNow
             };
-            
+
             // Validation Gate 1: Minimum budget threshold
             if (remainingBudget < MINIMUM_BUDGET_THRESHOLD)
             {
@@ -118,7 +115,7 @@ namespace ODTE.Strategy.RiskManagement
                 result.SuggestedAction = "Wait for next trading day or profitable trade to reset budget";
                 return result;
             }
-            
+
             // Validation Gate 2: Core budget cap test (f × RemainingBudget)
             if (maxLossAtEntry > allowedRisk)
             {
@@ -129,7 +126,7 @@ namespace ODTE.Strategy.RiskManagement
                 result.SuggestedAction = $"Reduce position size to {CalculateMaxAllowedContracts(allowedRisk, maxLossAtEntry, proposedContracts)} contracts";
                 return result;
             }
-            
+
             // Validation Gate 3: Sanity check for zero/negative values
             if (maxLossAtEntry <= 0 || proposedContracts <= 0)
             {
@@ -139,20 +136,20 @@ namespace ODTE.Strategy.RiskManagement
                 result.SuggestedAction = "Check trade parameter calculation logic";
                 return result;
             }
-            
+
             // Success case
             result.IsApproved = true;
             result.ReasonCode = BudgetCapReasonCode.Approved;
             result.ReasonMessage = $"Trade approved: ${maxLossAtEntry:F2} risk within {riskFactor:P0} budget cap (${allowedRisk:F2})";
             result.BudgetUtilizationAfterTrade = (double)((dailyLimit - remainingBudget + maxLossAtEntry) / dailyLimit);
             result.SuggestedAction = "Proceed with trade execution";
-            
+
             // Record validation for audit trail
             RecordValidation(result);
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Calculate maximum allowed contracts given budget constraints
         /// </summary>
@@ -163,11 +160,11 @@ namespace ODTE.Strategy.RiskManagement
         public int CalculateMaxAllowedContracts(decimal allowedRisk, decimal riskPerContract, int desiredContracts)
         {
             if (riskPerContract <= 0) return 0;
-            
+
             var maxByBudget = (int)Math.Floor(allowedRisk / riskPerContract);
             return Math.Min(maxByBudget, desiredContracts);
         }
-        
+
         /// <summary>
         /// Adaptive risk factor adjustment based on recent performance
         /// </summary>
@@ -176,32 +173,32 @@ namespace ODTE.Strategy.RiskManagement
         public double CalculateAdaptiveRiskFactor(TradingPerformanceMetrics recentPerformance)
         {
             var baseFactor = DEFAULT_RISK_FACTOR;
-            
+
             // Increase risk factor for consistent winners
             if (recentPerformance.RecentWinRate > 0.85 && recentPerformance.ConsecutiveProfitableDays >= 3)
             {
                 return Math.Min(AGGRESSIVE_RISK_FACTOR, baseFactor * 1.2);
             }
-            
+
             // Decrease risk factor for struggling periods
             if (recentPerformance.RecentWinRate < 0.70 || recentPerformance.ConsecutiveLossDays >= 2)
             {
                 return Math.Max(CONSERVATIVE_RISK_FACTOR, baseFactor * 0.8);
             }
-            
+
             // Decrease risk factor in high volatility
             if (recentPerformance.AverageVIX > 30)
             {
                 return Math.Max(CONSERVATIVE_RISK_FACTOR, baseFactor * 0.7);
             }
-            
+
             return baseFactor;
         }
-        
+
         #endregion
-        
+
         #region Validation History & Analytics
-        
+
         /// <summary>
         /// Record validation result for audit trail and analysis
         /// </summary>
@@ -212,7 +209,7 @@ namespace ODTE.Strategy.RiskManagement
             {
                 _validationHistory[day] = new List<BudgetValidationRecord>();
             }
-            
+
             _validationHistory[day].Add(new BudgetValidationRecord
             {
                 Timestamp = result.ValidationTimestamp,
@@ -224,7 +221,7 @@ namespace ODTE.Strategy.RiskManagement
                 ProposedContracts = result.ProposedContracts
             });
         }
-        
+
         /// <summary>
         /// Get validation statistics for a specific trading day
         /// </summary>
@@ -234,7 +231,7 @@ namespace ODTE.Strategy.RiskManagement
         {
             var day = tradingDay.Date;
             var records = _validationHistory.ContainsKey(day) ? _validationHistory[day] : new List<BudgetValidationRecord>();
-            
+
             return new DailyValidationStatistics
             {
                 TradingDay = day,
@@ -249,7 +246,7 @@ namespace ODTE.Strategy.RiskManagement
                                                .Sum(r => r.MaxLossAtEntry - r.AllowedRisk)
             };
         }
-        
+
         /// <summary>
         /// Get effectiveness analysis of budget cap validation
         /// </summary>
@@ -260,7 +257,7 @@ namespace ODTE.Strategy.RiskManagement
         {
             var allRecords = new List<BudgetValidationRecord>();
             var currentDate = startDate.Date;
-            
+
             while (currentDate <= endDate.Date)
             {
                 if (_validationHistory.ContainsKey(currentDate))
@@ -269,7 +266,7 @@ namespace ODTE.Strategy.RiskManagement
                 }
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             if (allRecords.Count == 0)
             {
                 return new ValidationEffectivenessAnalysis
@@ -278,7 +275,7 @@ namespace ODTE.Strategy.RiskManagement
                     TotalValidations = 0
                 };
             }
-            
+
             return new ValidationEffectivenessAnalysis
             {
                 AnalysisPeriod = $"{startDate:MM/dd/yyyy} - {endDate:MM/dd/yyyy}",
@@ -294,12 +291,12 @@ namespace ODTE.Strategy.RiskManagement
                 HighestRiskRequestBlocked = allRecords.Where(r => !r.IsApproved).DefaultIfEmpty().Max(r => r?.MaxLossAtEntry ?? 0)
             };
         }
-        
+
         #endregion
     }
-    
+
     #region Supporting Data Types
-    
+
     /// <summary>
     /// Result of budget cap validation with detailed information
     /// </summary>
@@ -319,7 +316,7 @@ namespace ODTE.Strategy.RiskManagement
         public decimal OverageAmount { get; set; }
         public double BudgetUtilizationAfterTrade { get; set; }
         public DateTime ValidationTimestamp { get; set; }
-        
+
         public string GetSummary()
         {
             var status = IsApproved ? "✅ APPROVED" : "❌ REJECTED";
@@ -327,7 +324,7 @@ namespace ODTE.Strategy.RiskManagement
                    $"({RiskFactor:P0} of ${RemainingBudget:F2} budget). {ReasonMessage}";
         }
     }
-    
+
     /// <summary>
     /// Reason codes for budget cap validation decisions
     /// </summary>
@@ -339,7 +336,7 @@ namespace ODTE.Strategy.RiskManagement
         InvalidParameters,
         SystemError
     }
-    
+
     /// <summary>
     /// Internal record for validation history tracking
     /// </summary>
@@ -353,7 +350,7 @@ namespace ODTE.Strategy.RiskManagement
         public double RiskFactor { get; set; }
         public int ProposedContracts { get; set; }
     }
-    
+
     /// <summary>
     /// Daily validation statistics
     /// </summary>
@@ -368,14 +365,14 @@ namespace ODTE.Strategy.RiskManagement
         public decimal TotalRiskRequested { get; set; }
         public decimal TotalRiskAllowed { get; set; }
         public decimal BudgetProtectionSavings { get; set; }
-        
+
         public string GetSummary()
         {
             return $"Day {TradingDay:MM/dd}: {ApprovedValidations}/{TotalValidations} approved ({ApprovalRate:P1}), " +
                    $"${BudgetProtectionSavings:F2} protected from over-risk";
         }
     }
-    
+
     /// <summary>
     /// Validation effectiveness analysis over time period
     /// </summary>
@@ -391,7 +388,7 @@ namespace ODTE.Strategy.RiskManagement
         public decimal TotalRiskProtected { get; set; }
         public double AverageRiskFactor { get; set; }
         public decimal HighestRiskRequestBlocked { get; set; }
-        
+
         public string GetAnalysisReport()
         {
             return $"Budget Cap Validation Analysis ({AnalysisPeriod}):\n" +
@@ -403,7 +400,7 @@ namespace ODTE.Strategy.RiskManagement
                    $"• Average Risk Factor: {AverageRiskFactor:P1}";
         }
     }
-    
+
     /// <summary>
     /// Trading performance metrics for adaptive risk factor calculation
     /// </summary>
@@ -416,6 +413,6 @@ namespace ODTE.Strategy.RiskManagement
         public decimal AverageDailyPnL { get; set; }
         public double MaxDrawdownRecent { get; set; }
     }
-    
+
     #endregion
 }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy
 {
     /// <summary>
@@ -75,22 +71,22 @@ namespace ODTE.Strategy
         public double VIXContango { get; set; }
 
         // Compatibility properties with automatic conversion
-        public decimal RSI_Decimal 
-        { 
-            get => (decimal)RSI; 
-            set => RSI = (double)value; 
+        public decimal RSI_Decimal
+        {
+            get => (decimal)RSI;
+            set => RSI = (double)value;
         }
-        
-        public decimal IVRank_Decimal 
-        { 
-            get => (decimal)IVRank; 
-            set => IVRank = (double)value; 
+
+        public decimal IVRank_Decimal
+        {
+            get => (decimal)IVRank;
+            set => IVRank = (double)value;
         }
-        
-        public decimal VIXContango_Decimal 
-        { 
-            get => (decimal)VIXContango; 
-            set => VIXContango = (double)value; 
+
+        public decimal VIXContango_Decimal
+        {
+            get => (decimal)VIXContango;
+            set => VIXContango = (double)value;
         }
     }
 
@@ -210,7 +206,7 @@ namespace ODTE.Strategy
         public int TotalPeriods { get; set; }
         public decimal MaxDrawdown { get; set; }
         public double SharpeRatio { get; set; }
-        
+
         // Additional metrics for comprehensive analysis
         public string StrategyName { get; set; } = "24-Day Regime Switching";
         public decimal FinalCapital { get; set; }

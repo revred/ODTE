@@ -13,32 +13,32 @@ public record Quote
     public int AskSize { get; init; }
     public decimal Last { get; init; }
     public int LastSize { get; init; }
-    
+
     /// <summary>
     /// Mid-point of bid/ask spread
     /// </summary>
     public decimal Mid => (Bid + Ask) / 2m;
-    
+
     /// <summary>
     /// Bid-ask spread in dollars
     /// </summary>
     public decimal Spread => Ask - Bid;
-    
+
     /// <summary>
     /// Spread as percentage of mid price
     /// </summary>
     public decimal SpreadBps => Spread / Mid * 10000m;
-    
+
     /// <summary>
     /// Top-of-book size (minimum of bid/ask size)
     /// </summary>
     public int TopOfBookSize => Math.Min(BidSize, AskSize);
-    
+
     /// <summary>
     /// Implied volatility if available
     /// </summary>
     public decimal? ImpliedVolatility { get; init; }
-    
+
     /// <summary>
     /// Greeks if available
     /// </summary>
@@ -66,11 +66,11 @@ public record QuoteBook
     public DateTime Timestamp { get; init; }
     public List<PriceLevel> Bids { get; init; } = new();
     public List<PriceLevel> Asks { get; init; } = new();
-    
+
     /// <summary>
     /// Best bid/offer from the book
     /// </summary>
-    public Quote? BestBidOffer => Bids.Count > 0 && Asks.Count > 0 
+    public Quote? BestBidOffer => Bids.Count > 0 && Asks.Count > 0
         ? new Quote
         {
             Symbol = Symbol,

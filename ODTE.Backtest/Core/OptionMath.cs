@@ -1,5 +1,3 @@
-using System;
-
 namespace ODTE.Backtest.Core;
 
 /// <summary>
@@ -45,29 +43,29 @@ public static class OptionMath
     /// Used in both pricing and Delta calculations.
     /// </summary>
     public static double D1(double S, double K, double r, double q, double sigma, double T)
-        => (Math.Log(S/K) + (r - q + 0.5*sigma*sigma)*T) / (sigma*Math.Sqrt(T));
-    
+        => (Math.Log(S / K) + (r - q + 0.5 * sigma * sigma) * T) / (sigma * Math.Sqrt(T));
+
     /// <summary>
     /// Calculate d2 parameter for Black-Scholes formula.
     /// d2 = d1 - σ√T, represents risk-adjusted probability of exercise.
     /// </summary>
-    public static double D2(double d1, double sigma, double T) 
-        => d1 - sigma*Math.Sqrt(T);
+    public static double D2(double d1, double sigma, double T)
+        => d1 - sigma * Math.Sqrt(T);
 
     /// <summary>
     /// Cumulative standard normal distribution N(x).
     /// Probability that a standard normal random variable is ≤ x.
     /// Used to calculate probabilities in Black-Scholes formula.
     /// </summary>
-    public static double Nd(double x) 
-        => 0.5 * (1.0 + Erf(x / Math.Sqrt(2.0))); 
-    
+    public static double Nd(double x)
+        => 0.5 * (1.0 + Erf(x / Math.Sqrt(2.0)));
+
     /// <summary>
     /// Standard normal probability density function n(x).
     /// Currently unused but useful for calculating other Greeks (Gamma, Vega).
     /// </summary>
-    public static double nd(double x) 
-        => Math.Exp(-0.5*x*x) / Math.Sqrt(2*Math.PI); 
+    public static double nd(double x)
+        => Math.Exp(-0.5 * x * x) / Math.Sqrt(2 * Math.PI);
 
     /// <summary>
     /// Calculate option Delta - sensitivity to underlying price movement.
@@ -90,10 +88,10 @@ public static class OptionMath
     public static double Delta(double S, double K, double r, double q, double sigma, double T, Right right)
     {
         if (T <= 0 || sigma <= 0) return 0;
-        var d1 = D1(S,K,r,q,sigma,T);
-        return right == Right.Call 
-            ? Math.Exp(-q*T)*Nd(d1)      // Call delta: always positive
-            : -Math.Exp(-q*T)*Nd(-d1);   // Put delta: always negative
+        var d1 = D1(S, K, r, q, sigma, T);
+        return right == Right.Call
+            ? Math.Exp(-q * T) * Nd(d1)      // Call delta: always positive
+            : -Math.Exp(-q * T) * Nd(-d1);   // Put delta: always negative
     }
 
     /// <summary>
@@ -120,18 +118,18 @@ public static class OptionMath
     public static double Price(double S, double K, double r, double q, double sigma, double T, Right right)
     {
         // Handle expiration: return intrinsic value
-        if (T <= 0 || sigma <= 0) 
+        if (T <= 0 || sigma <= 0)
             return Math.Max(0, right == Right.Call ? S - K : K - S);
-        
-        var d1 = D1(S,K,r,q,sigma,T); 
+
+        var d1 = D1(S, K, r, q, sigma, T);
         var d2 = D2(d1, sigma, T);
-        
+
         if (right == Right.Call)
             // Call = S·e^(-q·T)·N(d1) - K·e^(-r·T)·N(d2)
-            return Math.Exp(-q*T)*S*Nd(d1) - Math.Exp(-r*T)*K*Nd(d2);
+            return Math.Exp(-q * T) * S * Nd(d1) - Math.Exp(-r * T) * K * Nd(d2);
         else
             // Put = K·e^(-r·T)·N(-d2) - S·e^(-q·T)·N(-d1)
-            return Math.Exp(-r*T)*K*Nd(-d2) - Math.Exp(-q*T)*S*Nd(-d1);
+            return Math.Exp(-r * T) * K * Nd(-d2) - Math.Exp(-q * T) * S * Nd(-d1);
     }
 
     /// <summary>
@@ -160,33 +158,33 @@ public static class OptionMath
     public static double ImpliedVolatility(double marketPrice, double S, double K, double T, double r, Right right, double q = 0)
     {
         if (T <= 0) return 0;
-        
+
         // Check if price is below intrinsic value
         double intrinsic = Math.Max(0, right == Right.Call ? S - K : K - S);
         if (marketPrice <= intrinsic) return 0.01;
-        
+
         double volatility = 0.25; // Initial guess: 25%
         double tolerance = 0.0001;
         int maxIterations = 100;
-        
+
         for (int i = 0; i < maxIterations; i++)
         {
             double price = Price(S, K, r, q, volatility, T, right);
             double diff = price - marketPrice;
-            
+
             if (Math.Abs(diff) < tolerance)
                 return volatility;
-            
+
             // Calculate Vega (sensitivity to volatility) for Newton-Raphson
             double vega = Vega(S, K, r, q, volatility, T);
             if (Math.Abs(vega) < 1e-10) break; // Avoid division by zero
-            
+
             volatility = volatility - diff / vega;
-            
+
             // Keep volatility in reasonable bounds
             volatility = Math.Max(0.01, Math.Min(5.0, volatility));
         }
-        
+
         // If failed to converge, return default
         return 0.25;
     }
@@ -198,7 +196,7 @@ public static class OptionMath
     private static double Vega(double S, double K, double r, double q, double sigma, double T)
     {
         if (T <= 0 || sigma <= 0) return 0;
-        
+
         double d1 = D1(S, K, r, q, sigma, T);
         return S * Math.Exp(-q * T) * nd(d1) * Math.Sqrt(T);
     }
@@ -218,9 +216,9 @@ public static class OptionMath
     /// </summary>
     private static double Erf(double x)
     {
-        double t = 1.0/(1.0+0.5*Math.Abs(x));
-        double tau = t*Math.Exp(-x*x - 1.26551223 + t*(1.00002368 + t*(0.37409196 + t*(0.09678418 + 
-            t*(-0.18628806 + t*(0.27886807 + t*(-1.13520398 + t*(1.48851587 + t*(-0.82215223 + t*0.17087277)))))))));
-        return x>=0 ? 1.0 - tau : tau - 1.0;
+        double t = 1.0 / (1.0 + 0.5 * Math.Abs(x));
+        double tau = t * Math.Exp(-x * x - 1.26551223 + t * (1.00002368 + t * (0.37409196 + t * (0.09678418 +
+            t * (-0.18628806 + t * (0.27886807 + t * (-1.13520398 + t * (1.48851587 + t * (-0.82215223 + t * 0.17087277)))))))));
+        return x >= 0 ? 1.0 - tau : tau - 1.0;
     }
 }

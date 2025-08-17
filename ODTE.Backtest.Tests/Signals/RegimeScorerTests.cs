@@ -24,7 +24,7 @@ public class RegimeScorerTests
     {
         _mockMarketData = new Mock<IMarketData>();
         _mockCalendar = new Mock<IEconCalendar>();
-        
+
         _config = new SimConfig
         {
             Signals = new SignalsCfg
@@ -37,7 +37,7 @@ public class RegimeScorerTests
             },
             NoNewRiskMinutesToClose = 40
         };
-        
+
         _regimeScorer = new RegimeScorer(_config);
     }
 
@@ -153,7 +153,7 @@ public class RegimeScorerTests
         SetupMarketDataWithBars(bars);
         _mockMarketData.Setup(x => x.Vwap(_testTime, TimeSpan.FromMinutes(30))).Returns(100.5);
         _mockMarketData.Setup(x => x.Atr20Minutes(_testTime)).Returns(2.0);
-        
+
         // Event in 30 minutes (within EventBlockMinutesBefore = 60)
         var upcomingEvent = new EconEvent(_testTime.AddMinutes(30), "FOMC");
         _mockCalendar.Setup(x => x.NextEventAfter(_testTime)).Returns(upcomingEvent);
@@ -170,7 +170,7 @@ public class RegimeScorerTests
     {
         // Arrange - 30 minutes to close (within NoNewRiskMinutesToClose = 40)
         var lateTime = new DateTime(2024, 2, 1, 15, 30, 0); // 3:30 PM, close at 4:00 PM
-        
+
         var bars = CreateTrendingUpBars();
         SetupMarketDataWithBars(bars);
         _mockMarketData.Setup(x => x.Vwap(lateTime, TimeSpan.FromMinutes(30))).Returns(100.5);
@@ -194,7 +194,7 @@ public class RegimeScorerTests
         var atr = 2.0;
         var dailyRange = atr * rangeToAtrRatio;
         var bars = CreateBarsWithRange(dailyRange);
-        
+
         SetupMarketDataWithBars(bars);
         _mockMarketData.Setup(x => x.Vwap(_testTime, TimeSpan.FromMinutes(30))).Returns(100.0);
         _mockMarketData.Setup(x => x.Atr20Minutes(_testTime)).Returns(atr);
@@ -238,7 +238,7 @@ public class RegimeScorerTests
         // Arrange - Event proximity AND gamma hour
         var lateTime = new DateTime(2024, 2, 1, 15, 30, 0);
         var upcomingEvent = new EconEvent(lateTime.AddMinutes(30), "NFP");
-        
+
         var bars = CreateTrendingUpBars();
         SetupMarketDataWithBars(bars);
         _mockMarketData.Setup(x => x.Vwap(lateTime, TimeSpan.FromMinutes(30))).Returns(100.5);

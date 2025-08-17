@@ -1,15 +1,10 @@
 // StooqPerformanceMonitor.cs — Continuous performance monitoring and alerting
 // Tracks query performance trends, data quality degradation, and system health
 
-using System;
-using System.Collections.Generic;
+using Dapper;
+using Microsoft.Extensions.Logging;
 using System.Data.SQLite;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Dapper;
 
 namespace ODTE.Historical.Monitoring
 {
@@ -37,7 +32,7 @@ namespace ODTE.Historical.Monitoring
             _logger = logger;
 
             // Start monitoring every 5 minutes
-            _monitoringTimer = new Timer(async _ => await MonitorPerformanceAsync(), null, 
+            _monitoringTimer = new Timer(async _ => await MonitorPerformanceAsync(), null,
                 TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(5));
         }
 
@@ -136,8 +131,8 @@ namespace ODTE.Historical.Monitoring
         /// </summary>
         public async Task<RandomAccessTest> TestRandomAccessAsync(int testCount = 50, CancellationToken ct = default)
         {
-            var test = new RandomAccessTest 
-            { 
+            var test = new RandomAccessTest
+            {
                 StartTime = DateTime.UtcNow,
                 TestCount = testCount
             };
@@ -158,7 +153,7 @@ namespace ODTE.Historical.Monitoring
                     var randomOffset = random.NextInt64(0, Math.Max(1, totalRecords - 1));
 
                     var sw = Stopwatch.StartNew();
-                    
+
                     // Random access query
                     var sample = await connection.QuerySingleOrDefaultAsync(@"
                         SELECT underlying_id, timestamp, close, volume
@@ -241,7 +236,7 @@ namespace ODTE.Historical.Monitoring
                     trends.OverallTrend = negativeIndicators switch
                     {
                         0 => "IMPROVING",
-                        1 => "STABLE", 
+                        1 => "STABLE",
                         _ => "DEGRADING"
                     };
                 }
@@ -396,7 +391,7 @@ namespace ODTE.Historical.Monitoring
             for (int i = 0; i < 20; i++)
             {
                 var randomId = random.Next(1, 10); // Assume we have underlying IDs 1-10
-                
+
                 var sw = Stopwatch.StartNew();
                 try
                 {

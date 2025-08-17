@@ -25,7 +25,7 @@ public class SpreadBuilderTests
     {
         _mockMarketData = new Mock<IMarketData>();
         _mockOptionsData = new Mock<IOptionsData>();
-        
+
         _config = new SimConfig
         {
             Underlying = "XSP",
@@ -51,7 +51,7 @@ public class SpreadBuilderTests
                 SpreadPctCap = 0.25
             }
         };
-        
+
         _spreadBuilder = new SpreadBuilder(_config);
     }
 
@@ -363,7 +363,7 @@ public class SpreadBuilderTests
         result.Underlying.Should().Be(_config.Underlying);
         result.Short.Expiry.Should().Be(_testExpiry);
         result.Long.Expiry.Should().Be(_testExpiry);
-        
+
         // SpreadOrder backward compatibility properties
         result.PositionType.Should().Be(PositionType.PutSpread); // Based on SingleSidePut decision
         result.NetCredit.Should().Be(result.Credit); // Backward compatibility

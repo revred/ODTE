@@ -1,8 +1,8 @@
 using CsvHelper;
 using CsvHelper.Configuration;
-using System.Globalization;
-using ODTE.Backtest.Core;
 using ODTE.Backtest.Config;
+using ODTE.Backtest.Core;
+using System.Globalization;
 
 namespace ODTE.Backtest.Data;
 
@@ -44,16 +44,16 @@ namespace ODTE.Backtest.Data;
 /// </summary>
 public sealed class SyntheticOptionsData : IOptionsData
 {
-    private readonly SimConfig _cfg; 
+    private readonly SimConfig _cfg;
     private readonly IMarketData _md;
-    private readonly List<(DateOnly d, double vix)> _vix; 
+    private readonly List<(DateOnly d, double vix)> _vix;
     private readonly List<(DateOnly d, double vix9d)> _vix9d;
-    
+
     public SyntheticOptionsData(SimConfig cfg, IMarketData md, string vixPath, string vix9dPath)
     {
-        _cfg = cfg; 
+        _cfg = cfg;
         _md = md;
-        _vix = Load(vixPath, "vix"); 
+        _vix = Load(vixPath, "vix");
         _vix9d = Load(vix9dPath, "vix9d");
     }
 
@@ -85,46 +85,46 @@ public sealed class SyntheticOptionsData : IOptionsData
     {
         var S = _md.GetSpot(ts);
         if (S <= 0) yield break;
-        
+
         // Adjust for XSP vs SPX pricing - convert to XSP if needed
         if (S > 1000) S = S / 10.0; // Convert SPX to XSP if data is SPX-level
-        
+
         var exp = TodayExpiry(ts);
-        double T = Math.Max((exp.ToDateTime(new TimeOnly(21,0)) - ts).TotalDays/365.0, 0.0005);
+        double T = Math.Max((exp.ToDateTime(new TimeOnly(21, 0)) - ts).TotalDays / 365.0, 0.0005);
         var (ivS, ivL) = GetIvProxies(ts);
-        double baseIv = Math.Max(0.05, Math.Min(0.80, ivS/100.0)); // Convert % to decimal, clamp
+        double baseIv = Math.Max(0.05, Math.Min(0.80, ivS / 100.0)); // Convert % to decimal, clamp
 
         // Generate fine strike grid: 1-point increments around ATM
         double atmStrike = Math.Round(S);
-        
+
         for (int offset = -15; offset <= 15; offset++)
         {
             double K = atmStrike + offset;
             if (K <= 0) continue;
-            
+
             // Calculate moneyness for skew adjustment
             double moneyness = Math.Abs(K - S) / S;
-            
+
             // Generate both put and call for each strike
             foreach (var right in new[] { Right.Put, Right.Call })
             {
                 // Apply volatility skew based on moneyness and option type
-                double skewAdjust = right == Right.Put 
+                double skewAdjust = right == Right.Put
                     ? 1 + (moneyness * 2.0)  // Puts: higher IV for OTM (K < S)
                     : 1 + (moneyness * 1.0); // Calls: moderate IV increase for OTM (K > S)
-                    
+
                 double iv = baseIv * skewAdjust;
                 iv = Math.Max(0.05, Math.Min(1.0, iv)); // Clamp IV to reasonable range
-                
+
                 // Calculate theoretical values using Black-Scholes
                 var delta = OptionMath.Delta(S, K, 0.00, 0.00, iv, T, right);
                 var price = OptionMath.Price(S, K, 0.00, 0.00, iv, T, right);
-                
+
                 // Ensure minimum option value for liquidity
                 price = Math.Max(0.05, price);
-                
+
                 var (bid, ask) = QuoteFromMid(price, baseIv, ts);
-                yield return new OptionQuote(ts, exp, K, right, bid, ask, (bid+ask)/2.0, delta, iv);
+                yield return new OptionQuote(ts, exp, K, right, bid, ask, (bid + ask) / 2.0, delta, iv);
             }
         }
     }
@@ -137,52 +137,52 @@ public sealed class SyntheticOptionsData : IOptionsData
         var d = DateOnly.FromDateTime(ts);
         double vix = _vix.FirstOrDefault(x => x.d == d).vix;
         double vix9 = _vix9d.FirstOrDefault(x => x.d == d).vix9d;
-        
+
         if (vix == 0) vix = _vix.LastOrDefault(x => x.d <= d).vix;
         if (vix9 == 0) vix9 = _vix9d.LastOrDefault(x => x.d <= d).vix9d;
-        
+
         return (vix9 <= 0 ? vix : vix9, vix);
     }
 
     private (double bid, double ask) QuoteFromMid(double mid, double baseIv, DateTime ts)
     {
         double tick = 0.05;
-        
+
         // For 0DTE options, use tighter spreads and realistic pricing
         // Higher value options get tighter percentage spreads
         double spreadPct;
-        if (mid >= 1.0) 
+        if (mid >= 1.0)
             spreadPct = 0.05;  // 5% spread for ITM/ATM options
-        else if (mid >= 0.25) 
+        else if (mid >= 0.25)
             spreadPct = 0.10;  // 10% spread for near-money options  
-        else 
+        else
             spreadPct = 0.20;  // 20% spread for far OTM options
-            
+
         // Widen spreads in final hour
-        var minsToClose = (TodayExpiry(ts).ToDateTime(new TimeOnly(21,0)) - ts).TotalMinutes;
+        var minsToClose = (TodayExpiry(ts).ToDateTime(new TimeOnly(21, 0)) - ts).TotalMinutes;
         if (minsToClose < 40) spreadPct *= 1.5;
-        
+
         double half = mid * spreadPct / 2.0;
-        
+
         // Calculate bid/ask with proper minimum values
         double rawBid = mid - half;
         double rawAsk = mid + half;
-        
+
         // For very low value options, allow bids to go to zero but maintain minimum ask
         double bid = rawBid <= 0.05 ? 0.05 : Math.Floor(rawBid / tick) * tick;
         double ask = Math.Max(bid + tick, Math.Ceiling(rawAsk / tick) * tick);
-        
+
         // Ensure ask is always at least one tick above bid
         if (ask <= bid) ask = bid + tick;
-        
+
         return (bid, ask);
     }
 
     private static List<(DateOnly d, double val)> Load(string path, string valCol)
     {
         using var reader = new StreamReader(path);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture){ HasHeaderRecord = true });
-        
+        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true });
+
         if (valCol == "vix")
             return csv.GetRecords<VixRow>().Select(r => (DateOnly.Parse(r.date), double.Parse(r.vix))).ToList();
         else

@@ -35,7 +35,7 @@ public class BacktesterTests
         _mockMarketData = new Mock<IMarketData>();
         _mockOptionsData = new Mock<IOptionsData>();
         _mockCalendar = new Mock<IEconCalendar>();
-        
+
         _config = new SimConfig
         {
             Start = DateOnly.FromDateTime(_startTime),
@@ -111,7 +111,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         // Verify basic workflow was executed
-        _mockScorer.Verify(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()), 
+        _mockScorer.Verify(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()),
             Times.AtLeastOnce);
     }
 
@@ -128,7 +128,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().HaveCountGreaterThan(0);
-        
+
         var trade = report.Trades.First();
         trade.PnL.Should().BeGreaterThan(0); // Should be profitable
         trade.Fees.Should().BeGreaterThan(0); // Should include fees
@@ -147,7 +147,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().HaveCountGreaterThan(0);
-        
+
         var trade = report.Trades.First();
         trade.PnL.Should().BeLessThan(0); // Should be a loss
         trade.ExitReason.Should().Contain("Stop"); // Should exit via stop loss
@@ -197,7 +197,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().BeEmpty(); // No trades should execute when order build fails
-        _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>()), Times.AtLeastOnce);
     }
 
@@ -230,7 +230,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().HaveCountGreaterThan(0);
-        
+
         var pmTrade = report.Trades.FirstOrDefault(t => t.ExitReason.Contains("PM cash settlement"));
         pmTrade.Should().NotBeNull(); // Should have PM settlement trade
     }
@@ -248,7 +248,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().HaveCount(2); // Should have multiple trades
-        
+
         // Verify risk manager was called for each position
         _mockRisk.Verify(x => x.RegisterOpen(It.IsAny<Decision>()), Times.Exactly(2));
         _mockRisk.Verify(x => x.RegisterClose(It.IsAny<Decision>(), It.IsAny<double>()), Times.Exactly(2));
@@ -268,7 +268,7 @@ public class BacktesterTests
         // Assert
         // Should only call scorer at 15-minute intervals, not every bar
         var expectedCalls = bars.Count / 3; // Every 3rd bar (5min bars, 15min cadence)
-        _mockScorer.Verify(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()), 
+        _mockScorer.Verify(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()),
             Times.AtMost(expectedCalls + 1)); // +1 for first call
     }
 
@@ -288,17 +288,17 @@ public class BacktesterTests
         // Assert
         if (calm)
         {
-            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.Condor, 
+            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.Condor,
                 It.IsAny<IMarketData>(), It.IsAny<IOptionsData>()), Times.AtLeastOnce);
         }
         else if (trendUp)
         {
-            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.SingleSideCall, 
+            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.SingleSideCall,
                 It.IsAny<IMarketData>(), It.IsAny<IOptionsData>()), Times.AtLeastOnce);
         }
         else if (trendDown)
         {
-            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.SingleSidePut, 
+            _mockBuilder.Verify(x => x.TryBuild(It.IsAny<DateTime>(), Decision.SingleSidePut,
                 It.IsAny<IMarketData>(), It.IsAny<IOptionsData>()), Times.AtLeastOnce);
         }
     }
@@ -316,7 +316,7 @@ public class BacktesterTests
         // Assert
         report.Should().NotBeNull();
         report.Trades.Should().HaveCountGreaterThan(1);
-        
+
         // Check computed metrics
         report.NetPnL.Should().BeGreaterThan(0);
         report.WinCount.Should().BeGreaterThan(0);
@@ -376,7 +376,7 @@ public class BacktesterTests
     {
         var bars = new List<Bar>();
         var startTime = new DateTime(2024, 2, 1, 4, 0, 0); // Pre-market start
-        
+
         for (int i = 0; i < 64; i++) // 4 AM to 8 PM (16 hours of 15-minute bars)
         {
             var time = startTime.AddMinutes(i * 15);
@@ -402,25 +402,25 @@ public class BacktesterTests
     private void SetupProfitableTradeScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         // Setup profitable trade flow
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false)); // Favorable score for condor
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
+
         // Setup profitable exit
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns((true, 0.10, "Target profit")); // Exit at lower price = profit for credit spread
-        
+
         // Add quotes for position tracking
         var quotes = new List<OptionQuote>
         {
@@ -433,24 +433,24 @@ public class BacktesterTests
     private void SetupStopLossScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false));
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
+
         // Setup stop loss exit
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns((true, 1.50, "Stop credit x2.2"));
-        
+
         // Add quotes
         var quotes = new List<OptionQuote>
         {
@@ -463,17 +463,17 @@ public class BacktesterTests
     private void SetupRiskBlockedScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false)); // Favorable score
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(false); // Risk blocks
     }
 
     private void SetupNoGoScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((-2, false, false, false)); // NoGo score
     }
@@ -481,53 +481,53 @@ public class BacktesterTests
     private void SetupOrderBuildFailureScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false));
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns((SpreadOrder?)null); // Build fails
     }
 
     private void SetupExecutionFailureScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false));
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns((OpenPosition?)null); // Execution fails
     }
 
     private void SetupPMSettlementScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, true, false, false));
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
+
         // Setup no exit before PM settlement
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns((false, 0, ""));
-        
+
         // Add quotes
         var quotes = new List<OptionQuote>
         {
@@ -540,34 +540,34 @@ public class BacktesterTests
     private void SetupMultiplePositionsScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         var callCount = 0;
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
-            .Returns(() => 
+            .Returns(() =>
             {
                 callCount++;
                 return callCount <= 2 ? (3, true, false, false) : (-2, false, false, false); // Two trade signals
             });
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
+
         // Setup exit after a few bars
         var exitCallCount = 0;
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns(() =>
             {
                 exitCallCount++;
                 return exitCallCount > 2 ? (true, 0.20, "Profit target") : (false, 0, "");
             });
-        
+
         // Add quotes
         var quotes = new List<OptionQuote>
         {
@@ -580,23 +580,23 @@ public class BacktesterTests
     private void SetupSpecificRegimeScenario(List<Bar> bars, bool calm, bool trendUp, bool trendDown)
     {
         SetupBasicMarketData(bars);
-        
+
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
             .Returns((3, calm, trendUp, trendDown)); // High score with specific regime
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns((true, 0.15, "Quick exit"));
-        
+
         // Add quotes
         var quotes = new List<OptionQuote>
         {
@@ -609,36 +609,36 @@ public class BacktesterTests
     private void SetupMultipleProfitableTradesScenario(List<Bar> bars)
     {
         SetupBasicMarketData(bars);
-        
+
         var tradeCount = 0;
         _mockScorer.Setup(x => x.Score(It.IsAny<DateTime>(), It.IsAny<IMarketData>(), It.IsAny<IEconCalendar>()))
-            .Returns(() => 
+            .Returns(() =>
             {
                 tradeCount++;
                 return tradeCount <= 3 ? (3, true, false, false) : (-2, false, false, false); // Three trade signals
             });
-        
+
         _mockRisk.Setup(x => x.CanAdd(It.IsAny<DateTime>(), It.IsAny<Decision>())).Returns(true);
-        
+
         var testOrder = CreateTestSpreadOrder();
-        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(), 
+        _mockBuilder.Setup(x => x.TryBuild(It.IsAny<DateTime>(), It.IsAny<Decision>(),
             It.IsAny<IMarketData>(), It.IsAny<IOptionsData>())).Returns(testOrder);
-        
+
         var testPosition = CreateTestPosition();
         _mockExecution.Setup(x => x.TryEnter(It.IsAny<SpreadOrder>())).Returns(testPosition);
-        
+
         // Mix of profitable and losing exits
         var exitCount = 0;
-        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(), 
+        _mockExecution.Setup(x => x.ShouldExit(It.IsAny<OpenPosition>(), It.IsAny<double>(),
             It.IsAny<double>(), It.IsAny<DateTime>()))
             .Returns(() =>
             {
                 exitCount++;
-                return exitCount % 2 == 1 
+                return exitCount % 2 == 1
                     ? (true, 0.10, "Profit") // Profitable exit
                     : (true, 1.20, "Stop loss"); // Loss exit
             });
-        
+
         // Add quotes
         var quotes = new List<OptionQuote>
         {
@@ -652,7 +652,7 @@ public class BacktesterTests
     {
         var shortLeg = new SpreadLeg(_testExpiry, 100.0, Right.Put, -1);
         var longLeg = new SpreadLeg(_testExpiry, 99.0, Right.Put, 1);
-        
+
         return new SpreadOrder(
             _startTime,
             "XSP",

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 
 namespace ODTE.Backtest.Reporting;
@@ -20,7 +16,7 @@ public sealed class RunManifest
     public HashSet<DateOnly> Done { get; set; } = new();
     public HashSet<DateOnly> Failed { get; set; } = new();
     public HashSet<DateOnly> Skipped { get; set; } = new();
-    
+
     // Trinity integration fields
     public string TrinityPortfolioId { get; set; } = string.Empty;
     public string TrinityLedgerPath { get; set; } = string.Empty;
@@ -37,14 +33,14 @@ public sealed class RunManifest
             {
                 var text = File.ReadAllText(path);
                 var m = JsonSerializer.Deserialize<RunManifest>(text) ?? new RunManifest();
-                
+
                 // If configuration or strategy changed, reset the schedule
                 if (m.CfgHash != cfgHash || m.StrategyHash != stratHash)
                 {
                     Console.WriteLine($"Configuration or strategy changed. Creating new manifest.");
-                    m = new RunManifest 
-                    { 
-                        CfgHash = cfgHash, 
+                    m = new RunManifest
+                    {
+                        CfgHash = cfgHash,
                         StrategyHash = stratHash,
                         TrinityPortfolioId = $"ODTE_{stratHash}_{DateTime.UtcNow:yyyyMMdd}"
                     };
@@ -55,9 +51,9 @@ public sealed class RunManifest
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading manifest: {ex.Message}. Creating new one.");
-                var m = new RunManifest 
-                { 
-                    CfgHash = cfgHash, 
+                var m = new RunManifest
+                {
+                    CfgHash = cfgHash,
                     StrategyHash = stratHash,
                     TrinityPortfolioId = $"ODTE_{stratHash}_{DateTime.UtcNow:yyyyMMdd}"
                 };
@@ -67,9 +63,9 @@ public sealed class RunManifest
         }
         else
         {
-            var m = new RunManifest 
-            { 
-                CfgHash = cfgHash, 
+            var m = new RunManifest
+            {
+                CfgHash = cfgHash,
                 StrategyHash = stratHash,
                 TrinityPortfolioId = $"ODTE_{stratHash}_{DateTime.UtcNow:yyyyMMdd}"
             };
@@ -82,36 +78,36 @@ public sealed class RunManifest
     {
         var path = PathFor(reportsDir);
         Directory.CreateDirectory(reportsDir);
-        
-        var opts = new JsonSerializerOptions 
-        { 
+
+        var opts = new JsonSerializerOptions
+        {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        
+
         // Update completion time if all scheduled days are processed
-        if (Scheduled.Count > 0 && 
+        if (Scheduled.Count > 0 &&
             Scheduled.All(d => Done.Contains(d) || Failed.Contains(d) || Skipped.Contains(d)))
         {
             CompletedAt = DateTime.UtcNow;
         }
-        
+
         File.WriteAllText(path, JsonSerializer.Serialize(this, opts));
     }
-    
+
     public double GetProgress()
     {
         if (Scheduled.Count == 0) return 0;
         var processed = Done.Count + Failed.Count + Skipped.Count;
         return (double)processed / Scheduled.Count * 100;
     }
-    
+
     public (int pending, int done, int failed, int skipped) GetStats()
     {
         var pending = Scheduled.Except(Done).Except(Failed).Except(Skipped).Count();
         return (pending, Done.Count, Failed.Count, Skipped.Count);
     }
-    
+
     public void PrintStatus()
     {
         var (pending, done, failed, skipped) = GetStats();

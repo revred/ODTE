@@ -9,34 +9,34 @@ public record FillResult
     public DateTime FillTimestamp { get; init; }
     public List<ChildFill> ChildFills { get; init; } = new();
     public ExecutionDiagnostics Diagnostics { get; init; } = new();
-    
+
     /// <summary>
     /// Average fill price across all child fills
     /// </summary>
-    public decimal AverageFillPrice => ChildFills.Count > 0 
+    public decimal AverageFillPrice => ChildFills.Count > 0
         ? ChildFills.Sum(f => f.Price * f.Quantity) / ChildFills.Sum(f => f.Quantity)
         : 0m;
-    
+
     /// <summary>
     /// Total quantity filled
     /// </summary>
     public int TotalQuantity => ChildFills.Sum(f => f.Quantity);
-    
+
     /// <summary>
     /// Whether fill achieved mid-price or better
     /// </summary>
     public bool WasMidOrBetter { get; init; }
-    
+
     /// <summary>
     /// Whether fill was within NBBO band (±$0.01)
     /// </summary>
     public bool WasWithinNbbo { get; init; }
-    
+
     /// <summary>
     /// Slippage from intended price in dollars per contract
     /// </summary>
     public decimal SlippagePerContract { get; init; }
-    
+
     /// <summary>
     /// Total execution cost including slippage and fees
     /// </summary>
@@ -77,7 +77,7 @@ public record ExecutionDiagnostics
     public Quote StartQuote { get; init; } = new();
     public Quote? EndQuote { get; init; }
     public List<string> Warnings { get; init; } = new();
-    
+
     /// <summary>
     /// Calculate execution quality score (0-100)
     /// </summary>
@@ -86,19 +86,19 @@ public record ExecutionDiagnostics
         get
         {
             var score = 100m;
-            
+
             // Penalty for excessive slippage
             var slippageRatio = Math.Abs(AchievedPrice - IntendedPrice) / IntendedPrice;
             score -= slippageRatio * 1000m; // 10 points per 1% slippage
-            
+
             // Penalty for high latency
             if (TotalLatencyMs > 500)
                 score -= (TotalLatencyMs - 500) / 100; // 1 point per 100ms over 500ms
-                
+
             // Bonus for mid-fills
             if (MidAttempts > 0)
                 score += (decimal)MidAccepted / MidAttempts * 10; // Up to 10 bonus points
-                
+
             return Math.Max(0, Math.Min(100, score));
         }
     }
@@ -116,17 +116,17 @@ public record ExecutionMetrics
     public decimal AverageLatencyMs { get; init; }
     public decimal AverageSlippageBps { get; init; }
     public decimal TotalNotional { get; init; }
-    
+
     /// <summary>
     /// Percentage of fills at mid-price or better (target < 60%)
     /// </summary>
     public decimal MidRate => TotalFills > 0 ? (decimal)MidOrBetterFills / TotalFills * 100m : 0m;
-    
+
     /// <summary>
     /// Percentage of fills within NBBO band (target ≥ 98%)
     /// </summary>
     public decimal NbboComplianceRate => TotalFills > 0 ? (decimal)WithinNbboFills / TotalFills * 100m : 0m;
-    
+
     /// <summary>
     /// Check if metrics meet institutional acceptance criteria
     /// </summary>
