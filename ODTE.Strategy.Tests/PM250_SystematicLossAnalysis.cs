@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ODTE.Strategy.Tests
 {
@@ -11,10 +11,9 @@ namespace ODTE.Strategy.Tests
     /// Analyzes where the system is losing money and why RevFibNotch isn't preventing losses
     /// Identifies leverage opportunities and market condition failures
     /// </summary>
-    [TestClass]
     public class PM250_SystematicLossAnalysis
     {
-        [TestMethod]
+        [Fact]
         public void AnalyzeSystematicLosses()
         {
             Console.WriteLine("🔍 PM250 SYSTEMATIC LOSS ANALYSIS");

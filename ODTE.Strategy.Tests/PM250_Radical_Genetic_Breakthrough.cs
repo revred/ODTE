@@ -24,7 +24,7 @@ namespace ODTE.Strategy.Tests
         private decimal _bestFitness;
         private RadicalChromosome _bestChromosome;
 
-        public static void Main(string[] args)
+        public static void RunOptimization(string[] args)
         {
             Console.WriteLine("🧬 PM250 RADICAL GENETIC BREAKTHROUGH OPTIMIZER");
             Console.WriteLine("===============================================");

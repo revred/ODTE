@@ -12,7 +12,7 @@ namespace ODTE.Strategy.Tests
     /// </summary>
     public class PM250_UltraOptimized_ImplementationTest
     {
-        public static void Main(string[] args)
+        public static void RunTest(string[] args)
         {
             Console.WriteLine("🧬 PM250 ULTRA-OPTIMIZED CONFIGURATION DEPLOYMENT");
             Console.WriteLine("================================================");

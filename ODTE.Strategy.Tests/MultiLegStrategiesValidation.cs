@@ -11,7 +11,7 @@ namespace ODTE.Strategy.Tests
     /// </summary>
     public class MultiLegStrategiesValidation
     {
-        public static void Main(string[] args)
+        public static void RunValidation(string[] args)
         {
             Console.WriteLine("🎯 MULTI-LEG OPTIONS STRATEGIES VALIDATION");
             Console.WriteLine("Testing all 10 strategies with realistic market conditions...");

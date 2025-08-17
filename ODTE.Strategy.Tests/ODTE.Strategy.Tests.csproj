@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+    <StartupObject>ODTE.Strategy.Tests.Program</StartupObject>
     <!-- Suppress verbose restore and build messages -->
     <RestoreVerbosity>minimal</RestoreVerbosity>
     <MSBuildVerbosity>minimal</MSBuildVerbosity>
@@ -19,8 +21,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <!-- MSTest packages removed to avoid Assert namespace conflicts with xUnit -->
     <PackageReference Include="FluentAssertions" Version="6.12.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
   </ItemGroup>

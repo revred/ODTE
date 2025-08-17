@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 using ODTE.Strategy.ProcessWindow;
 
 namespace ODTE.Strategy.Tests
 {
-    [TestClass]
     public class ProcessWindowResilienceTests
     {
         private ProcessWindowResilientGuard _resilientGuard;
@@ -17,8 +16,7 @@ namespace ODTE.Strategy.Tests
         private ResilienceTestMockTradeExecutor _mockExecutor;
         private InMemoryProcessWindowPersistence _persistence;
 
-        [TestInitialize]
-        public void Setup()
+        public ProcessWindowResilienceTests()
         {
             _monitor = new ProcessWindowMonitor();
             _validator = new ProcessWindowValidator(_monitor);
@@ -28,12 +26,11 @@ namespace ODTE.Strategy.Tests
             _resilientGuard = new ProcessWindowResilientGuard(_baseGuard, _persistence);
         }
 
-        [TestClass]
         public class CircuitBreakerTests
         {
             private CircuitBreaker _circuitBreaker;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _circuitBreaker = new CircuitBreaker(
@@ -43,7 +40,7 @@ namespace ODTE.Strategy.Tests
                 );
             }
 
-            [TestMethod]
+            [Fact]
             public async Task CircuitBreaker_MultipleFailures_ShouldOpenCircuit()
             {
                 // Arrange: Create operation that always fails
@@ -57,7 +54,7 @@ namespace ODTE.Strategy.Tests
                 // Act & Assert: First 3 calls should execute, then circuit should open
                 for (int i = 1; i <= 3; i++)
                 {
-                    await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    await Assert.ThrowsAsync<InvalidOperationException>(
                         () => _circuitBreaker.ExecuteAsync(failingOperation));
                 }
 
@@ -66,13 +63,13 @@ namespace ODTE.Strategy.Tests
 
                 // Next call should fail fast without executing operation
                 var callCountBeforeFastFail = operationCallCount;
-                await Assert.ThrowsExceptionAsync<CircuitBreakerOpenException>(
+                await Assert.ThrowsAsync<CircuitBreakerOpenException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
 
                 operationCallCount.Should().Be(callCountBeforeFastFail, "Operation should not execute when circuit is open");
             }
 
-            [TestMethod]
+            [Fact]
             public async Task CircuitBreaker_RecoveryAfterTimeout_ShouldTransitionToHalfOpen()
             {
                 // Arrange: Open the circuit with failures
@@ -80,7 +77,7 @@ namespace ODTE.Strategy.Tests
                 
                 for (int i = 0; i < 3; i++)
                 {
-                    await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    await Assert.ThrowsAsync<InvalidOperationException>(
                         () => _circuitBreaker.ExecuteAsync(failingOperation));
                 }
                 
@@ -98,7 +95,7 @@ namespace ODTE.Strategy.Tests
                 _circuitBreaker.State.Should().Be(CircuitBreaker.CircuitBreakerState.Closed);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task CircuitBreaker_SuccessfulOperations_ShouldResetFailureCount()
             {
                 // Arrange: Partially fail (but not enough to open circuit)
@@ -106,9 +103,9 @@ namespace ODTE.Strategy.Tests
                 Func<Task<string>> successfulOperation = () => Task.FromResult("Success");
 
                 // Act: 2 failures (below threshold of 3)
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
 
                 // 1 success should reset failure count
@@ -119,9 +116,9 @@ namespace ODTE.Strategy.Tests
                 _circuitBreaker.State.Should().Be(CircuitBreaker.CircuitBreakerState.Closed);
 
                 // Should take 3 more failures to open (not just 1 more)
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
                 
                 // Circuit should still be closed after 2 failures
@@ -129,10 +126,9 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class RetryPolicyTests
         {
-            [TestMethod]
+            [Fact]
             public async Task RetryPolicy_TransientFailure_ShouldEventuallySucceed()
             {
                 // Arrange
@@ -160,7 +156,7 @@ namespace ODTE.Strategy.Tests
                 retryPolicy.LastAttemptCount.Should().Be(3);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task RetryPolicy_PersistentFailure_ShouldExhaustRetries()
             {
                 // Arrange
@@ -178,14 +174,14 @@ namespace ODTE.Strategy.Tests
                 };
 
                 // Act & Assert
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => retryPolicy.ExecuteAsync(alwaysFailingOperation));
 
                 attemptCount.Should().Be(3);
                 retryPolicy.LastAttemptCount.Should().Be(3);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task RetryPolicy_ExponentialBackoff_ShouldIncreaseDelay()
             {
                 // Arrange
@@ -203,7 +199,7 @@ namespace ODTE.Strategy.Tests
                 };
 
                 // Act
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                await Assert.ThrowsAsync<InvalidOperationException>(
                     () => retryPolicy.ExecuteAsync(timingOperation));
 
                 // Assert: Should have 3 attempts with increasing delays
@@ -218,18 +214,17 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class HealthCheckerTests
         {
             private HealthChecker _healthChecker;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _healthChecker = new HealthChecker();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task CheckSystemHealth_NormalConditions_ShouldReturnHealthy()
             {
                 // Act
@@ -245,7 +240,7 @@ namespace ODTE.Strategy.Tests
                 componentNames.Should().Contain(new[] { "Memory", "DiskSpace", "ProcessWindow", "HistoricalData" });
             }
 
-            [TestMethod]
+            [Fact]
             public async Task CheckSystemHealth_ProcessWindowCheck_ShouldValidateBasicFunctionality()
             {
                 // Act
@@ -259,18 +254,17 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class FallbackMechanismsTests
         {
             private FallbackMechanisms _fallback;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _fallback = new FallbackMechanisms();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteFallbackValidations_ValidIronCondorRequest_ShouldPass()
             {
                 // Arrange: Valid Iron Condor request
@@ -293,7 +287,7 @@ namespace ODTE.Strategy.Tests
                 result.Validations.Values.Should().AllSatisfy(v => v.Should().BeTrue());
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteFallbackValidations_BuggyIronCondorCredit_ShouldFail()
             {
                 // Arrange: Iron Condor with the 2.5% bug
@@ -315,7 +309,7 @@ namespace ODTE.Strategy.Tests
                 result.FailureReasons.Should().Contain(r => r.Contains("2.5% bug"));
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteFallbackValidations_ExcessivePositionSize_ShouldFail()
             {
                 // Arrange: Request with excessive position size
@@ -337,13 +331,12 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class ResilientGuardIntegrationTests
         {
             private ProcessWindowResilientGuard _resilientGuard;
             private ResilienceTestMockTradeExecutor _mockExecutor;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 var monitor = new ProcessWindowMonitor();
@@ -354,7 +347,7 @@ namespace ODTE.Strategy.Tests
                 _resilientGuard = new ProcessWindowResilientGuard(baseGuard, persistence);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteResilientTrade_ValidIronCondor_ShouldSucceed()
             {
                 // Arrange: Valid Iron Condor trade
@@ -381,7 +374,7 @@ namespace ODTE.Strategy.Tests
                 result.ResilienceInfo.EmergencyMode.Should().BeFalse();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteResilientTrade_BuggyIronCondor_ShouldBlock()
             {
                 // Arrange: Iron Condor with the 2.5% bug
@@ -404,7 +397,7 @@ namespace ODTE.Strategy.Tests
                 result.OperationId.Should().NotBeNullOrEmpty();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorWithResilience_PrimaryAndBackupAgree_ShouldReturnConsistentResult()
             {
                 // Arrange: Valid Iron Condor parameters
@@ -425,7 +418,7 @@ namespace ODTE.Strategy.Tests
                 result.OperationId.Should().NotBeNullOrEmpty();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorWithResilience_BuggyCredit_ShouldBlockWithAllMethods()
             {
                 // Arrange: Iron Condor with the 2.5% bug
@@ -453,7 +446,7 @@ namespace ODTE.Strategy.Tests
                 }
             }
 
-            [TestMethod]
+            [Fact]
             public async Task GetResilienceStatus_AfterOperations_ShouldProvideCompleteStatus()
             {
                 // Arrange: Execute some operations first
@@ -483,10 +476,9 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class OfflineValidationTests
         {
-            [TestMethod]
+            [Fact]
             public void ValidateIronCondorOffline_CorrectCredit_ShouldReturnTrue()
             {
                 // Arrange
@@ -503,7 +495,7 @@ namespace ODTE.Strategy.Tests
                 result.Should().BeTrue();
             }
 
-            [TestMethod]
+            [Fact]
             public void ValidateIronCondorOffline_BuggyCredit_ShouldReturnFalse()
             {
                 // Arrange: The exact 2.5% credit that caused the bug
@@ -520,7 +512,7 @@ namespace ODTE.Strategy.Tests
                 result.Should().BeFalse();
             }
 
-            [TestMethod]
+            [Fact]
             public void ValidateIronCondorOffline_EdgeCases_ShouldHandleCorrectly()
             {
                 var resilientGuard = new ProcessWindowResilientGuard(null, new InMemoryProcessWindowPersistence());
@@ -551,10 +543,9 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class EmergencyModeTests
         {
-            [TestMethod]
+            [Fact]
             public async Task ExecuteResilientTrade_MultipleFailures_ShouldActivateEmergencyMode()
             {
                 // Arrange: Setup guard with failing executor

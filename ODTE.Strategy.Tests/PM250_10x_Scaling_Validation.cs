@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 using ODTE.Strategy;
 
 namespace ODTE.Strategy.Tests
@@ -10,7 +10,6 @@ namespace ODTE.Strategy.Tests
     /// Validates the 10x scaling strategy implementation using the ScaleHighWithManagedRisk framework
     /// Tests progressive scaling from $284.66 baseline to $2,847 target monthly P&L
     /// </summary>
-    [TestClass]
     public class PM250_10x_Scaling_Validation
     {
         private PM250_DualStrategyEngine _engine;
@@ -18,14 +17,14 @@ namespace ODTE.Strategy.Tests
         private readonly DateTime _testStartDate = new DateTime(2020, 1, 1);
         private readonly DateTime _testEndDate = new DateTime(2024, 12, 31);
 
-        [TestInitialize]
+        // Constructor replaces TestInitialize in xUnit
         public void Setup()
         {
             _engine = new PM250_DualStrategyEngine();
             _validator = new ScalingValidationFramework();
         }
 
-        [TestMethod]
+        [Fact]
         public void Phase1_Foundation_2x_Scaling_Validation()
         {
             // Phase 1: Foundation & Infrastructure (2x scaling target)
@@ -36,15 +35,15 @@ namespace ODTE.Strategy.Tests
             var validation = _validator.ValidatePhase1(results);
 
             // Phase 1 Acceptance Criteria
-            Assert.IsTrue(validation.MonthlyAverage >= 569m, $"Phase 1 target not met: {validation.MonthlyAverage:C}");
-            Assert.IsTrue(validation.MaxDrawdown <= 0.06m, "Phase 1 drawdown exceeded 6%");
-            Assert.IsTrue(validation.WinRate >= 0.75m, $"Phase 1 win rate below 75%: {validation.WinRate:P1}");
-            Assert.AreEqual(0, validation.RFibBreaches, "Phase 1 had RFib breaches");
+            Assert.True(validation.MonthlyAverage >= 569m, $"Phase 1 target not met: {validation.MonthlyAverage:C}");
+            Assert.True(validation.MaxDrawdown <= 0.06m, "Phase 1 drawdown exceeded 6%");
+            Assert.True(validation.WinRate >= 0.75m, $"Phase 1 win rate below 75%: {validation.WinRate:P1}");
+            Assert.Equal(0, validation.RFibBreaches, "Phase 1 had RFib breaches");
 
             Console.WriteLine($"Phase 1 Results: Monthly Avg: {validation.MonthlyAverage:C}, Win Rate: {validation.WinRate:P1}, Max DD: {validation.MaxDrawdown:P2}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Phase2_Escalation_4x_Scaling_Validation()
         {
             // Phase 2: Escalation Ladder Implementation (4x scaling target)
@@ -55,15 +54,15 @@ namespace ODTE.Strategy.Tests
             var validation = _validator.ValidatePhase2(results);
 
             // Phase 2 Acceptance Criteria
-            Assert.IsTrue(validation.MonthlyAverage >= 1139m, $"Phase 2 target not met: {validation.MonthlyAverage:C}");
-            Assert.IsTrue(validation.MaxDrawdown <= 0.10m, "Phase 2 drawdown exceeded 10%");
-            Assert.IsTrue(validation.ConcurrencyUsage >= 0.40m, "Phase 2 insufficient concurrency utilization");
-            Assert.IsTrue(validation.EscalationEfficiency >= 0.60m, "Phase 2 escalation system underperforming");
+            Assert.True(validation.MonthlyAverage >= 1139m, $"Phase 2 target not met: {validation.MonthlyAverage:C}");
+            Assert.True(validation.MaxDrawdown <= 0.10m, "Phase 2 drawdown exceeded 10%");
+            Assert.True(validation.ConcurrencyUsage >= 0.40m, "Phase 2 insufficient concurrency utilization");
+            Assert.True(validation.EscalationEfficiency >= 0.60m, "Phase 2 escalation system underperforming");
 
             Console.WriteLine($"Phase 2 Results: Monthly Avg: {validation.MonthlyAverage:C}, Concurrency: {validation.ConcurrencyUsage:P1}, Escalation: {validation.EscalationEfficiency:P1}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Phase3_Quality_6x_Scaling_Validation()
         {
             // Phase 3: Advanced Sizing & Quality Enhancement (6x scaling target)
@@ -74,15 +73,15 @@ namespace ODTE.Strategy.Tests
             var validation = _validator.ValidatePhase3(results);
 
             // Phase 3 Acceptance Criteria
-            Assert.IsTrue(validation.MonthlyAverage >= 1708m, $"Phase 3 target not met: {validation.MonthlyAverage:C}");
-            Assert.IsTrue(validation.QualityTradeRatio >= 0.65m, "Phase 3 quality ratio insufficient");
-            Assert.IsTrue(validation.ProfitMarginImprovement >= 0.20m, "Phase 3 profit margin not improved 20%");
-            Assert.IsTrue(validation.AdvancedSizingEfficiency >= 0.70m, "Phase 3 sizing efficiency insufficient");
+            Assert.True(validation.MonthlyAverage >= 1708m, $"Phase 3 target not met: {validation.MonthlyAverage:C}");
+            Assert.True(validation.QualityTradeRatio >= 0.65m, "Phase 3 quality ratio insufficient");
+            Assert.True(validation.ProfitMarginImprovement >= 0.20m, "Phase 3 profit margin not improved 20%");
+            Assert.True(validation.AdvancedSizingEfficiency >= 0.70m, "Phase 3 sizing efficiency insufficient");
 
             Console.WriteLine($"Phase 3 Results: Monthly Avg: {validation.MonthlyAverage:C}, Quality Ratio: {validation.QualityTradeRatio:P1}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Phase4_Maximum_10x_Scaling_Validation()
         {
             // Phase 4: Maximum Scaling & Optimization (10x scaling target)
@@ -93,23 +92,23 @@ namespace ODTE.Strategy.Tests
             var validation = _validator.ValidatePhase4(results);
 
             // Phase 4 Acceptance Criteria (FINAL TARGET)
-            Assert.IsTrue(validation.MonthlyAverage >= 2500m, $"Phase 4 minimum not met: {validation.MonthlyAverage:C}");
-            Assert.IsTrue(validation.TargetAchievement >= 0.88m, $"Phase 4 target achievement: {validation.TargetAchievement:P1}");
-            Assert.IsTrue(validation.MaxDrawdown <= 0.15m, "Phase 4 drawdown exceeded 15%");
-            Assert.IsTrue(validation.WinRate >= 0.75m, $"Phase 4 win rate below 75%: {validation.WinRate:P1}");
-            Assert.IsTrue(validation.SharpeRatio >= 1.5m, $"Phase 4 Sharpe ratio insufficient: {validation.SharpeRatio:F2}");
+            Assert.True(validation.MonthlyAverage >= 2500m, $"Phase 4 minimum not met: {validation.MonthlyAverage:C}");
+            Assert.True(validation.TargetAchievement >= 0.88m, $"Phase 4 target achievement: {validation.TargetAchievement:P1}");
+            Assert.True(validation.MaxDrawdown <= 0.15m, "Phase 4 drawdown exceeded 15%");
+            Assert.True(validation.WinRate >= 0.75m, $"Phase 4 win rate below 75%: {validation.WinRate:P1}");
+            Assert.True(validation.SharpeRatio >= 1.5m, $"Phase 4 Sharpe ratio insufficient: {validation.SharpeRatio:F2}");
 
             // STRETCH TARGET (if achieved)
             if (validation.MonthlyAverage >= 2847m)
             {
                 Console.WriteLine("🎯 FULL 10x TARGET ACHIEVED!");
-                Assert.IsTrue(validation.TargetAchievement >= 1.0m, "Full target confirmed");
+                Assert.True(validation.TargetAchievement >= 1.0m, "Full target confirmed");
             }
 
             Console.WriteLine($"Phase 4 Results: Monthly Avg: {validation.MonthlyAverage:C}, Achievement: {validation.TargetAchievement:P1}, Sharpe: {validation.SharpeRatio:F2}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Complete_10x_Scaling_Journey_Validation()
         {
             // Complete validation across all phases
@@ -132,13 +131,13 @@ namespace ODTE.Strategy.Tests
             
             // Final validation
             var finalPhase = phaseResults.Last();
-            Assert.IsTrue(finalPhase.MonthlyAverage >= 2500m, "Final scaling target not achieved");
+            Assert.True(finalPhase.MonthlyAverage >= 2500m, "Final scaling target not achieved");
             
             Console.WriteLine($"\n🏆 SCALING VALIDATION COMPLETE");
             Console.WriteLine($"Journey: $284 → ${finalPhase.MonthlyAverage:F0} ({finalPhase.MonthlyAverage / 284.66m:F1}x scaling achieved)");
         }
 
-        [TestMethod]
+        [Fact]
         public void Risk_Management_Integrity_During_Scaling()
         {
             // Validate that risk management remains intact during scaling
@@ -153,15 +152,15 @@ namespace ODTE.Strategy.Tests
                 var riskValidation = _validator.ValidateRiskIntegrity(results);
 
                 // Risk integrity requirements
-                Assert.AreEqual(0, riskValidation.RFibBreaches, $"RFib breached in {scenario.Name}");
-                Assert.IsTrue(riskValidation.CorrelationCompliance >= 0.95m, $"Correlation violations in {scenario.Name}");
-                Assert.IsTrue(riskValidation.PositionSizingAccuracy >= 0.90m, $"Position sizing errors in {scenario.Name}");
+                Assert.Equal(0, riskValidation.RFibBreaches, $"RFib breached in {scenario.Name}");
+                Assert.True(riskValidation.CorrelationCompliance >= 0.95m, $"Correlation violations in {scenario.Name}");
+                Assert.True(riskValidation.PositionSizingAccuracy >= 0.90m, $"Position sizing errors in {scenario.Name}");
                 
                 Console.WriteLine($"Stress Test {scenario.Name}: RFib OK, Correlation OK, Sizing OK");
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void Dual_Lane_Architecture_Performance()
         {
             // Validate dual-lane (Probe vs Punch) architecture effectiveness
@@ -172,15 +171,15 @@ namespace ODTE.Strategy.Tests
             var dualLaneValidation = _validator.ValidateDualLaneArchitecture(results);
 
             // Dual-lane effectiveness criteria
-            Assert.IsTrue(dualLaneValidation.ProbeConsistency >= 0.85m, "Probe lane inconsistent");
-            Assert.IsTrue(dualLaneValidation.PunchEfficiency >= 0.70m, "Punch lane inefficient");
-            Assert.IsTrue(dualLaneValidation.PositiveProbeAccuracy >= 0.75m, "Positive-probe detection poor");
-            Assert.IsTrue(dualLaneValidation.EscalationSafety >= 0.90m, "Escalation safety insufficient");
+            Assert.True(dualLaneValidation.ProbeConsistency >= 0.85m, "Probe lane inconsistent");
+            Assert.True(dualLaneValidation.PunchEfficiency >= 0.70m, "Punch lane inefficient");
+            Assert.True(dualLaneValidation.PositiveProbeAccuracy >= 0.75m, "Positive-probe detection poor");
+            Assert.True(dualLaneValidation.EscalationSafety >= 0.90m, "Escalation safety insufficient");
 
             Console.WriteLine($"Dual-Lane Performance: Probe {dualLaneValidation.ProbeConsistency:P1}, Punch {dualLaneValidation.PunchEfficiency:P1}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Correlation_Budget_Management_Validation()
         {
             // Test correlation budget management under concurrent positions
@@ -197,8 +196,8 @@ namespace ODTE.Strategy.Tests
                 var results = RunCorrelationTest(config, scenario);
                 var corrValidation = _validator.ValidateCorrelationManagement(results);
 
-                Assert.IsTrue(corrValidation.CorrelationBudgetCompliance >= 0.95m, $"Correlation budget violated in {scenario.Name}");
-                Assert.IsTrue(corrValidation.RhoWeightedExposureAccuracy >= 0.90m, $"Rho exposure calculation error in {scenario.Name}");
+                Assert.True(corrValidation.CorrelationBudgetCompliance >= 0.95m, $"Correlation budget violated in {scenario.Name}");
+                Assert.True(corrValidation.RhoWeightedExposureAccuracy >= 0.90m, $"Rho exposure calculation error in {scenario.Name}");
                 
                 Console.WriteLine($"Correlation Test {scenario.Name}: Budget Compliance {corrValidation.CorrelationBudgetCompliance:P1}");
             }
@@ -355,14 +354,14 @@ namespace ODTE.Strategy.Tests
                 var currentPhase = phases[i];
                 var previousPhase = phases[i - 1];
                 
-                Assert.IsTrue(currentPhase.MonthlyAverage > previousPhase.MonthlyAverage,
+                Assert.True(currentPhase.MonthlyAverage > previousPhase.MonthlyAverage,
                     $"Phase {i + 1} did not exceed Phase {i} performance");
                 
                 // Risk should not increase disproportionately
                 var riskIncrease = currentPhase.MaxDrawdown / previousPhase.MaxDrawdown;
                 var returnIncrease = currentPhase.MonthlyAverage / previousPhase.MonthlyAverage;
                 
-                Assert.IsTrue(riskIncrease <= returnIncrease * 0.5m,
+                Assert.True(riskIncrease <= returnIncrease * 0.5m,
                     $"Risk increased too much relative to returns in Phase {i + 1}");
             }
         }

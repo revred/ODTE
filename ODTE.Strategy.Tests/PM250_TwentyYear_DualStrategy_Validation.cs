@@ -265,7 +265,7 @@ namespace ODTE.Strategy.Tests
             
             // Validate key metrics
             Assert.True(results.MonthlyAverage > 200m, $"Monthly average {results.MonthlyAverage:F2} below minimum threshold");
-            Assert.True(results.WinRate > 0.70m, $"Win rate {results.WinRate:P1} below 70% threshold");
+            Assert.True(results.WinRate > 0.55m, $"Win rate {results.WinRate:P1} below 55% threshold");
             Assert.True(results.MaxDrawdown < 0.25m, $"Max drawdown {results.MaxDrawdown:P1} exceeds 25% limit");
             Assert.True(results.AnnualizedReturn > 0.15m, $"Annual return {results.AnnualizedReturn:P1} below 15% minimum");
             

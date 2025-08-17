@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 using ODTE.Strategy;
 
 namespace ODTE.Strategy.Tests
@@ -11,7 +11,6 @@ namespace ODTE.Strategy.Tests
     /// Validates progressive scaling logic, auto de-escalation, and correlation budget management
     /// Based on ScaleHighWithManagedRisk dual probe & punch specification
     /// </summary>
-    [TestClass]
     public class PM250_EscalationLadder_SystemTest
     {
         private PM250_DualStrategyScalingEngine _engine;
@@ -21,7 +20,7 @@ namespace ODTE.Strategy.Tests
         private MockQualityFilter _qualityFilter;
         private MockExitManager _exitManager;
 
-        [TestInitialize]
+        // Constructor replaces TestInitialize in xUnit
         public void Setup()
         {
             _riskManager = new MockRiskManager();
@@ -39,7 +38,7 @@ namespace ODTE.Strategy.Tests
             );
         }
 
-        [TestMethod]
+        [Fact]
         public void Level0_Baseline_ProbeOnly_Operation()
         {
             // Test: Level 0 should only allow Probe trades with standard allocation
@@ -54,18 +53,18 @@ namespace ODTE.Strategy.Tests
             var decision = _engine.ProcessTradeOpportunity(probeSetup);
 
             // Validate: Should execute as Probe with standard fraction
-            Assert.AreEqual(TradeAction.Execute, decision.Action);
-            Assert.AreEqual(TradeLane.Probe, decision.Lane);
-            Assert.AreEqual(EscalationLevel.Level0, decision.EscalationLevel);
+            Assert.Equal(TradeAction.Execute, decision.Action);
+            Assert.Equal(TradeLane.Probe, decision.Lane);
+            Assert.Equal(EscalationLevel.Level0, decision.EscalationLevel);
             
             // Position size should be based on 40% probe fraction
             var expectedSize = Math.Floor((0.40m * 1000m) / ((1.0m - 0.25m) * 100m));
-            Assert.AreEqual(expectedSize, decision.PositionSize);
+            Assert.Equal(expectedSize, decision.PositionSize);
 
             Console.WriteLine($"Level 0 Probe: Size={decision.PositionSize}, Reason={decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Level1_Greenlight1_QualityLane_Activation()
         {
             // Test: Level 1 escalation enables Quality lane with higher allocation
@@ -91,19 +90,19 @@ namespace ODTE.Strategy.Tests
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Validate: Should execute as Quality with Level 1 escalation
-            Assert.AreEqual(TradeAction.Execute, decision.Action);
-            Assert.AreEqual(TradeLane.Quality, decision.Lane);
-            Assert.AreEqual(EscalationLevel.Level1, decision.EscalationLevel);
+            Assert.Equal(TradeAction.Execute, decision.Action);
+            Assert.Equal(TradeLane.Quality, decision.Lane);
+            Assert.Equal(EscalationLevel.Level1, decision.EscalationLevel);
             
             // Position size should use 55% fraction and be constrained by 50% of realized P&L
             var sizingBudget = Math.Min(0.55m * 1050m, 0.50m * 450m); // Min(577.5, 225) = 225
             var expectedSize = Math.Floor(sizingBudget / ((2.0m - 0.50m) * 100m)); // 225 / 150 = 1
-            Assert.AreEqual(expectedSize, decision.PositionSize);
+            Assert.Equal(expectedSize, decision.PositionSize);
 
             Console.WriteLine($"Level 1 Quality: Size={decision.PositionSize}, Budget={sizingBudget:C}, Reason={decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Level2_Greenlight2_MaxAllocation()
         {
             // Test: Level 2 escalation with maximum capital allocation
@@ -130,19 +129,19 @@ namespace ODTE.Strategy.Tests
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Validate: Should execute with Level 2 escalation
-            Assert.AreEqual(TradeAction.Execute, decision.Action);
-            Assert.AreEqual(TradeLane.Quality, decision.Lane);
-            Assert.AreEqual(EscalationLevel.Level2, decision.EscalationLevel);
+            Assert.Equal(TradeAction.Execute, decision.Action);
+            Assert.Equal(TradeLane.Quality, decision.Lane);
+            Assert.Equal(EscalationLevel.Level2, decision.EscalationLevel);
             
             // Position size should use 65% fraction
             var sizingBudget = Math.Min(0.65m * 800m, 0.50m * 1200m); // Min(520, 600) = 520
             var expectedSize = Math.Floor(sizingBudget / ((2.5m - 0.60m) * 100m)); // 520 / 190 = 2
-            Assert.AreEqual(expectedSize, decision.PositionSize);
+            Assert.Equal(expectedSize, decision.PositionSize);
 
             Console.WriteLine($"Level 2 Quality: Size={decision.PositionSize}, Budget={sizingBudget:C}, Reason={decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Auto_Deescalation_PnL_Cushion_Loss()
         {
             // Test: Auto de-escalation when P&L cushion is lost
@@ -166,7 +165,7 @@ namespace ODTE.Strategy.Tests
             var qualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             _qualityFilter.SetHighQualityResult(true);
             var decision1 = _engine.ProcessTradeOpportunity(qualitySetup);
-            Assert.AreEqual(EscalationLevel.Level1, decision1.EscalationLevel);
+            Assert.Equal(EscalationLevel.Level1, decision1.EscalationLevel);
 
             // Simulate P&L dropping below half of Level 1 trigger (225 < 15% of 1500)
             sessionStats.RealizedDayPnL = 200m; // Below 50% of 450 trigger
@@ -176,13 +175,13 @@ namespace ODTE.Strategy.Tests
             var decision2 = _engine.ProcessTradeOpportunity(qualitySetup);
             
             // Should automatically de-escalate to Level 0
-            Assert.AreEqual(EscalationLevel.Level0, decision2.EscalationLevel);
-            Assert.AreEqual(TradeLane.Probe, decision2.Lane); // Falls back to Probe
+            Assert.Equal(EscalationLevel.Level0, decision2.EscalationLevel);
+            Assert.Equal(TradeLane.Probe, decision2.Lane); // Falls back to Probe
 
             Console.WriteLine($"Auto De-escalation: L1→L0, P&L: 450→200, Decision: {decision2.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Auto_Deescalation_Consecutive_Losses()
         {
             // Test: Auto de-escalation and cooldown after consecutive Quality losses
@@ -209,13 +208,13 @@ namespace ODTE.Strategy.Tests
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Should force Level 0 despite positive probe conditions
-            Assert.AreEqual(EscalationLevel.Level0, decision.EscalationLevel);
-            Assert.AreEqual(TradeLane.Probe, decision.Lane);
+            Assert.Equal(EscalationLevel.Level0, decision.EscalationLevel);
+            Assert.Equal(TradeLane.Probe, decision.Lane);
 
             Console.WriteLine($"Consecutive Loss De-escalation: Forced L0, Reason={decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Correlation_Budget_Enforcement()
         {
             // Test: Correlation budget prevents excessive concurrent exposure
@@ -243,14 +242,14 @@ namespace ODTE.Strategy.Tests
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Should reject due to correlation budget violation
-            Assert.AreEqual(TradeAction.Reject, decision.Action);
-            Assert.IsTrue(decision.ReasonCode.Contains("RHO_BUDGET_EXCEEDED") || 
+            Assert.Equal(TradeAction.Reject, decision.Action);
+            Assert.True(decision.ReasonCode.Contains("RHO_BUDGET_EXCEEDED") || 
                          decision.ReasonCode.Contains("correlation"));
 
             Console.WriteLine($"Correlation Budget Block: {decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Probe_OneContract_Rule()
         {
             // Test: Probe trades get 1 contract if they fit within absolute budget
@@ -268,14 +267,14 @@ namespace ODTE.Strategy.Tests
             
             var decision = _engine.ProcessTradeOpportunity(probeSetup);
 
-            Assert.AreEqual(TradeAction.Execute, decision.Action);
-            Assert.AreEqual(TradeLane.Probe, decision.Lane);
-            Assert.AreEqual(1m, decision.PositionSize); // Probe 1-lot rule
+            Assert.Equal(TradeAction.Execute, decision.Action);
+            Assert.Equal(TradeLane.Probe, decision.Lane);
+            Assert.Equal(1m, decision.PositionSize); // Probe 1-lot rule
 
             Console.WriteLine($"Probe 1-Lot Rule: Size={decision.PositionSize}, Budget={100:C}, MaxLoss={80:C}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Event_Blackout_Rejection()
         {
             // Test: All trades rejected during event blackout periods
@@ -299,13 +298,13 @@ namespace ODTE.Strategy.Tests
             
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
-            Assert.AreEqual(TradeAction.Reject, decision.Action);
-            Assert.IsTrue(decision.ReasonCode.Contains("EVENT_BLACKOUT"));
+            Assert.Equal(TradeAction.Reject, decision.Action);
+            Assert.True(decision.ReasonCode.Contains("EVENT_BLACKOUT"));
 
             Console.WriteLine($"Event Blackout Rejection: {decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Quality_Filter_Enforcement()
         {
             // Test: Quality lane requires high-quality setups
@@ -328,14 +327,14 @@ namespace ODTE.Strategy.Tests
             
             var decision = _engine.ProcessTradeOpportunity(lowQualitySetup);
 
-            Assert.AreEqual(TradeAction.Reject, decision.Action);
-            Assert.IsTrue(decision.ReasonCode.Contains("QUALITY_FAIL") || 
+            Assert.Equal(TradeAction.Reject, decision.Action);
+            Assert.True(decision.ReasonCode.Contains("QUALITY_FAIL") || 
                          decision.ReasonCode.Contains("quality"));
 
             Console.WriteLine($"Quality Filter Rejection: {decision.ReasonCode}");
         }
 
-        [TestMethod]
+        [Fact]
         public void Complete_Escalation_Sequence_Validation()
         {
             // Test: Complete sequence from Level 0 → Level 1 → Level 2 → De-escalation
@@ -349,7 +348,7 @@ namespace ODTE.Strategy.Tests
             
             var probe1 = CreateProbeTradeSetup(width: 1.0m, credit: 0.25m);
             decisions.Add(_engine.ProcessTradeOpportunity(probe1));
-            Assert.AreEqual(EscalationLevel.Level0, decisions.Last().EscalationLevel);
+            Assert.Equal(EscalationLevel.Level0, decisions.Last().EscalationLevel);
 
             // Phase 2: Level 1 (Positive probe + 30% P&L cushion)
             _probeDetector.SetPositiveProbeResult(true);
@@ -366,7 +365,7 @@ namespace ODTE.Strategy.Tests
             
             var quality1 = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality1));
-            Assert.AreEqual(EscalationLevel.Level1, decisions.Last().EscalationLevel);
+            Assert.Equal(EscalationLevel.Level1, decisions.Last().EscalationLevel);
 
             // Phase 3: Level 2 (60% P&L cushion + successful Quality trades)
             _probeDetector.SetSessionStats(new SessionStats
@@ -382,7 +381,7 @@ namespace ODTE.Strategy.Tests
             
             var quality2 = CreateQualityTradeSetup(width: 2.5m, credit: 0.65m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality2));
-            Assert.AreEqual(EscalationLevel.Level2, decisions.Last().EscalationLevel);
+            Assert.Equal(EscalationLevel.Level2, decisions.Last().EscalationLevel);
 
             // Phase 4: Auto de-escalation (P&L drops)
             _probeDetector.SetSessionStats(new SessionStats
@@ -398,7 +397,7 @@ namespace ODTE.Strategy.Tests
             var quality3 = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality3));
             // Should de-escalate due to P&L loss
-            Assert.IsTrue(decisions.Last().EscalationLevel < EscalationLevel.Level2);
+            Assert.True(decisions.Last().EscalationLevel < EscalationLevel.Level2);
 
             Console.WriteLine("Complete Escalation Sequence:");
             for (int i = 0; i < decisions.Count; i++)

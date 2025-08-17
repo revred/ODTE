@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ODTE.Strategy.Tests
 {
@@ -10,10 +10,9 @@ namespace ODTE.Strategy.Tests
     /// Tests different sensitivity levels to find optimal parameters
     /// Focuses on preventing 2024-2025 style losses while maintaining profitable scaling
     /// </summary>
-    [TestClass]
     public class PM250_SensitivityTesting
     {
-        [TestMethod]
+        [Fact]
         public void TestRevFibNotchSensitivityLevels()
         {
             Console.WriteLine("🔬 PM250 REVFIBNOTCH SENSITIVITY TESTING");

@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 using ODTE.Strategy.ProcessWindow;
 
 namespace ODTE.Strategy.Tests
 {
-    [TestClass]
     public class ProcessWindowTests
     {
         private ProcessWindowMonitor _monitor;
@@ -15,8 +14,7 @@ namespace ODTE.Strategy.Tests
         private MockTradeExecutor _mockExecutor;
         private ProcessWindowTradeGuard _guard;
 
-        [TestInitialize]
-        public void Setup()
+        public ProcessWindowTests()
         {
             _monitor = new ProcessWindowMonitor();
             _validator = new ProcessWindowValidator(_monitor);
@@ -24,18 +22,17 @@ namespace ODTE.Strategy.Tests
             _guard = new ProcessWindowTradeGuard(_validator, _mockExecutor);
         }
 
-        [TestClass]
         public class IronCondorCreditTests
         {
             private ProcessWindowMonitor _monitor;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _monitor = new ProcessWindowMonitor();
             }
 
-            [TestMethod]
+            [Fact]
             public void IronCondorCredit_35Percent_ShouldBeInGreenZone()
             {
                 // Arrange: The CORRECT credit percentage that yields 29.81% CAGR
@@ -51,7 +48,7 @@ namespace ODTE.Strategy.Tests
                 result.Message.Should().Contain("within safe bounds");
             }
 
-            [TestMethod]
+            [Fact]
             public void IronCondorCredit_25Percent_ShouldBeInBlackSwanZone()
             {
                 // Arrange: The BUGGY credit percentage that caused 0% returns
@@ -68,7 +65,7 @@ namespace ODTE.Strategy.Tests
                 result.Message.Should().Contain("SUSPEND TRADING");
             }
 
-            [TestMethod]
+            [Fact]
             public void IronCondorCredit_32Percent_ShouldBeInYellowZone()
             {
                 // Arrange: Credit percentage at warning threshold
@@ -85,7 +82,7 @@ namespace ODTE.Strategy.Tests
                 result.Message.Should().Contain("approaching limits");
             }
 
-            [TestMethod]
+            [Fact]
             public void IronCondorCredit_45Percent_ShouldBeInBlackSwanZone()
             {
                 // Arrange: Unrealistically high credit percentage
@@ -101,7 +98,7 @@ namespace ODTE.Strategy.Tests
                 result.Message.Should().Contain("CRITICAL VIOLATION");
             }
 
-            [TestMethod]
+            [Fact]
             public void IronCondorCredit_RealWorldScenario_ShouldValidateCorrectly()
             {
                 // Arrange: Real-world Iron Condor scenario
@@ -122,18 +119,17 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class SystemStatusTests
         {
             private ProcessWindowMonitor _monitor;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _monitor = new ProcessWindowMonitor();
             }
 
-            [TestMethod]
+            [Fact]
             public void SystemStatus_AllParametersGreen_ShouldBeGreenZone()
             {
                 // Arrange: All parameters in safe ranges
@@ -157,7 +153,7 @@ namespace ODTE.Strategy.Tests
                 systemStatus.ShouldReducePositionSize.Should().BeFalse();
             }
 
-            [TestMethod]
+            [Fact]
             public void SystemStatus_OneParameterCritical_ShouldBeBlackSwan()
             {
                 // Arrange: One parameter in critical range (the Iron Condor bug)
@@ -179,7 +175,7 @@ namespace ODTE.Strategy.Tests
                 systemStatus.GetSummaryMessage().Should().Contain("SUSPEND TRADING");
             }
 
-            [TestMethod]
+            [Fact]
             public void SystemStatus_MultipleWarnings_ShouldBeRedZone()
             {
                 // Arrange: Multiple parameters in warning ranges
@@ -201,20 +197,19 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class TradeValidationTests
         {
             private ProcessWindowValidator _validator;
             private ProcessWindowMonitor _monitor;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _monitor = new ProcessWindowMonitor();
                 _validator = new ProcessWindowValidator(_monitor);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateTradeParameters_SafeIronCondor_ShouldAllowTrade()
             {
                 // Arrange: Safe Iron Condor parameters
@@ -238,7 +233,7 @@ namespace ODTE.Strategy.Tests
                 result.SystemStatus.ShouldSuspendTrading.Should().BeFalse();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateTradeParameters_BuggyIronCondor_ShouldBlockTrade()
             {
                 // Arrange: Iron Condor with the 2.5% bug
@@ -262,7 +257,7 @@ namespace ODTE.Strategy.Tests
                 result.SystemStatus.CriticalViolations.Should().BeGreaterThan(0);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorCredit_CorrectCredit_ShouldReturnTrue()
             {
                 // Arrange: The correct 3.5% credit that yields 29.81% CAGR
@@ -277,7 +272,7 @@ namespace ODTE.Strategy.Tests
                 isValid.Should().BeTrue();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorCredit_BuggyCredit_ShouldReturnFalse()
             {
                 // Arrange: The buggy 2.5% credit that caused 0% returns
@@ -293,14 +288,13 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class TradeGuardTests
         {
             private ProcessWindowTradeGuard _guard;
             private MockTradeExecutor _mockExecutor;
             private ProcessWindowValidator _validator;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 var monitor = new ProcessWindowMonitor();
@@ -309,7 +303,7 @@ namespace ODTE.Strategy.Tests
                 _guard = new ProcessWindowTradeGuard(_validator, _mockExecutor);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteTradeWithGuard_SafeParameters_ShouldExecuteTrade()
             {
                 // Arrange: Safe trade request
@@ -334,7 +328,7 @@ namespace ODTE.Strategy.Tests
                 result.ReasonCode.Should().Be("SUCCESS");
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteTradeWithGuard_CriticalViolation_ShouldBlockTrade()
             {
                 // Arrange: Trade request with critical violation
@@ -357,7 +351,7 @@ namespace ODTE.Strategy.Tests
                 result.Message.Should().Contain("suspended");
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ExecuteTradeWithGuard_WarningConditions_ShouldReducePositionSize()
             {
                 // Arrange: Trade request with warning conditions
@@ -383,7 +377,7 @@ namespace ODTE.Strategy.Tests
                 result.AdjustedPositionSize.Should().BeLessThan(result.OriginalPositionSize);
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorBeforeExecution_SafeCredit_ShouldReturnTrue()
             {
                 // Arrange
@@ -398,7 +392,7 @@ namespace ODTE.Strategy.Tests
                 isValid.Should().BeTrue();
             }
 
-            [TestMethod]
+            [Fact]
             public async Task ValidateIronCondorBeforeExecution_BuggyCredit_ShouldReturnFalse()
             {
                 // Arrange
@@ -414,18 +408,17 @@ namespace ODTE.Strategy.Tests
             }
         }
 
-        [TestClass]
         public class ViolationLoggingTests
         {
             private ProcessWindowMonitor _monitor;
 
-            [TestInitialize]
+            // Constructor replaces TestInitialize in xUnit
             public void Setup()
             {
                 _monitor = new ProcessWindowMonitor();
             }
 
-            [TestMethod]
+            [Fact]
             public void ViolationHistory_MultipleViolations_ShouldTrackCorrectly()
             {
                 // Arrange & Act: Generate multiple violations
@@ -443,7 +436,7 @@ namespace ODTE.Strategy.Tests
                 summary.MostFrequentParameter.Should().Be("IronCondorCreditPct");
             }
 
-            [TestMethod]
+            [Fact]
             public void ViolationHistory_TimePeriodFilter_ShouldFilterCorrectly()
             {
                 // Arrange: Generate violations across time

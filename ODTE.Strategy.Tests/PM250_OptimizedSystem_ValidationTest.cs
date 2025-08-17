@@ -11,7 +11,7 @@ namespace ODTE.Strategy.Tests
     /// </summary>
     public class PM250_OptimizedSystem_ValidationTest
     {
-        public static void Main(string[] args)
+        public static void RunValidation(string[] args)
         {
             Console.WriteLine("🧬 PM250 OPTIMIZED SYSTEM VALIDATION");
             Console.WriteLine("====================================");

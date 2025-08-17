@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace ODTE.Strategy.Tests
 {
@@ -10,10 +10,9 @@ namespace ODTE.Strategy.Tests
     /// Evolves RevFibNotch parameters to resolve current performance issues
     /// Targets: Loss prevention, faster scaling, better leverage utilization
     /// </summary>
-    [TestClass]
     public class PM250_GeneticOptimizer
     {
-        [TestMethod]
+        [Fact]
         public void OptimizeRevFibNotchParameters()
         {
             Console.WriteLine("🧬 PM250 GENETIC ALGORITHM OPTIMIZATION");
