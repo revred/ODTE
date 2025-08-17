@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyTitle>ODTE Realistic Fill Execution Engine</AssemblyTitle>
+    <Description>Market-microstructure-aware execution engine for ODTE trading strategies</Description>
+    <Version>1.0.0</Version>
+    <Authors>ODTE Strategy Team</Authors>
+    <Company>ODTE Platform</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
+  </ItemGroup>
+
+</Project>

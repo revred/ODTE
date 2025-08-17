@@ -1,18 +1,18 @@
-# 🧬 ODTE - Genetic Strategy Evolution Platform
+# 🧬  ODTE - Genetic Strategy Evolution Platform
 
-## 🎯 Project Philosophy: Evolution Through Battle
+## 🎯  Project Philosophy: Evolution Through Battle
 
 **ODTE is not just a trading system - it's a strategy evolution platform** that breeds profitable algorithms through survival of the fittest. Like nature evolves organisms through harsh environments, ODTE evolves trading strategies through progressively challenging market conditions.
 
 ### The Evolution Pipeline
 ```
-🧬 Genetic Algorithm → 🎭 Synthetic Markets → 📊 Historical Validation → 📝 Paper Trading → 💰 Live Trading
+🧬  Genetic Algorithm → 🎭  Synthetic Markets → 📊  Historical Validation → 📝  Paper Trading → 💰  Live Trading
      (Breed)              (Stress Test)         (Backtest)              (Forward Test)      (Battle Ready)
 ```
 
-## 🔬 Core Innovation: Multi-Stage Strategy Evolution
+## 🔬  Core Innovation: Multi-Stage Strategy Evolution
 
-### Stage 1: 🧬 **Genetic Breeding Chamber**
+### Stage 1: 🧬  **Genetic Breeding Chamber**
 The system starts with a **population of strategy "chromosomes"** - each representing a unique combination of parameters:
 
 ```yaml
@@ -33,7 +33,7 @@ Chromosome Example:
 - **Selection**: Only profitable strategies survive to next generation
 - **Elitism**: Best performers are preserved unchanged
 
-### Stage 2: 🎭 **Synthetic Market Gauntlet (ODTE.Syntricks)**
+### Stage 2: 🎭  **Synthetic Market Gauntlet (ODTE.Syntricks)**
 Before touching real data, strategies must survive **artificially harsh conditions**:
 
 ```csharp
@@ -53,7 +53,7 @@ Synthetic Stress Scenarios:
 - **No Overfitting**: Can't memorize patterns that don't exist yet
 - **Extreme Testing**: Create "impossible" days to find breaking points
 
-### Stage 3: 📊 **Historical Validation (5 Years Real Data)**
+### Stage 3: 📊  **Historical Validation (5 Years Real Data)**
 Survivors face **actual market history** with all its quirks:
 
 ```yaml
@@ -90,7 +90,7 @@ Paper Trading Requirements:
 ### Stage 5: 💰 **Live Trading (Battle Hardened)**
 Only strategies that pass ALL previous stages can trade real money.
 
-## 🛡️ Risk Management: RevFibNotch System
+## 🛡️  Risk Management: RevFibNotch System
 
 The crown jewel of ODTE's risk management - **proportional position sizing** based on P&L magnitude:
 
@@ -150,7 +150,7 @@ Strategy Selection Logic:
     USE balanced_condor_v4
 ```
 
-## 📊 Performance Expectations
+## 📊  Performance Expectations
 
 ### Realistic Targets (After Full Evolution)
 ```
@@ -201,7 +201,7 @@ Profit Factor: 1.8-2.5
 - [ ] Order execution simulator with slippage
 - [ ] Performance tracking dashboard
 
-### Phase 5: Production 🎯
+### Phase 5: Production 🎯 
 - [ ] Live trading activation
 - [ ] Risk monitoring alerts
 - [ ] Automated reporting
@@ -262,7 +262,7 @@ Priority Order:
 4. **Small consistent wins > home runs** - Compound growth wins
 5. **The market is always right** - Adapt or die
 
-## 🎯 Success Metrics
+## 🎯  Success Metrics
 
 A strategy is considered **"Battle Hardened"** when it achieves:
 
@@ -288,9 +288,9 @@ Risk Metrics:
   ✓ Profit factor > 1.5
 ```
 
-## 🔧 For Claude Code Sessions
+## 🔧  For Claude Code Sessions
 
-### 🎯 Key System Discovery (IMPORTANT)
+### 🎯  Key System Discovery (IMPORTANT)
 
 **PM250 Trading System**:
 - **Location**: `Options.OPM/Options.PM250/`
@@ -352,9 +352,24 @@ cd ODTE.Historical.Tests && dotnet run instruments  # Test multi-instrument supp
 cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 ```
 
+### 📏  Code Formatting Guidelines
+
+#### Icon Usage Standards
+- **Always add double space after icons**: `🎯  Overview` not `🎯 Overview`
+- **Applies to all markdown files**: Headers, bullet points, inline text
+- **Unicode/emoji consistency**: Use standard Unicode emojis for better readability
+- **Examples**:
+  ```markdown
+  ## 🚀  Quick Start     ✅ Correct
+  ## 🚀 Quick Start      ❌ Incorrect
+  
+  - 📊  Data Analysis    ✅ Correct  
+  - 📊 Data Analysis     ❌ Incorrect
+  ```
+
 ### ✅ Recent Major Accomplishments (August 2025)
 
-**🏗️ ODTE.Strategy DLL - PRODUCTION READY**
+**🏗️  ODTE.Strategy DLL - PRODUCTION READY**
 - ✅ Complete class library with public API interface (`IStrategyEngine`)
 - ✅ All trading strategies exposed: Iron Condor, Credit BWB, Convex Tail Overlay
 - ✅ 24-day regime switching framework fully implemented
@@ -362,36 +377,43 @@ cd ODTE.Historical.Tests && dotnet run cold-start   # Test cold start capability
 - ✅ Zero compilation errors, clean architecture
 - ✅ Ready for external application integration
 
-**🧹 Project Structure Cleanup**
+**🧹  Project Structure Cleanup**
 - ✅ Consolidated scattered Reports/TestResults folders
 - ✅ Clean root directory following .NET conventions
 - ✅ Each project maintains its own outputs
 - ✅ Historical data preserved in Archive/
 
-**🔧 Infrastructure Improvements**
+**🔧  Infrastructure Improvements**
 - ✅ MarketConditions API unified with backward compatibility  
 - ✅ Type safety improvements across all projects
 - ✅ Enhanced testing framework with API validation
 - ✅ Proper DLL packaging with NuGet metadata
 
-**🎯 Strategy System Framework Documentation**
+**🎯  Strategy System Framework Documentation**
 - ✅ **Strategy Evolution Framework** - Complete 8-stage lifecycle from discovery to production
 - ✅ **Strategy Versioning System** - Comprehensive version control with rollback capabilities
 - ✅ **Strategy Benchmarking Standards** - Objective performance measurement framework
 - ✅ **Cold Start Discovery** - All framework documentation discoverable from root directory
 - ✅ **Production Ready** - Complete systematic approach to building profitable strategies
-- ✅ **Documentation Integration** - Updated README.md and CLAUDE.md with framework references
+- ✅ **Documentation Consolidation** - All .md files consolidated into unified `Documentation/` folder
+
+**📚  Documentation Consolidation (August 2025)**
+- ✅ **Unified Documentation Folder** - All scattered documentation consolidated into `Documentation/`
+- ✅ **COLD_START.md** - Quick Claude Code alignment guide at root level
+- ✅ **Historical Data Guide** - Complete 20+ years data system documentation (669 lines)
+- ✅ **Clean Root Directory** - Only CLAUDE.md, README.md, and COLD_START.md remain at root
+- ✅ **Organized Structure** - Easy discovery of all documentation assets
 
 ### Current Focus Areas
 1. **✅ Strategy Library**: Complete DLL with public APIs  
 2. **✅ Risk Management**: RevFibNotch proportional scaling implemented
 3. **✅ Testing Framework**: Comprehensive test coverage achieved
-4. **🔄 Paper Trading**: Ready for broker integration phase
-5. **📊 Performance Analytics**: Enhanced tracking and reporting
+4. **🔄  Paper Trading**: Ready for broker integration phase
+5. **📊  Performance Analytics**: Enhanced tracking and reporting
 
 ---
 
-## 🏆 End Goal
+## 🏆  End Goal
 
 **Create a self-evolving trading system** that:
 - Breeds strategies through genetic algorithms
@@ -407,6 +429,6 @@ This is not about finding one perfect strategy - it's about building an **evolut
 
 *"In trading, as in nature, it's not the strongest that survive, but the most adaptable."*
 
-**Version**: 2.3 - RevFibNotch System Complete  
-**Updated**: August 16, 2025  
-**Status**: ✅ REVFIBNOTCH SYSTEM COMPLETED - Proportional Risk Management Active
+**Version**: 2.4 - Documentation Consolidation Complete  
+**Updated**: August 17, 2025  
+**Status**: ✅ DOCUMENTATION CONSOLIDATED - Clean Structure with COLD_START.md

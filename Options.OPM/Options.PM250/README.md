@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The **PM250 Trading System** is a genetically-optimized, high-frequency options trading strategy designed for 0DTE (zero days to expiration) SPY/XSP options. Through 20 years of backtesting and genetic algorithm optimization across 20,000+ strategy variations, PM250 delivers consistent $15+ average trade profits with strict capital preservation.
+The **PM250 Trading System** is a genetically-optimized, high-frequency options trading strategy designed for 0DTE (zero days to expiration) SPY/XSP options. As part of the ODTE dual-strategy framework alongside PM212 (capital preservation), PM250 focuses on profit maximization during optimal market conditions. Through 20 years of backtesting and genetic algorithm optimization across 20,000+ strategy variations, PM250 delivers consistent $15+ average trade profits with strict capital preservation and institutional-grade execution modeling.
 
 ### Key Performance Metrics
 - **Average Trade Profit**: $16.85
@@ -11,6 +11,8 @@ The **PM250 Trading System** is a genetically-optimized, high-frequency options 
 - **Sharpe Ratio**: 1.68
 - **Expected Annual Return**: 38-58%
 - **Profit Factor**: 2.15
+- **Execution Engine**: Realistic fill simulation with NBBO compliance
+- **Risk Management**: RevFibNotch integration with PM212 compatibility
 
 ## 🎯 Quick Start Guide
 
@@ -50,12 +52,13 @@ var result = await strategy.ExecuteAsync(parameters, marketConditions);
 ## 🏗️ System Architecture
 
 ```
-PM250 Trading System
+PM250 Trading System (Dual-Strategy Component)
 ├── Genetic Optimizer       # 20-year parameter evolution
-├── Risk Management         # Reverse Fibonacci system
+├── Risk Management         # Reverse Fibonacci system + PM212 compatibility
 ├── Market Analysis         # GoScore & regime detection
-├── Execution Engine        # High-frequency order management
-└── Monitoring System       # Real-time performance tracking
+├── Execution Engine        # Realistic fill simulation (ODTE.Execution)
+├── Dual-Strategy Logic     # PM250/PM212 regime switching
+└── Monitoring System       # Real-time performance tracking + audit compliance
 ```
 
 ### 📁 Directory Structure

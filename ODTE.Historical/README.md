@@ -2,7 +2,7 @@
 
 ## 📊 Historical Data Management Library
 
-**ODTE.Historical** is a comprehensive .NET library for managing historical market data, synthetic data generation, and data quality validation within the ODTE trading platform.
+**ODTE.Historical** is a comprehensive .NET library for managing historical market data, synthetic data generation, and data quality validation within the ODTE dual-strategy trading platform. Supports both PM250 (profit maximization) and PM212 (capital preservation) strategies with institutional-grade data quality.
 
 ## 🎯 Core Features
 
@@ -26,9 +26,11 @@
 
 ### 🗃️ **Data Sources**
 - **Stooq Integration**: Free historical data with validation
-- **Market Microstructure**: Bid-ask spreads and volume modeling
+- **Market Microstructure**: Bid-ask spreads and volume modeling for realistic fills
 - **Options Greeks**: Delta, Gamma, Theta, Vega calculations
 - **VIX Term Structure**: Forward-looking volatility modeling
+- **Execution Data**: NBBO compliance, latency metrics, slippage parameters
+- **Audit Trail**: Institutional compliance data for PM212 strategy validation
 
 ## 🏗️ Architecture
 
@@ -217,13 +219,16 @@ Operations:
 ## 🤝 Integration with ODTE Platform
 
 ### Used By
-- **ODTE.Optimization**: Historical data for backtesting
+- **ODTE.Strategy**: PM250/PM212 dual-strategy data requirements
+- **ODTE.Execution**: Market microstructure data for realistic fill simulation
+- **ODTE.Optimization**: Historical data for backtesting both strategies
 - **ODTE.Syntricks**: Baseline data for stress testing
-- **ODTE.Strategy**: Market data for strategy validation
 - **Options.Start**: Real-time data dashboard
+- **audit/**: PM212 institutional audit compliance validation
 
 ### Dependencies
 - **ODTE.Backtest**: Options math and pricing models
+- **ODTE.Execution**: Integration with realistic execution modeling
 - **Microsoft.Data.Sqlite**: Database operations
 - **Dapper**: Object-relational mapping
 - **Microsoft.Extensions.Logging**: Logging framework

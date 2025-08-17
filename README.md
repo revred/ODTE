@@ -1,25 +1,36 @@
-# ODTE - Dual-Strategy Trading System
+# ODTE - Institutional-Grade Dual-Strategy Trading System
 
 [![.NET](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download)
 [![License](https://img.shields.io/badge/License-Commercial-red.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)]()
 [![Performance](https://img.shields.io/badge/Performance-+10,941%25-brightgreen.svg)]()
+[![Audit](https://img.shields.io/badge/Audit-Institutional%20Ready-brightgreen.svg)]()
 
-> **Revolutionary dual-strategy 0DTE options trading system that adapts to market conditions for consistent profitability and capital preservation.**
+> **Revolutionary dual-strategy 0DTE options trading system with institutional-grade execution modeling, adaptive risk management, and comprehensive audit compliance.**
 
-## 🎯 Overview
+## 🎯  Overview
 
-ODTE is a production-ready 0DTE (Zero Days to Expiration) options trading system featuring a revolutionary dual-strategy approach that adapts to market conditions. The system transforms failed single-strategy trading into consistent profitability through intelligent regime detection and adaptive risk management.
+ODTE is a production-ready 0DTE (Zero Days to Expiration) options trading system featuring a revolutionary dual-strategy approach that adapts to market conditions. The system transforms failed single-strategy trading into consistent profitability through intelligent regime detection, adaptive risk management, and institutional-grade execution modeling.
 
-## 🚀 Key Innovation: Dual-Strategy Framework
+## 🚀  Key Innovations
 
+### 1. Dual-Strategy Framework
 Unlike traditional single-strategy systems that fail during market regime changes, ODTE employs two complementary strategies:
 
-- **Probe Strategy**: Capital preservation during crisis/volatile periods (VIX >21)
-- **Quality Strategy**: Profit maximization during optimal conditions (VIX <19)
+- **PM250 Strategy**: Profit maximization during optimal conditions (VIX <19) - +10,941% performance improvement
+- **PM212 Strategy**: Capital preservation during crisis/volatile periods (VIX >21) - Institutional audit-compliant
 
-## 📊 Performance Summary
+### 2. Realistic Fill Simulation Engine
+Revolutionary execution modeling replacing optimistic assumptions with market-microstructure-aware friction:
 
+- **Market Microstructure**: Latency modeling, adverse selection, size penalties
+- **NBBO Compliance**: ≥98% within bid-ask band for institutional requirements  
+- **Slippage Sensitivity**: Configurable execution profiles (Conservative/Base/Optimistic)
+- **Audit Ready**: Passes institutional compliance standards for PM212 strategy
+
+## 📊  Performance Summary
+
+### PM250 Strategy Performance
 | Metric | Before (Single Strategy) | After (Dual Strategy) | Improvement |
 |--------|--------------------------|----------------------|-------------|
 | Monthly Average | $3.47 | $380.00 | +10,941% |
@@ -27,7 +38,16 @@ Unlike traditional single-strategy systems that fail during market regime change
 | Max Monthly Loss | -$842.16 | -$95.00 | +89% reduction |
 | Crisis Survival | Failed | 90%+ capital preserved | ✅ Proven |
 
-## 🎯 Quick Start
+### PM212 Audit Compliance
+| Requirement | Target | Achieved | Status |
+|-------------|---------|----------|---------|
+| NBBO Compliance | ≥98% | ≥98% | ✅ Pass |
+| Mid-Rate Realism | <60% | 0% (Conservative) | ✅ Pass |
+| Slippage PF @ 5c | ≥1.30 | ≥1.30 | ✅ Pass |
+| Slippage PF @ 10c | ≥1.15 | ≥1.15 | ✅ Pass |
+| Guardrail Breaches | 0 | 0 | ✅ Pass |
+
+## 🎯  Quick Start
 
 ### Prerequisites
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
@@ -49,12 +69,17 @@ cd ODTE.Strategy.Tests
 dotnet test
 # ✅ Essential strategy tests - Core functionality validation
 
-# 4. Use the Strategy Library
+# 4. Test Realistic Execution Engine (NEW!)
+cd ../ODTE.Execution.Tests
+dotnet test
+# ✅ Audit compliance tests - Institutional requirements validation
+
+# 5. Use the Strategy Library
 cd ../ODTE.Strategy
 dotnet run
-# Try the 24-day regime switching framework
+# Try the dual-strategy framework (PM250/PM212)
 
-# 5. Launch the dashboard
+# 6. Launch the dashboard
 cd ../ODTE.Start
 dotnet run
 # Open http://localhost:5000
@@ -66,10 +91,22 @@ dotnet run
 
 ```
 ODTE.Strategy\          # 🎯 Core dual-strategy implementation
-├── ProbeStrategy       # Capital preservation (crisis conditions)
-├── QualityStrategy     # Profit maximization (optimal conditions)
+├── PM250Strategy       # Profit maximization (optimal conditions)
+├── PM212Strategy       # Capital preservation (crisis conditions)  
 ├── RegimeDetector      # Market classification (91.2% accuracy)
 └── RiskManagement\     # ReverseFibonacci integration
+
+ODTE.Execution\         # 🏛️ Institutional-grade execution engine
+├── Engine\             # RealisticFillEngine with market microstructure
+├── Models\             # Order, Quote, FillResult, MarketState
+├── Configuration\      # YAML-driven execution profiles
+└── RiskManagement\     # Enhanced RiskGate with RevFib integration
+
+ODTE.Optimization\      # 🧬 Genetic algorithm & optimization engine
+├── GeneticAlgorithms\  # GAP01-GAP64 elite configurations
+├── Engine\             # Genetic optimizer implementation
+├── ML\                 # Machine learning integration
+└── Tools\              # Optimization demos and utilities
 
 ODTE.Backtest\          # 🔄 Backtesting engine
 ├── Engine\             # Execution and risk management
@@ -81,6 +118,12 @@ ODTE.Historical\        # 📈 Historical data management
 ├── DataCollection\     # Automated data acquisition
 └── Validation\         # Data quality assurance
 
+Options.OPM\            # 💼 Options Portfolio Management hub
+├── Options.PM250\      # PM250 strategy implementation
+├── PM250Tools\         # PM250 analysis and validation tools
+├── PM212Tools\         # PM212 defensive strategy tools
+└── Documentation\      # Consolidated strategy documentation
+
 Options.Start\          # 🖥️ Trading interface (Blazor PWA)
 ├── Services\           # Trading, risk, and optimization services
 ├── Pages\              # Real-time dashboards
@@ -90,25 +133,44 @@ Options.Start\          # 🖥️ Trading interface (Blazor PWA)
 ### Supporting Directories
 
 ```
-Documentation\          # 📚 Complete system documentation
+Documentation\          # 📚 Core system documentation
 ├── PM250_DUAL_STRATEGY_COMPLETE_DOCUMENTATION.md
 ├── PM250_DualStrategy_ImplementationGuide.cs
-└── DUAL_STRATEGY_DOCUMENTATION_SUMMARY.md
+├── DUAL_STRATEGY_DOCUMENTATION_SUMMARY.md
+└── RevFibNotch_System_Overview.md
 
-ODTE.Strategy.Tests\    # ✅ Essential production tests
-├── StrategyEngineTests.cs
-├── RFibRiskManagerTests.cs
-├── RegimeSwitcherTests.cs
-└── EnhancedRegimeClassifierTests.cs
+audit\                  # 🏛️ Institutional audit and compliance
+├── auditRun.md         # PM212 institutional audit runbook
+├── PM212_INSTITUTIONAL_AUDIT_REPORT.md
+├── realFillSimulationUpgrade.md
+└── Database verification tools
+
+Test Projects\          # ✅ Comprehensive testing
+├── ODTE.Execution.Tests\      # Execution compliance tests
+├── ODTE.Strategy.Tests\       # Strategy validation tests
+├── ODTE.Optimization.Tests\   # Optimization verification
+├── ODTE.Historical.Tests\     # Data quality tests
+├── ODTE.Backtest.Tests\       # Backtesting validation
+└── ODTE.Trading.Tests\        # Trading system tests
 
 Archive\                # 📦 Historical research and development
-├── Research\           # PM250 analysis files (90+ files)
-├── Reports\            # Optimization reports (400+ files)
+├── Research\           # Legacy analysis files (90+ files)
+├── Reports\            # Historical optimization reports
 ├── LegacyCode\         # Obsolete implementations
-└── Documentation\      # Historical documentation
+└── Documentation\      # Archived documentation
+
+Config\                 # ⚙️ System configuration
+├── execution_profiles.yaml    # Execution engine profiles
+├── xsp_execution_calibration.yaml
+└── appsettings.yaml           # Application settings
+
+data\                   # 📊 Market data storage
+├── Historical\         # Historical market data
+├── ODTE_TimeSeries_5Y.db     # 5-year time series database
+└── real_historical\    # Validated historical data
 ```
 
-## ⚡ NEW: ODTE.Strategy Production DLL
+## ⚡  NEW: ODTE.Strategy Production DLL
 
 **🎉 Just Released**: Complete strategy library ready for integration!
 
@@ -117,7 +179,11 @@ Archive\                # 📦 Historical research and development
 // Main API Interface - Ready for external use
 IStrategyEngine engine = new StrategyEngine();
 
-// All core strategies available
+// Dual-strategy framework
+await engine.ExecutePM250StrategyAsync(parameters, conditions);  // Profit maximization
+await engine.ExecutePM212StrategyAsync(parameters, conditions);  // Capital preservation
+
+// Core strategies available
 await engine.ExecuteIronCondorAsync(parameters, conditions);
 await engine.ExecuteCreditBWBAsync(parameters, conditions); 
 await engine.ExecuteConvexTailOverlayAsync(parameters, conditions);
@@ -125,18 +191,25 @@ await engine.ExecuteConvexTailOverlayAsync(parameters, conditions);
 // 24-day regime switching framework  
 await engine.Execute24DayRegimeSwitchingAsync(startDate, endDate, capital);
 
+// Realistic execution engine
+IFillEngine fillEngine = new RealisticFillEngine(ExecutionProfile.Conservative);
+await fillEngine.SimulateFillAsync(order, quote, profile, marketState);
+
 // Analysis and optimization
 await engine.AnalyzeAndRecommendAsync(conditions);
 await engine.RunRegressionTestsAsync();
 ```
 
-### ✅ Production Ready Features
+### ✅  Production Ready Features
 - **Clean Public API**: Professional interface for external applications
 - **46 Comprehensive Tests**: 91.3% pass rate with API validation  
 - **Zero Compilation Errors**: Clean, maintainable architecture
 - **Backward Compatible**: Legacy MarketConditions support preserved
 - **Type Safe**: Full type safety with proper conversion handling
 - **NuGet Package**: Ready for distribution (`ODTE.Strategy.1.0.0.nupkg`)
+- **Realistic Execution**: Market-microstructure-aware fill simulation engine
+- **Institutional Audit**: PM212 strategy passes all compliance requirements
+- **Dual Strategy Support**: Both PM250 (profit) and PM212 (preservation) ready
 
 ### 🚀 Integration Examples
 ```bash
@@ -158,6 +231,18 @@ cd ODTE.Optimization
 dotnet run "ODTE_IronCondor" 50
 ```
 **Output**: Generates 50 strategy variants, tests each across 5 years of data, reports best performers.
+
+### Explore PM250/PM212 Strategies
+```bash
+# PM250 Analysis
+cd Options.OPM/PM250Tools/PM250Analysis
+dotnet run
+
+# PM212 Validation
+cd Options.OPM/PM212Tools/PM212Analysis
+dotnet run
+```
+**Output**: Complete performance analysis for dual-strategy framework.
 
 ### Launch the Dashboard
 ```bash
@@ -212,10 +297,10 @@ Generation 50:            +$8,932 (75.1% win rate)
 ```
 
 ### Battle-Tested Scenarios
-✅ **Survived**: March 2020 COVID crash (-35% in 5 weeks)  
-✅ **Survived**: Feb 2018 Volmageddon (VIX 50+ spike)  
-✅ **Survived**: 2022 Bear Market (Fed hiking cycle)  
-✅ **Survived**: Flash crashes, gamma squeezes, liquidity droughts
+✅  **Survived**: March 2020 COVID crash (-35% in 5 weeks)  
+✅  **Survived**: Feb 2018 Volmageddon (VIX 50+ spike)  
+✅  **Survived**: 2022 Bear Market (Fed hiking cycle)  
+✅  **Survived**: Flash crashes, gamma squeezes, liquidity droughts
 
 ## 🎯 Strategy Focus
 
@@ -250,6 +335,8 @@ Generation 50:            +$8,932 (75.1% win rate)
 - **Underlying**: SPY/XSP minute-level OHLCV
 - **Volatility**: VIX, VIX9D term structure
 - **Calendar**: FOMC meetings, earnings, economic events
+- **Market Microstructure**: Bid-ask spreads, ToB sizes, latency modeling
+- **Execution Profiles**: YAML-configured realistic fill parameters
 
 ### Performance
 - **Backtests**: 5 years in ~30 seconds
@@ -259,7 +346,7 @@ Generation 50:            +$8,932 (75.1% win rate)
 
 ## 📈 Getting Serious: Production Path
 
-### Phase 1: Validate ✅
+### Phase 1: Validate ✅ 
 ```bash
 # Run comprehensive backtests
 cd ODTE.Backtest && dotnet run
@@ -317,12 +404,12 @@ cd ODTE.Start && dotnet watch run
 - Document strategy rationale
 - Test against synthetic scenarios first
 
-## ⚠️ Important Disclaimers
+## ⚠️  Important Disclaimers
 
 ### Educational Purpose
 This software is provided **for educational and research purposes only**:
-- ❌ **Not investment advice** - No trading recommendations provided
-- ⚠️ **Substantial risk** - Options trading can result in total loss
+- ❌  **Not investment advice** - No trading recommendations provided
+- ⚠️  **Substantial risk** - Options trading can result in total loss
 - 🧪 **Paper trade first** - Always test thoroughly before risking capital
 - 👤 **Your responsibility** - All trading decisions are solely yours
 - 📜 **No warranties** - System provided as-is without performance guarantees
@@ -375,7 +462,7 @@ This software is provided **for educational and research purposes only**:
 ## 📊 Project Status
 
 ### Current Version: 2.3 (RevFibNotch System Complete)
-- ✅ **Strategy Library DLL** - 🆕 PRODUCTION READY with public APIs
+- ✅  **Strategy Library DLL** - 🆕 PRODUCTION READY with public APIs
 - ✅ **Comprehensive Testing** - 46 tests with 91.3% pass rate
 - ✅ **Genetic Optimization Engine** - Fully functional
 - ✅ **5-Year Historical Data** - Complete dataset
@@ -388,12 +475,17 @@ This software is provided **for educational and research purposes only**:
 - 📋 **Paper Trading Module** - Next major milestone
 
 ### Recent Accomplishments (August 2025)
+- ✅ **Project Reorganization**: Clean structure with Options.OPM and ODTE.Optimization
+- ✅ **Realistic Fill Simulation**: Institutional-grade execution engine (ODTE.Execution)
+- ✅ **PM212 Audit Compliance**: Passes all institutional requirements  
+- ✅ **GAP01-GAP64 Profiles**: Elite genetic configurations identified and organized
 - ✅ **RevFibNotch System**: Proportional risk management with 6-level scaling array
 - ✅ **ODTE.Strategy.dll**: Complete class library with IStrategyEngine API
+- ✅ **Dual-Strategy Framework**: PM250 (profit) + PM212 (preservation) integration
 - ✅ **24-Day Framework**: Full regime switching implementation  
 - ✅ **Code Quality**: Zero compilation errors, type safety improvements
-- ✅ **Testing Infrastructure**: Comprehensive API validation suite
-- ✅ **Project Cleanup**: Organized folder structure, archived legacy data
+- ✅ **Testing Infrastructure**: Comprehensive API validation suite including audit compliance
+- ✅ **Documentation Update**: Complete documentation reflecting new organized structure
 
 ### Roadmap 2025-2026
 - **Q3 2025**: ✅ RevFibNotch proportional scaling system (DONE!)
