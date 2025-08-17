@@ -202,7 +202,7 @@ namespace ODTE.Strategy.Tests
         public void Complete_RFib_Journey_Up_And_Down()
         {
             // Test: Complete journey through all RFib levels
-            var results = new List<NotchRFibAdjustment>();
+            var results = new List<RevFibNotchAdjustment>();
             var currentDate = _testDate;
 
             // Journey to maximum safety (series of losses)
@@ -309,8 +309,7 @@ namespace ODTE.Strategy.Tests
                 
                 var adjustment = _manager.ProcessDailyPnL(-testCase.Loss, _testDate);
                 
-                Assert.Equal(testCase.ExpectedMovement, adjustment.NotchMovement, 
-                    $"Failed for {testCase.Description}");
+                Assert.Equal(testCase.ExpectedMovement, adjustment.NotchMovement);
                 
                 Console.WriteLine($"✓ {testCase.Description}: {-testCase.Loss:C} → {adjustment.NotchMovement} notches");
             }

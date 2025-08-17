@@ -130,9 +130,9 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"✓ Critical scenarios: {_testScenarios.Count(s => s.CriticalTest)}");
         }
 
-        private List<RevFibNotchConfiguration> GenerateTestConfigurations()
+        private List<TestRevFibNotchConfiguration> GenerateTestConfigurations()
         {
-            return new List<RevFibNotchConfiguration>
+            return new List<TestRevFibNotchConfiguration>
             {
                 // Current system (baseline)
                 new()
@@ -220,7 +220,7 @@ namespace ODTE.Strategy.Tests
             };
         }
 
-        private ConfigurationResult TestConfiguration(RevFibNotchConfiguration config)
+        private ConfigurationResult TestConfiguration(TestRevFibNotchConfiguration config)
         {
             var totalPnL = 0m;
             var maxDrawdown = 0m;
@@ -381,7 +381,7 @@ namespace ODTE.Strategy.Tests
         public decimal VIX { get; set; }
     }
 
-    public class RevFibNotchConfiguration
+    public class TestRevFibNotchConfiguration
     {
         public string Name { get; set; }
         public decimal[] RevFibLimits { get; set; }
@@ -394,7 +394,7 @@ namespace ODTE.Strategy.Tests
 
     public class ConfigurationResult
     {
-        public RevFibNotchConfiguration Configuration { get; set; }
+        public TestRevFibNotchConfiguration Configuration { get; set; }
         public decimal FinalPnL { get; set; }
         public decimal MaxDrawdown { get; set; }
         public int LossesPreventedCount { get; set; }
@@ -415,7 +415,7 @@ namespace ODTE.Strategy.Tests
 
     public class SensitivityTestResults
     {
-        public RevFibNotchConfiguration BestConfiguration { get; set; }
+        public TestRevFibNotchConfiguration BestConfiguration { get; set; }
         public List<ConfigurationResult> AllResults { get; set; }
         public double ImprovementVsCurrent { get; set; }
     }

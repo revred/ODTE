@@ -38,7 +38,7 @@ namespace ODTE.Strategy.Tests
             Assert.True(validation.MonthlyAverage >= 569m, $"Phase 1 target not met: {validation.MonthlyAverage:C}");
             Assert.True(validation.MaxDrawdown <= 0.06m, "Phase 1 drawdown exceeded 6%");
             Assert.True(validation.WinRate >= 0.75m, $"Phase 1 win rate below 75%: {validation.WinRate:P1}");
-            Assert.Equal(0, validation.RFibBreaches, "Phase 1 had RFib breaches");
+            Assert.Equal(0, validation.RFibBreaches);
 
             Console.WriteLine($"Phase 1 Results: Monthly Avg: {validation.MonthlyAverage:C}, Win Rate: {validation.WinRate:P1}, Max DD: {validation.MaxDrawdown:P2}");
         }
@@ -152,7 +152,7 @@ namespace ODTE.Strategy.Tests
                 var riskValidation = _validator.ValidateRiskIntegrity(results);
 
                 // Risk integrity requirements
-                Assert.Equal(0, riskValidation.RFibBreaches, $"RFib breached in {scenario.Name}");
+                Assert.Equal(0, riskValidation.RFibBreaches);
                 Assert.True(riskValidation.CorrelationCompliance >= 0.95m, $"Correlation violations in {scenario.Name}");
                 Assert.True(riskValidation.PositionSizingAccuracy >= 0.90m, $"Position sizing errors in {scenario.Name}");
                 
@@ -423,13 +423,6 @@ namespace ODTE.Strategy.Tests
         public decimal CorrelationBudgetLimit { get; set; } = 1.0m;
     }
 
-    public enum ScalingPhase
-    {
-        Foundation = 0,
-        Escalation = 1,
-        Quality = 2,
-        Maximum = 3
-    }
 
     public class ScalingTestResult
     {
