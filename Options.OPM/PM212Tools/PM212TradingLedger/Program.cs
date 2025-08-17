@@ -115,6 +115,10 @@ namespace PM212TradingLedger
                 GenerateInstitutionalSummary(allTrades);
                 GenerateAuditTrail();
                 
+                // Run database verification
+                Console.WriteLine("\n🔍 Running database verification...");
+                VerifyDatabase.RunVerification(DB_PATH);
+                
                 Console.WriteLine("\n🏆 INSTITUTIONAL TRADING LEDGER COMPLETE!");
                 Console.WriteLine($"📁 Database: {Path.GetFullPath(DB_PATH)}");
                 Console.WriteLine($"📊 Total Trades: {allTrades.Count:N0}");

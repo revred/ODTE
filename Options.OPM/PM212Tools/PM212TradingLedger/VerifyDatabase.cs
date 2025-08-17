@@ -5,10 +5,8 @@ namespace PM212TradingLedger
 {
     public class VerifyDatabase
     {
-        public static void Main(string[] args)
+        public static void RunVerification(string dbPath = "PM212_Trading_Ledger_2005_2025.db")
         {
-            var dbPath = "PM212_Trading_Ledger_2005_2025.db";
-            
             Console.WriteLine("🔍 PM212 DATABASE VERIFICATION REPORT");
             Console.WriteLine("=" + new string('=', 50));
             
