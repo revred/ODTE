@@ -13,7 +13,7 @@ namespace ODTE.Strategy
     /// </summary>
     public class RevFibNotchManager
     {
-        private readonly decimal[] _rFibLimits = { 1250m, 800m, 500m, 300m, 200m, 100m };
+        private readonly decimal[] _rFibLimits = { 1280m, 500m, 300m, 200m, 100m, 50m };
         private int _currentNotchIndex;
         private readonly List<RevFibNotchDailyResult> _recentDays;
         private readonly RevFibNotchConfiguration _config;
@@ -25,7 +25,7 @@ namespace ODTE.Strategy
         public RevFibNotchManager(RevFibNotchConfiguration config = null)
         {
             _config = config ?? new RevFibNotchConfiguration();
-            _currentNotchIndex = 2; // Start at $500 (middle position)
+            _currentNotchIndex = 2; // Start at $300 (middle position)
             _recentDays = new List<RevFibNotchDailyResult>();
             
             // Initialize thresholds based on current RFib level
@@ -35,8 +35,9 @@ namespace ODTE.Strategy
 
         /// <summary>
         /// Process end-of-day P&L and adjust RFib position accordingly
+        /// OPTIMIZED: Enhanced with win rate monitoring and immediate protection
         /// </summary>
-        public RevFibNotchAdjustment ProcessDailyPnL(decimal dailyPnL, DateTime date)
+        public RevFibNotchAdjustment ProcessDailyPnL(decimal dailyPnL, DateTime date, decimal dailyWinRate = 0m)
         {
             var dailyResult = new RevFibNotchDailyResult
             {
@@ -45,7 +46,29 @@ namespace ODTE.Strategy
                 RFibLevelBefore = _currentNotchIndex
             };
 
-            // Calculate notch movement based on P&L
+            // OPTIMIZED: Check immediate protection trigger first
+            if (dailyPnL <= _config.ProtectiveTriggerLoss)
+            {
+                var protectiveAdjustment = new RevFibNotchMovementDecision
+                {
+                    NotchMovement = 2, // Immediate 2-notch protection
+                    Reason = $"IMMEDIATE_PROTECTION_{dailyPnL:C}"
+                };
+                ApplyNotchMovement(protectiveAdjustment);
+            }
+            
+            // OPTIMIZED: Check win rate threshold
+            if (dailyWinRate > 0 && dailyWinRate < _config.WinRateThreshold)
+            {
+                var winRateAdjustment = new RevFibNotchMovementDecision
+                {
+                    NotchMovement = 1, // Scale down for poor win rate
+                    Reason = $"LOW_WINRATE_{dailyWinRate:P1}"
+                };
+                ApplyNotchMovement(winRateAdjustment);
+            }
+            
+            // Calculate normal notch movement based on P&L
             var adjustment = CalculateNotchMovement(dailyPnL);
             
             // Apply movement
@@ -117,22 +140,24 @@ namespace ODTE.Strategy
             var currentLimit = _rFibLimits[_currentNotchIndex];
             var lossPercentage = lossAmount / currentLimit;
 
-            // Determine notch movement based on loss severity
-            int notchMovement = lossPercentage switch
+            // OPTIMIZED: More sensitive loss thresholds with scaling sensitivity
+            decimal adjustedLossPercentage = lossPercentage * _config.ScalingSensitivity;
+            
+            int notchMovement = adjustedLossPercentage switch
             {
-                >= 0.80m => 3, // Catastrophic loss: Move 3 notches right
-                >= 0.50m => 2, // Major loss: Move 2 notches right  
-                >= 0.25m => 1, // Significant loss: Move 1 notch right
-                >= 0.10m => 1, // Mild loss: Move 1 notch right
+                >= 0.60m => 3, // OPTIMIZED: Catastrophic loss (was 0.80m)
+                >= 0.35m => 2, // OPTIMIZED: Major loss (was 0.50m)  
+                >= 0.15m => 1, // OPTIMIZED: Significant loss (was 0.25m)
+                >= 0.06m => 1, // OPTIMIZED: Mild loss (was 0.10m)
                 _ => 0          // Minimal loss: No movement
             };
 
-            var reason = lossPercentage switch
+            var reason = adjustedLossPercentage switch
             {
-                >= 0.80m => "CATASTROPHIC_LOSS",
-                >= 0.50m => "MAJOR_LOSS",
-                >= 0.25m => "SIGNIFICANT_LOSS", 
-                >= 0.10m => "MILD_LOSS",
+                >= 0.60m => "CATASTROPHIC_LOSS_OPTIMIZED",
+                >= 0.35m => "MAJOR_LOSS_OPTIMIZED",
+                >= 0.15m => "SIGNIFICANT_LOSS_OPTIMIZED", 
+                >= 0.06m => "MILD_LOSS_OPTIMIZED",
                 _ => "MINIMAL_LOSS"
             };
 
@@ -338,11 +363,14 @@ namespace ODTE.Strategy
 
     public class RevFibNotchConfiguration
     {
-        public int RequiredConsecutiveProfitDays { get; set; } = 2;
-        public decimal MildProfitThreshold { get; set; } = 0.10m; // 10% profit threshold
-        public decimal MajorProfitThreshold { get; set; } = 0.30m; // 30% profit for immediate upgrade
+        public int RequiredConsecutiveProfitDays { get; set; } = 1; // OPTIMIZED: Faster scaling up
+        public decimal MildProfitThreshold { get; set; } = 0.08m; // OPTIMIZED: 8% profit threshold (more sensitive)
+        public decimal MajorProfitThreshold { get; set; } = 0.25m; // OPTIMIZED: 25% profit for immediate upgrade
         public int MaxHistoryDays { get; set; } = 30;
         public int DrawdownLookbackDays { get; set; } = 10;
+        public decimal WinRateThreshold { get; set; } = 0.71m; // ULTRA-OPTIMIZED: Scale down if win rate <71%
+        public decimal ProtectiveTriggerLoss { get; set; } = -75m; // ULTRA-OPTIMIZED: Immediate protection at -$75
+        public decimal ScalingSensitivity { get; set; } = 2.26m; // ULTRA-OPTIMIZED: 2.26x faster scaling
     }
 
     public class RevFibNotchDailyResult

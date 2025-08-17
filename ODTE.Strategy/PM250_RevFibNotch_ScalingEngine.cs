@@ -46,11 +46,12 @@ namespace ODTE.Strategy
 
         /// <summary>
         /// Process end-of-day P&L and update RevFibNotch position
+        /// OPTIMIZED: Enhanced with win rate monitoring
         /// </summary>
-        public RevFibNotchScalingDailyResult ProcessEndOfDay(decimal dailyPnL, DateTime date)
+        public RevFibNotchScalingDailyResult ProcessEndOfDay(decimal dailyPnL, DateTime date, decimal dailyWinRate = 0m)
         {
-            // Update RevFibNotch position based on P&L
-            var notchAdjustment = _revFibNotchManager.ProcessDailyPnL(dailyPnL, date);
+            // OPTIMIZED: Update RevFibNotch position based on P&L and win rate
+            var notchAdjustment = _revFibNotchManager.ProcessDailyPnL(dailyPnL, date, dailyWinRate);
             
             // Update session statistics
             UpdateSessionForNewDay(dailyPnL, date);
@@ -129,17 +130,18 @@ namespace ODTE.Strategy
 
         /// <summary>
         /// Determine scaling phase based on current RFib level
+        /// OPTIMIZED: Updated for new conservative limits
         /// </summary>
         private RevFibNotchScalingPhase DetermineScalingPhase(decimal rFibLimit)
         {
             return rFibLimit switch
             {
-                1250m => RevFibNotchScalingPhase.Maximum,      // Most aggressive
-                800m => RevFibNotchScalingPhase.Aggressive,    // High scaling
-                500m => RevFibNotchScalingPhase.Balanced,      // Balanced approach
-                300m => RevFibNotchScalingPhase.Conservative,  // Reduced scaling
-                200m => RevFibNotchScalingPhase.Defensive,     // Minimal scaling
-                100m => RevFibNotchScalingPhase.Survival,      // Capital preservation only
+                1280m => RevFibNotchScalingPhase.Maximum,      // ULTRA-OPTIMIZED: Most aggressive
+                500m => RevFibNotchScalingPhase.Aggressive,     // ULTRA-OPTIMIZED: High scaling  
+                300m => RevFibNotchScalingPhase.Balanced,       // ULTRA-OPTIMIZED: Balanced approach
+                200m => RevFibNotchScalingPhase.Conservative,   // ULTRA-OPTIMIZED: Reduced scaling
+                100m => RevFibNotchScalingPhase.Defensive,      // ULTRA-OPTIMIZED: Minimal scaling
+                50m => RevFibNotchScalingPhase.Survival,        // ULTRA-OPTIMIZED: Capital preservation only
                 _ => RevFibNotchScalingPhase.Balanced
             };
         }
@@ -236,17 +238,18 @@ namespace ODTE.Strategy
 
         /// <summary>
         /// Get scaling multiplier based on RevFibNotch phase
+        /// OPTIMIZED: More conservative multipliers for protection
         /// </summary>
         private decimal GetNotchScalingMultiplier(RevFibNotchScalingPhase phase)
         {
             return phase switch
             {
-                RevFibNotchScalingPhase.Maximum => 1.50m,      // 150% of base allocation
-                RevFibNotchScalingPhase.Aggressive => 1.25m,   // 125% of base allocation
+                RevFibNotchScalingPhase.Maximum => 1.30m,      // OPTIMIZED: 130% of base allocation (was 150%)
+                RevFibNotchScalingPhase.Aggressive => 1.15m,   // OPTIMIZED: 115% of base allocation (was 125%)
                 RevFibNotchScalingPhase.Balanced => 1.00m,     // 100% of base allocation
-                RevFibNotchScalingPhase.Conservative => 0.80m, // 80% of base allocation
-                RevFibNotchScalingPhase.Defensive => 0.60m,    // 60% of base allocation
-                RevFibNotchScalingPhase.Survival => 0.40m,     // 40% of base allocation (capital preservation)
+                RevFibNotchScalingPhase.Conservative => 0.75m, // OPTIMIZED: 75% of base allocation (was 80%)
+                RevFibNotchScalingPhase.Defensive => 0.50m,    // OPTIMIZED: 50% of base allocation (was 60%)
+                RevFibNotchScalingPhase.Survival => 0.30m,     // OPTIMIZED: 30% of base allocation (was 40%)
                 _ => 1.00m
             };
         }
@@ -577,12 +580,12 @@ namespace ODTE.Strategy
 
     public enum RevFibNotchScalingPhase
     {
-        Survival = 0,     // $100 - Capital preservation only
-        Defensive = 1,    // $200 - Minimal scaling
-        Conservative = 2, // $300 - Reduced scaling
-        Balanced = 3,     // $500 - Standard scaling
-        Aggressive = 4,   // $800 - High scaling
-        Maximum = 5       // $1250 - Maximum scaling
+        Survival = 0,     // $50 - Capital preservation only
+        Defensive = 1,    // $100 - Minimal scaling
+        Conservative = 2, // $200 - Reduced scaling
+        Balanced = 3,     // $300 - Standard scaling
+        Aggressive = 4,   // $500 - High scaling
+        Maximum = 5       // $1280 - Maximum scaling
     }
 
     public class RevFibNotchScalingConfiguration
