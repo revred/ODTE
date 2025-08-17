@@ -286,7 +286,7 @@ namespace AdvancedGeneticOptimizer
         
         private decimal CalculateGeneticCredit(decimal positionSize, decimal vix)
         {
-            var baseCreditPct = 0.025m; // This might be the bug - too low
+            var baseCreditPct = 0.035m; // FIXED: Realistic Iron Condor credit (was 0.025m - too low)
             var vixBonus = 1.0m + (vix / 100m);
             return positionSize * baseCreditPct * vixBonus;
         }

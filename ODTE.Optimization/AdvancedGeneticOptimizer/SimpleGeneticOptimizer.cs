@@ -262,7 +262,7 @@ namespace AdvancedGeneticOptimizer
         {
             return strategy switch
             {
-                StrategyType.IronCondor => 0.02m,
+                StrategyType.IronCondor => 0.035m, // FIXED: Realistic Iron Condor credit (was 0.02m)
                 StrategyType.BrokenWingButterfly => 0.015m,
                 StrategyType.JadeElephant => 0.025m,
                 StrategyType.ShortStrangle => 0.035m,
