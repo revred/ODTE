@@ -1,0 +1,15 @@
+# pm212_agent_config.yaml
+date_range:
+  start: "2005-01-01"
+  end: "2025-07-31"
+
+thresholds:
+  nbbo_within_pct: 98.0     # >= 98% fills within [bid-1c, ask+1c]
+  mid_rate_max_pct: 60.0    # <= 60% fills at or above mid
+  pf_5c_min: 1.30           # PF under $0.05 slip
+  pf_10c_min: 1.15          # PF under $0.10 slip
+  guardrail_breaches_max: 0 # must be zero
+
+execution:
+  tolerance: 0.01           # $0.01 NBBO band tolerance
+  slippage_penalty_cents: [0.05, 0.10]
