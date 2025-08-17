@@ -485,7 +485,7 @@ namespace ODTE.Strategy.MultiLegStrategies
         {
             // Simplified Black-Scholes approximation
             var moneyness = spot / strike;
-            var timeValue = Math.Sqrt(dte / 365.0m);
+            var timeValue = (decimal)Math.Sqrt((double)(dte / 365.0m));
             var volatility = vix / 100m;
             
             if (moneyness >= 1.0m)
@@ -496,14 +496,14 @@ namespace ODTE.Strategy.MultiLegStrategies
             else
             {
                 // OTM: Time value only
-                return strike * volatility * timeValue * (0.3m + moneyness * 0.3m);
+                return strike * volatility * timeValue * (0.3m + (moneyness * 0.3m));
             }
         }
         
         private static decimal CalculatePutPremium(decimal spot, decimal strike, decimal rate, decimal vix, int dte = 45)
         {
             var moneyness = strike / spot;
-            var timeValue = Math.Sqrt(dte / 365.0m);
+            var timeValue = (decimal)Math.Sqrt((double)(dte / 365.0m));
             var volatility = vix / 100m;
             
             if (moneyness >= 1.0m)
@@ -514,7 +514,7 @@ namespace ODTE.Strategy.MultiLegStrategies
             else
             {
                 // OTM: Time value only
-                return strike * volatility * timeValue * (0.3m + (2.0m - moneyness) * 0.3m);
+                return strike * volatility * timeValue * (0.3m + ((2.0m - moneyness) * 0.3m));
             }
         }
         
