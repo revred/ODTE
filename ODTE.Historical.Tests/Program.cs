@@ -78,6 +78,7 @@ class Program
                 "stress" or "load" => await RunStressTest(),
                 "cold-start" or "cold" => await TestColdStartCapability(),
                 "integration" or "int" => await RunIntegrationTests(),
+                "oil-demo" or "oil" => await RunOilDataDemo(),
                 _ => await ShowOperationsMenu()
             };
         }
@@ -507,6 +508,20 @@ class Program
         return 0;
     }
 
+    private static async Task<int> RunOilDataDemo()
+    {
+        try
+        {
+            await OilDataDemonstration.RunLiveOilDataDemo();
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Oil data demo failed: {ex.Message}");
+            return 1;
+        }
+    }
+
     private static async Task<int> ShowOperationsMenu()
     {
         Console.WriteLine("❓ UNKNOWN OPERATION");
@@ -523,6 +538,7 @@ class Program
         Console.WriteLine("  stress       - Stress test the data pipeline");
         Console.WriteLine("  cold-start   - Test cold start capability");
         Console.WriteLine("  integration  - Run integration test suite");
+        Console.WriteLine("  oil-demo     - Demonstrate crude oil data acquisition");
         Console.WriteLine();
         Console.WriteLine("Use --help for detailed information");
 

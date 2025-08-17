@@ -103,15 +103,38 @@ namespace ODTE.Historical.DataProviders
             // Handle common symbol conversions
             return symbol switch
             {
-                "^VIX" => "^VIX",          // VIX index (keep ^ for indices)
+                // Indices (keep ^ prefix)
+                "^VIX" => "^VIX",          // VIX volatility index
                 "^SPX" => "^SPX",          // S&P 500 index
                 "^DJI" => "^DJI",          // Dow Jones index
                 "^IXIC" => "^IXIC",        // NASDAQ index
-                "SPY" => "SPY.US",         // US ETFs need .US suffix
-                "QQQ" => "QQQ.US",         // PowerShares QQQ
-                "IWM" => "IWM.US",         // iShares Russell 2000
+                
+                // Standard ETFs (add .US suffix)
+                "SPY" => "SPY.US",         // SPDR S&P 500 ETF
+                "QQQ" => "QQQ.US",         // PowerShares QQQ ETF
+                "IWM" => "IWM.US",         // iShares Russell 2000 ETF
                 "XSP" => "XSP.TO",         // Canadian ETF (Toronto exchange)
-                _ => symbol.Contains("^") ? symbol : $"{symbol.ToUpper()}.US" // Add .US for US stocks
+                
+                // Oil & Energy ETFs
+                "USO" => "USO.US",         // United States Oil Fund ETF
+                "UCO" => "UCO.US",         // ProShares Ultra Bloomberg Crude Oil ETF
+                "SCO" => "SCO.US",         // ProShares UltraShort Bloomberg Crude Oil ETF
+                "USL" => "USL.US",         // United States 12 Month Oil Fund ETF
+                "DBO" => "DBO.US",         // Invesco DB Oil Fund ETF
+                "OIL" => "OIL.US",         // iPath S&P GSCI Crude Oil ETN
+                "GUSH" => "GUSH.US",       // Direxion Daily S&P Oil & Gas Bull 2X
+                "DRIP" => "DRIP.US",       // Direxion Daily S&P Oil & Gas Bear 2X
+                "XLE" => "XLE.US",         // Energy Select Sector SPDR Fund
+                "VDE" => "VDE.US",         // Vanguard Energy ETF
+                
+                // Commodities ETFs
+                "GLD" => "GLD.US",         // SPDR Gold Trust ETF
+                "SLV" => "SLV.US",         // iShares Silver Trust ETF
+                "UNG" => "UNG.US",         // United States Natural Gas Fund ETF
+                "DBA" => "DBA.US",         // Invesco DB Agriculture Fund ETF
+                
+                // Default: Add .US for US stocks/ETFs, keep indices as-is
+                _ => symbol.Contains("^") ? symbol : $"{symbol.ToUpper()}.US"
             };
         }
 

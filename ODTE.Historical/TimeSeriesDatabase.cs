@@ -78,7 +78,55 @@ public class TimeSeriesDatabase : IDisposable
                 notes TEXT
             )");
 
-        Console.WriteLine($"✅ Time series database initialized: {_dbPath}");
+        // Options data table for options chains
+        await ExecuteNonQueryAsync(@"
+            CREATE TABLE IF NOT EXISTS options_data (
+                id INTEGER PRIMARY KEY,
+                timestamp INTEGER NOT NULL,                    -- Unix timestamp
+                underlying_symbol_id INTEGER NOT NULL,         -- Reference to symbols table
+                option_symbol TEXT NOT NULL,                   -- Full option symbol (USO240119C00012000)
+                contract_type INTEGER NOT NULL,                -- 0=Call, 1=Put
+                strike_price INTEGER NOT NULL,                 -- Strike * 10000 (compression)
+                expiration_date INTEGER NOT NULL,              -- Expiration as YYYYMMDD
+                days_to_expiration INTEGER NOT NULL,           -- DTE
+                bid_price INTEGER NOT NULL,                    -- Bid * 10000
+                ask_price INTEGER NOT NULL,                    -- Ask * 10000
+                last_price INTEGER NOT NULL,                   -- Last * 10000
+                volume INTEGER NOT NULL,                       -- Volume
+                open_interest INTEGER NOT NULL,                -- Open Interest
+                implied_volatility INTEGER NOT NULL,           -- IV * 10000
+                delta INTEGER NOT NULL,                        -- Delta * 10000
+                gamma INTEGER NOT NULL,                        -- Gamma * 100000 
+                theta INTEGER NOT NULL,                        -- Theta * 10000
+                vega INTEGER NOT NULL,                          -- Vega * 10000
+                underlying_price INTEGER NOT NULL              -- Underlying price * 10000
+            )");
+
+        // Index for fast options queries
+        await ExecuteNonQueryAsync(@"
+            CREATE INDEX IF NOT EXISTS idx_options_timestamp_symbol 
+            ON options_data(timestamp, underlying_symbol_id)");
+
+        await ExecuteNonQueryAsync(@"
+            CREATE INDEX IF NOT EXISTS idx_options_expiration 
+            ON options_data(expiration_date, underlying_symbol_id, strike_price)");
+
+        // Options chains metadata
+        await ExecuteNonQueryAsync(@"
+            CREATE TABLE IF NOT EXISTS options_chains (
+                id INTEGER PRIMARY KEY,
+                underlying_symbol_id INTEGER NOT NULL,
+                expiration_date INTEGER NOT NULL,              -- YYYYMMDD
+                chain_timestamp INTEGER NOT NULL,              -- When chain was captured
+                total_calls INTEGER NOT NULL,                  -- Number of call options
+                total_puts INTEGER NOT NULL,                   -- Number of put options
+                min_strike INTEGER NOT NULL,                   -- Minimum strike * 10000
+                max_strike INTEGER NOT NULL,                   -- Maximum strike * 10000
+                underlying_price INTEGER NOT NULL,             -- Underlying price at capture * 10000
+                UNIQUE(underlying_symbol_id, expiration_date, chain_timestamp)
+            )");
+
+        Console.WriteLine($"✅ Time series database initialized with options support: {_dbPath}");
     }
 
     /// <summary>

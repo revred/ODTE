@@ -142,7 +142,7 @@ public class MultiSourceDataFetcherExample
 /// <summary>
 /// Simple mock data provider for demonstration
 /// </summary>
-internal class MockDataProvider : IOptionsDataProvider
+internal class MockDataProvider : DataProviders.IOptionsDataProvider, IDisposable
 {
     public string ProviderName => "Mock Provider (Demo)";
     public int Priority => 1;
@@ -218,6 +218,12 @@ internal class MockDataProvider : IOptionsDataProvider
             ResetTime = DateTime.UtcNow.AddMinutes(1),
             IsThrottled = false
         };
+    }
+
+
+    public void Dispose()
+    {
+        // Mock provider - nothing to dispose
     }
 
     private List<OptionsContract> GenerateOptions(string symbol, string type, int count)
