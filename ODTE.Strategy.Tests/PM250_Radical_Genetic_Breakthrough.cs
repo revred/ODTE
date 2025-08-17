@@ -431,33 +431,33 @@ namespace ODTE.Strategy.Tests
         private RadicalChromosome RadicalMutation(RadicalChromosome chromosome)
         {
             // Apply radical mutations with 35% chance per parameter
-            if (_random.NextDouble() < MUTATION_RATE)
+            if (_random.NextDouble() < (double)MUTATION_RATE)
             {
                 // Determine if this is a radical mutation (20% chance)
-                bool isRadicalMutation = _random.NextDouble() < RADICAL_MUTATION_CHANCE;
+                bool isRadicalMutation = _random.NextDouble() < (double)RADICAL_MUTATION_CHANCE;
                 decimal mutationStrength = isRadicalMutation ? 0.5m : 0.1m; // Radical = 50% change, Normal = 10% change
                 
                 // Mutate core parameters
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit1 = MutateParameter(chromosome.RFibLimit1, 800m, 2000m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit2 = MutateParameter(chromosome.RFibLimit2, 300m, 800m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit3 = MutateParameter(chromosome.RFibLimit3, 150m, 500m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit4 = MutateParameter(chromosome.RFibLimit4, 75m, 300m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit5 = MutateParameter(chromosome.RFibLimit5, 25m, 150m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.RFibLimit6 = MutateParameter(chromosome.RFibLimit6, 10m, 75m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit1 = MutateParameter(chromosome.RFibLimit1, 800m, 2000m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit2 = MutateParameter(chromosome.RFibLimit2, 300m, 800m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit3 = MutateParameter(chromosome.RFibLimit3, 150m, 500m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit4 = MutateParameter(chromosome.RFibLimit4, 75m, 300m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit5 = MutateParameter(chromosome.RFibLimit5, 25m, 150m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.RFibLimit6 = MutateParameter(chromosome.RFibLimit6, 10m, 75m, mutationStrength);
                 
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.WinRateThreshold = MutateParameter(chromosome.WinRateThreshold, 0.55m, 0.85m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.ProtectiveTriggerLoss = MutateParameter(chromosome.ProtectiveTriggerLoss, -150m, -25m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.ScalingSensitivity = MutateParameter(chromosome.ScalingSensitivity, 0.5m, 4.0m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.WinRateThreshold = MutateParameter(chromosome.WinRateThreshold, 0.55m, 0.85m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.ProtectiveTriggerLoss = MutateParameter(chromosome.ProtectiveTriggerLoss, -150m, -25m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.ScalingSensitivity = MutateParameter(chromosome.ScalingSensitivity, 0.5m, 4.0m, mutationStrength);
                 
                 // Mutate advanced parameters
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.MovementAgility = MutateParameter(chromosome.MovementAgility, 0.8m, 3.0m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.LossReactionSpeed = MutateParameter(chromosome.LossReactionSpeed, 0.5m, 3.5m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.ProfitReactionSpeed = MutateParameter(chromosome.ProfitReactionSpeed, 0.5m, 2.5m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.MovementAgility = MutateParameter(chromosome.MovementAgility, 0.8m, 3.0m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.LossReactionSpeed = MutateParameter(chromosome.LossReactionSpeed, 0.5m, 3.5m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.ProfitReactionSpeed = MutateParameter(chromosome.ProfitReactionSpeed, 0.5m, 2.5m, mutationStrength);
                 
                 // Mutate revolutionary parameters
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.CrisisRecoverySpeed = MutateParameter(chromosome.CrisisRecoverySpeed, 0.3m, 2.5m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.VolatilityAdaptation = MutateParameter(chromosome.VolatilityAdaptation, 0.4m, 2.0m, mutationStrength);
-                if (_random.NextDouble() < MUTATION_RATE) chromosome.TrendFollowingStrength = MutateParameter(chromosome.TrendFollowingStrength, 0.2m, 1.8m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.CrisisRecoverySpeed = MutateParameter(chromosome.CrisisRecoverySpeed, 0.3m, 2.5m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.VolatilityAdaptation = MutateParameter(chromosome.VolatilityAdaptation, 0.4m, 2.0m, mutationStrength);
+                if (_random.NextDouble() < (double)MUTATION_RATE) chromosome.TrendFollowingStrength = MutateParameter(chromosome.TrendFollowingStrength, 0.2m, 1.8m, mutationStrength);
                 
                 // Mark as extreme configuration if mutation creates extreme values
                 if (isRadicalMutation)

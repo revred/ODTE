@@ -339,7 +339,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Complete sequence from Level 0 → Level 1 → Level 2 → De-escalation
             _engine.ConfigureForPhase(ScalingPhase.Quality);
-            var decisions = new List<TradeDecision>();
+            var decisions = new List<ScalingTradeDecision>();
 
             // Phase 1: Level 0 (No positive probe)
             _probeDetector.SetPositiveProbeResult(false);

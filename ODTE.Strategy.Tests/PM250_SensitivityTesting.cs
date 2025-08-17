@@ -309,8 +309,8 @@ namespace ODTE.Strategy.Tests
             var drawdownScore = Math.Max(0, 50 - maxDrawdown * 1000);
             var protectionScore = lossesPreventedCount * 20;
 
-            var overallScore = criticalScenarioScore * 0.5 + profitabilityScore * 0.2 + 
-                              drawdownScore * 0.2 + protectionScore * 0.1;
+            var overallScore = criticalScenarioScore * 0.5m + profitabilityScore * 0.2m + 
+                              drawdownScore * 0.2m + protectionScore * 0.1m;
 
             return new ConfigurationResult
             {
@@ -318,9 +318,9 @@ namespace ODTE.Strategy.Tests
                 FinalPnL = totalPnL,
                 MaxDrawdown = maxDrawdown,
                 LossesPreventedCount = lossesPreventedCount,
-                OverallScore = overallScore,
+                OverallScore = (double)overallScore,
                 ScenarioResults = scenarioResults,
-                CriticalScenarioScore = criticalScenarioScore
+                CriticalScenarioScore = (double)criticalScenarioScore
             };
         }
 
