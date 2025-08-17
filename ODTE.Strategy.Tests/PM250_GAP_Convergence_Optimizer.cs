@@ -650,15 +650,15 @@ namespace ODTE.Strategy.Tests
         {
             // Assess how neutral the configuration is across market regimes
             decimal crisis = config.Parameters[12];
-            decimal volatile = config.Parameters[13];
+            decimal volatileRegime = config.Parameters[13];
             decimal bull = config.Parameters[14];
             
             // Calculate variance from neutral (1.0)
             decimal crisisVar = Math.Abs(crisis - 0.33m);
-            decimal volatileVar = Math.Abs(volatile - 1.0m);
+            decimal volatility = Math.Abs(volatileRegime - 1.0m);
             decimal bullVar = Math.Abs(bull - 1.0m);
             
-            decimal totalVar = crisisVar + volatileVar + bullVar;
+            decimal totalVar = crisisVar + volatility + bullVar;
             return Math.Max(1 - totalVar / 2m, 0);
         }
         
