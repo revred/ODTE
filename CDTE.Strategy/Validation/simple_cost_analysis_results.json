@@ -1,0 +1,27 @@
+{
+  "AnalysisDate": "2025-08-18T00:08:38.9900647Z",
+  "OriginalResults": {
+    "CAGR": 0.5813,
+    "PositionSize": 0.0205,
+    "TakeProfit": 0.868,
+    "RiskCap": 1130,
+    "ICWeight": 0.496,
+    "IFWeight": 0.423,
+    "BWBWeight": 0.08,
+    "StrategyDescription": "49.6% IC, 42.3% IF, 8.0% BWB",
+    "WeeklyTrades": 50,
+    "AverageContracts": 5
+  },
+  "CostAnalysis": {
+    "BidAskImpact": 0.00075,
+    "CommissionImpact": 0.00675,
+    "SlippageImpact": 0.0012330000000000002,
+    "AssignmentImpact": 0.00125,
+    "LiquidityImpact": 0.0050000000000000044,
+    "TotalCostImpact": 0.014983000000000003
+  },
+  "CostAdjustedCAGR": 0.5663170000000001,
+  "TargetAchieved": true,
+  "PerformanceReduction": 0.025774987097884058,
+  "Verdict": "VIABLE"
+}
