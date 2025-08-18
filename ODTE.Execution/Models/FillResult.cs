@@ -77,6 +77,7 @@ public record ExecutionDiagnostics
     public Quote StartQuote { get; init; } = new();
     public Quote? EndQuote { get; init; }
     public List<string> Warnings { get; init; } = new();
+    public string? FailureReason { get; init; }
 
     /// <summary>
     /// Calculate execution quality score (0-100)

@@ -1,0 +1,698 @@
+@page "/cdte-dashboard"
+@using CDTE.Strategy.Backtesting
+@using Microsoft.Extensions.Logging
+@inject ILogger<CDTEDashboard> Logger
+
+<PageTitle>CDTE Weekly Engine Dashboard</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">🗓️ CDTE Weekly Engine</h1>
+            <p class="lead">Couple Days To Expiry strategy monitoring and analysis</p>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Current Week</h5>
+                            <h3 class="mb-0">@currentWeekStatus</h3>
+                        </div>
+                        <div class="text-primary-light">
+                            <i class="fas fa-calendar-week fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Weekly P&L</h5>
+                            <h3 class="mb-0">@weeklyPnL.ToString("C")</h3>
+                        </div>
+                        <div class="text-success-light">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">IV Regime</h5>
+                            <h3 class="mb-0">@currentRegime</h3>
+                        </div>
+                        <div class="text-info-light">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Win Rate</h5>
+                            <h3 class="mb-0">@winRate.ToString("P1")</h3>
+                        </div>
+                        <div class="text-warning-light">
+                            <i class="fas fa-trophy fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strategy Workflow Timeline -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📅 Weekly Workflow Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="workflow-timeline">
+                        <div class="timeline-item @(GetTimelineStatus("Monday"))">
+                            <div class="timeline-icon">🎯</div>
+                            <div class="timeline-content">
+                                <h6>Monday Entry (10:00 ET)</h6>
+                                <p>Enter Core (Thu) + Carry (Fri) positions</p>
+                                <small class="text-muted">Status: @mondayStatus</small>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item @(GetTimelineStatus("Wednesday"))">
+                            <div class="timeline-icon">⚖️</div>
+                            <div class="timeline-content">
+                                <h6>Wednesday Management (12:30 ET)</h6>
+                                <p>P&L assessment and roll decisions</p>
+                                <small class="text-muted">Status: @wednesdayStatus</small>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item @(GetTimelineStatus("Friday"))">
+                            <div class="timeline-icon">🏁</div>
+                            <div class="timeline-content">
+                                <h6>Friday Exit (15:00 CT)</h6>
+                                <p>Force close all remaining positions</p>
+                                <small class="text-muted">Status: @fridayStatus</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Regime Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">📊 Market Regime Performance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="regimeChart" width="400" height="300"></canvas>
+                    
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="regime-stat">
+                                    <span class="badge badge-low-iv">Low IV</span>
+                                    <div class="stat-value">@lowIvStats.WinRate.ToString("P1")</div>
+                                    <small class="text-muted">Win Rate</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="regime-stat">
+                                    <span class="badge badge-mid-iv">Mid IV</span>
+                                    <div class="stat-value">@midIvStats.WinRate.ToString("P1")</div>
+                                    <small class="text-muted">Win Rate</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="regime-stat">
+                                    <span class="badge badge-high-iv">High IV</span>
+                                    <div class="stat-value">@highIvStats.WinRate.ToString("P1")</div>
+                                    <small class="text-muted">Win Rate</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🎯 Strategy Structure Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="strategyChart" width="400" height="300"></canvas>
+                    
+                    <div class="mt-3">
+                        <div class="strategy-legend">
+                            <div class="legend-item">
+                                <span class="legend-color bg-bwb"></span>
+                                <span>BWB (Low IV): @bwbCount trades</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color bg-ic"></span>
+                                <span>Iron Condor (Mid IV): @icCount trades</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color bg-if"></span>
+                                <span>Iron Fly (High IV): @ifCount trades</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Heatmap -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🔥 Weekly Performance Heatmap</h5>
+                </div>
+                <div class="card-body">
+                    <div class="heatmap-container">
+                        @for (int month = 1; month <= 12; month++)
+                        {
+                            <div class="heatmap-month">
+                                <div class="month-label">@GetMonthName(month)</div>
+                                <div class="heatmap-weeks">
+                                    @for (int week = 1; week <= 4; week++)
+                                    {
+                                        var pnl = GetWeeklyPnL(month, week);
+                                        var heatClass = GetHeatmapClass(pnl);
+                                        <div class="heatmap-cell @heatClass" 
+                                             title="@GetMonthName(month) Week @week: @pnl.ToString("C")"
+                                             @onclick="() => ShowWeekDetails(month, week)">
+                                            <span class="cell-value">@pnl.ToString("C0")</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="heatmap-legend mt-3">
+                        <span class="legend-label">Performance Scale:</span>
+                        <div class="legend-gradient">
+                            <span class="legend-min">-$800</span>
+                            <div class="gradient-bar"></div>
+                            <span class="legend-max">+$800</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Trades Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">📋 Recent Trades</h5>
+                    <button class="btn btn-primary btn-sm" @onclick="RefreshData">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Week</th>
+                                    <th>Strategy</th>
+                                    <th>IV Regime</th>
+                                    <th>Entry P&L</th>
+                                    <th>Wed Action</th>
+                                    <th>Final P&L</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var trade in recentTrades)
+                                {
+                                    <tr class="@GetRowClass(trade.FinalPnL)">
+                                        <td>@trade.WeekStart.ToString("MMM dd")</td>
+                                        <td>
+                                            <span class="badge @GetStrategyBadge(trade.Strategy)">
+                                                @trade.Strategy
+                                            </span>
+                                        </td>
+                                        <td>@trade.IvRegime</td>
+                                        <td class="@GetPnLClass(trade.EntryPnL)">
+                                            @trade.EntryPnL.ToString("C")
+                                        </td>
+                                        <td>@trade.WednesdayAction</td>
+                                        <td class="@GetPnLClass(trade.FinalPnL)">
+                                            <strong>@trade.FinalPnL.ToString("C")</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetStatusBadge(trade.Status)">
+                                                @trade.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Management Panel -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">🛡️ Risk Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="risk-gauge-container">
+                        <canvas id="riskGauge" width="300" height="200"></canvas>
+                    </div>
+                    
+                    <div class="risk-metrics mt-3">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="metric">
+                                    <span class="metric-label">Max Risk</span>
+                                    <span class="metric-value text-danger">@maxRisk.ToString("C")</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric">
+                                    <span class="metric-label">Current Risk</span>
+                                    <span class="metric-value text-warning">@currentRisk.ToString("C")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">⚠️ System Alerts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alerts-container">
+                        @foreach (var alert in systemAlerts)
+                        {
+                            <div class="alert alert-@alert.Type alert-dismissible fade show" role="alert">
+                                <i class="fas fa-@alert.Icon"></i>
+                                <strong>@alert.Title</strong> @alert.Message
+                                <small class="float-right">@alert.Timestamp.ToString("HH:mm")</small>
+                            </div>
+                        }
+                        
+                        @if (!systemAlerts.Any())
+                        {
+                            <div class="text-center text-muted">
+                                <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                                <p>All systems operational</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // State variables
+    private string currentWeekStatus = "Active";
+    private decimal weeklyPnL = 245.67m;
+    private string currentRegime = "Mid IV";
+    private double winRate = 0.73;
+    
+    private string mondayStatus = "Completed";
+    private string wednesdayStatus = "Pending";
+    private string fridayStatus = "Scheduled";
+    
+    private RegimeStats lowIvStats = new() { WinRate = 0.68 };
+    private RegimeStats midIvStats = new() { WinRate = 0.76 };
+    private RegimeStats highIvStats = new() { WinRate = 0.71 };
+    
+    private int bwbCount = 24;
+    private int icCount = 45;
+    private int ifCount = 18;
+    
+    private decimal maxRisk = 800m;
+    private decimal currentRisk = 1200m;
+    
+    private List<TradeRow> recentTrades = new();
+    private List<SystemAlert> systemAlerts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+        await InitializeCharts();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        // Load sample data - in production this would come from the backtest results
+        recentTrades = new List<TradeRow>
+        {
+            new() { WeekStart = DateTime.Today.AddDays(-21), Strategy = "BWB", IvRegime = "Low", EntryPnL = -45m, WednesdayAction = "Hold", FinalPnL = 123m, Status = "Closed" },
+            new() { WeekStart = DateTime.Today.AddDays(-14), Strategy = "IC", IvRegime = "Mid", EntryPnL = 67m, WednesdayAction = "Roll", FinalPnL = 189m, Status = "Closed" },
+            new() { WeekStart = DateTime.Today.AddDays(-7), Strategy = "IC", IvRegime = "Mid", EntryPnL = -23m, WednesdayAction = "Loss Mgmt", FinalPnL = -156m, Status = "Closed" },
+            new() { WeekStart = DateTime.Today, Strategy = "IF", IvRegime = "High", EntryPnL = 89m, WednesdayAction = "Pending", FinalPnL = 89m, Status = "Open" }
+        };
+
+        systemAlerts = new List<SystemAlert>
+        {
+            new() { Type = "warning", Icon = "exclamation-triangle", Title = "Risk Alert:", Message = "Current risk exceeds cap by $400", Timestamp = DateTime.Now.AddMinutes(-15) },
+            new() { Type = "info", Icon = "info-circle", Title = "Market Update:", Message = "VIX above 22 - High IV regime detected", Timestamp = DateTime.Now.AddMinutes(-45) }
+        };
+    }
+
+    private async Task InitializeCharts()
+    {
+        // Chart initialization would go here using Chart.js or similar
+        // This is a placeholder for the actual chart rendering
+        await Task.Delay(100);
+    }
+
+    private async Task RefreshData()
+    {
+        Logger.LogInformation("Refreshing CDTE dashboard data");
+        await LoadDashboardData();
+        StateHasChanged();
+    }
+
+    private string GetTimelineStatus(string day)
+    {
+        return day switch
+        {
+            "Monday" => mondayStatus == "Completed" ? "completed" : "pending",
+            "Wednesday" => wednesdayStatus == "Completed" ? "completed" : "active",
+            "Friday" => fridayStatus == "Completed" ? "completed" : "pending",
+            _ => "pending"
+        };
+    }
+
+    private string GetMonthName(int month)
+    {
+        return new DateTime(2025, month, 1).ToString("MMM");
+    }
+
+    private decimal GetWeeklyPnL(int month, int week)
+    {
+        // Sample P&L data - in production this would come from backtest results
+        var random = new Random(month * 100 + week);
+        return (decimal)(random.NextDouble() * 1600 - 800); // Range from -$800 to +$800
+    }
+
+    private string GetHeatmapClass(decimal pnl)
+    {
+        return pnl switch
+        {
+            > 400 => "heat-high-positive",
+            > 200 => "heat-positive",
+            > 0 => "heat-low-positive",
+            > -200 => "heat-low-negative",
+            > -400 => "heat-negative",
+            _ => "heat-high-negative"
+        };
+    }
+
+    private void ShowWeekDetails(int month, int week)
+    {
+        // Navigate to detailed week view
+        Logger.LogInformation("Showing details for {Month} week {Week}", GetMonthName(month), week);
+    }
+
+    private string GetRowClass(decimal pnl) => pnl >= 0 ? "table-success-light" : "table-danger-light";
+    private string GetPnLClass(decimal pnl) => pnl >= 0 ? "text-success" : "text-danger";
+    
+    private string GetStrategyBadge(string strategy) => strategy switch
+    {
+        "BWB" => "badge-bwb",
+        "IC" => "badge-ic", 
+        "IF" => "badge-if",
+        _ => "badge-secondary"
+    };
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Open" => "badge-primary",
+        "Closed" => "badge-success",
+        "Failed" => "badge-danger",
+        _ => "badge-secondary"
+    };
+
+    // Data models
+    public class RegimeStats
+    {
+        public double WinRate { get; set; }
+        public decimal AvgPnL { get; set; }
+        public int TradeCount { get; set; }
+    }
+
+    public class TradeRow
+    {
+        public DateTime WeekStart { get; set; }
+        public string Strategy { get; set; } = "";
+        public string IvRegime { get; set; } = "";
+        public decimal EntryPnL { get; set; }
+        public string WednesdayAction { get; set; } = "";
+        public decimal FinalPnL { get; set; }
+        public string Status { get; set; } = "";
+    }
+
+    public class SystemAlert
+    {
+        public string Type { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
+}
+
+<style>
+    .workflow-timeline {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .timeline-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        padding: 20px 10px;
+    }
+
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 35px;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background: #dee2e6;
+        z-index: 1;
+    }
+
+    .timeline-item.completed::after {
+        background: #28a745;
+    }
+
+    .timeline-item.active::after {
+        background: #ffc107;
+    }
+
+    .timeline-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.5rem;
+        z-index: 2;
+        position: relative;
+    }
+
+    .timeline-item.completed .timeline-icon {
+        background: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+
+    .timeline-item.active .timeline-icon {
+        background: #ffc107;
+        border-color: #ffc107;
+        color: white;
+    }
+
+    .heatmap-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .heatmap-month {
+        text-align: center;
+    }
+
+    .month-label {
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #6c757d;
+    }
+
+    .heatmap-weeks {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .heatmap-cell {
+        width: 60px;
+        height: 25px;
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .heatmap-cell:hover {
+        transform: scale(1.1);
+        z-index: 10;
+        position: relative;
+    }
+
+    .heat-high-positive { background-color: #1e7e34; color: white; }
+    .heat-positive { background-color: #28a745; color: white; }
+    .heat-low-positive { background-color: #6fb069; color: white; }
+    .heat-low-negative { background-color: #f19ca4; color: #721c24; }
+    .heat-negative { background-color: #dc3545; color: white; }
+    .heat-high-negative { background-color: #721c24; color: white; }
+
+    .heatmap-legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .gradient-bar {
+        width: 200px;
+        height: 20px;
+        background: linear-gradient(to right, #721c24, #dc3545, #f19ca4, #6fb069, #28a745, #1e7e34);
+        border-radius: 10px;
+    }
+
+    .regime-stat {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .badge-low-iv { background-color: #17a2b8; }
+    .badge-mid-iv { background-color: #ffc107; color: #212529; }
+    .badge-high-iv { background-color: #dc3545; }
+
+    .badge-bwb { background-color: #6f42c1; }
+    .badge-ic { background-color: #20c997; }
+    .badge-if { background-color: #fd7e14; }
+
+    .strategy-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 2px;
+    }
+
+    .bg-bwb { background-color: #6f42c1; }
+    .bg-ic { background-color: #20c997; }
+    .bg-if { background-color: #fd7e14; }
+
+    .alerts-container {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .metric {
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .metric-value {
+        font-size: 1.3rem;
+        font-weight: bold;
+    }
+
+    .table-success-light {
+        background-color: rgba(40, 167, 69, 0.1);
+    }
+
+    .table-danger-light {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+</style>
