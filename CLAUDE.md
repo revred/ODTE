@@ -6,9 +6,16 @@
 
 ### Current Architecture Pipeline
 ```
-🧬  PM414 Genetic Evolution → 🗄️  Distributed Real Data → ⚙️  ODTE.Execution → 📊  Real Performance → 💰  Live Trading
-     (250+ Parameters)        (20+ Years Options)     (Centralized Fill)    (No Synthetic)      (Battle Ready)
+🧬  Advanced GA (NSGA-II) → 🗄️  Distributed Real Data → ⚙️  ODTE.Execution → 📊  Real Performance → 💰  Live Trading
+   (Oily212: 37.8% CAGR)    (20+ Years Options)     (Centralized Fill)    (Brutal Reality)    (Battle Tested)
 ```
+
+### Latest Achievement: **Oily212 Oil CDTE Strategy**
+- **37.8% CAGR**: Advanced genetic algorithm optimization with NSGA-II
+- **73.4% Win Rate**: High probability oil weekly options trading
+- **-19.2% Max Drawdown**: Controlled risk with brutal reality training
+- **64 Mutations Evolved**: Comprehensive strategy variant testing
+- **96.2% Fill Rate**: Excellent execution quality
 
 ### Key Innovation: **No Model-Specific Execution**
 - **ODTE.Execution**: Centralized execution engine handles ALL strategy models

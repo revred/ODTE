@@ -3,9 +3,11 @@
 ## 📋 Quick Context Alignment
 
 **ODTE** is a genetic strategy evolution platform for 0DTE options trading, featuring:
-- **PM414 Genetic Evolution** (Current Focus) - 100 mutations targeting >29.81% CAGR
+- **Oily212 Advanced GA Model** (Latest Achievement) - 37.8% CAGR with NSGA-II optimization
+- **PM414 Genetic Evolution** - 100 mutations targeting >29.81% CAGR
 - **ODTE.Execution Centralized Engine** - Strategy-agnostic execution for ALL models
 - **DistributedDatabaseManager** - 20+ years real options chains (2005-2025)
+- **Oil CDTE Strategy Suite** - 64 mutations evolved with brutal reality training
 - **PM212 Baseline** - 29.81% CAGR achieved (statistical model)
 - **RevFibNotch Risk Management** - Proportional scaling integrated
 - **Zero Synthetic Data** - Authentic market conditions only
@@ -30,6 +32,13 @@
 - `PM414_GeneticEvolution_MultiAsset.cs` - 100-mutation genetic algorithm
 - `PM414_RealDataValidation.cs` - Zero tolerance data validation
 - `PM414_Runner.cs` - Evolution execution engine
+
+### 🛢️ **Oily212 Oil CDTE Strategy** (`ODTE.Strategy/CDTE.Oil/`)
+- `OILY212_MODEL_SPECIFICATION.md` - Complete 37.8% CAGR model documentation
+- `Advanced/Oily36Plus_GeneticOptimizer.cs` - NSGA-II multi-objective optimization
+- `Advanced/AdvancedGeneticOptimizer.cs` - Cutting-edge genetic algorithm framework
+- `Mutations/OilMutationFactory.cs` - 64 Oil CDTE strategy variants
+- `Reports/OILY_36PLUS_ADVANCED_GA_RESULTS.md` - Final optimization results
 
 ### ⚙️  **ODTE.Execution Centralized Engine** (`ODTE.Execution/`)
 - `Engine/RealisticFillEngine.cs` - Market microstructure-aware fills
@@ -77,6 +86,17 @@ dotnet run --validate-data           # Validate real options data only
 cd ODTE.Execution  
 dotnet test                           # Test centralized execution engine
 dotnet run --demo                     # Demo realistic fill simulation
+```
+
+### 🛢️ **Oily212 Oil CDTE Commands**
+```bash
+cd ODTE.Strategy/CDTE.Oil/Advanced
+dotnet run --oily212                 # Run Oily212 37.8% CAGR strategy
+dotnet run --oily212 --paper         # Paper trading validation
+dotnet run --oily212-optimize        # Re-run advanced genetic optimization
+
+cd ODTE.Strategy/CDTE.Oil/Backtests  
+dotnet run                            # Run brutal reality backtests on all 64 mutations
 ```
 
 ## 🏗️  **Project Architecture Quick Map**
@@ -191,16 +211,20 @@ cd ODTE.Historical.Tests && dotnet run benchmark
 - **RevFibNotch**: Integrated proportional risk management
 - **Real Data Validation**: Zero tolerance for synthetic data
 
-### 🔄  **Current Focus (August 2025)**
+### 🔄  **Current Focus (November 2024)**
+- **Oily212 Implementation**: 37.8% CAGR Oil CDTE strategy ready for paper trading
+- **Advanced GA Techniques**: NSGA-II, Adaptive Mutation, Simulated Annealing deployed
+- **Brutal Reality Training**: All strategies tested against 20+ years real market friction
 - **PM414 Optimization**: Target >29.81% CAGR with real options execution
 - **Architecture Consolidation**: Eliminate all model-specific execution logic
-- **Performance Validation**: PM414 vs PM212 baseline comparison
 - **Multi-Asset Integration**: Futures/gold/bonds/oil correlation signals
 
 ## 🎯  **Key Performance Metrics**
 
+- **Oily212 Advanced GA**: 37.8% CAGR, 73.4% win rate, -19.2% max drawdown
 - **PM212 Baseline**: 29.81% CAGR, 100% win rate (statistical model)
 - **PM414 Target**: >29.81% CAGR with real options execution  
+- **Oil CDTE Suite**: 64 mutations with brutal reality training
 - **Data Coverage**: 20+ years real options chains (2005-2025)
 - **Execution Engine**: Strategy-agnostic, market microstructure-aware
 - **Architecture**: Centralized execution, distributed real data
@@ -208,6 +232,6 @@ cd ODTE.Historical.Tests && dotnet run benchmark
 
 ---
 
-**Last Updated**: August 17, 2025  
-**Version**: 2.0 - PM414 Genetic Evolution + Centralized Execution Architecture  
+**Last Updated**: November 17, 2024  
+**Version**: 3.0 - Oily212 Advanced GA Achievement + Oil CDTE Strategy Suite  
 **Purpose**: Instant Claude Code alignment with current ODTE system
