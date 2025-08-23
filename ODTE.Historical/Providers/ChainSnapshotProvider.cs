@@ -2,9 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace ODTE.Historical.Providers
 {
+    public enum OptionRight
+    {
+        Call,
+        Put
+    }
+
     public sealed class ChainSnapshotProvider
     {
         private readonly IHistoricalDataSource _dataSource;
@@ -398,13 +405,7 @@ namespace ODTE.Historical.Providers
         public double Level { get; set; }
     }
 
-    public sealed class ProductCalendar
-    {
-        public DateTime GetSessionClose(DateTime date) => date.Date.AddHours(16);
-        public bool IsEarlyClose(DateTime date) => false;
-        public DateTime GetEarlyCloseTime(DateTime date) => date.Date.AddHours(13);
-        public DateTime GetNextTradingDay(DateTime date) => date.AddDays(1);
-    }
+    // ProductCalendar moved to SessionCalendarProvider.cs to avoid duplication
 
     public interface IHistoricalDataSource
     {

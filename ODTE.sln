@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ODTE.Execution.Tests", "ODT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ODTE.Optimization", "ODTE.Optimization\ODTE.Optimization.csproj", "{716D28C2-B1F2-C491-F657-BF050F6C0AC2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ODTE.Strategy.Tests", "ODTE.Strategy.Tests\ODTE.Strategy.Tests.csproj", "{B4E15D83-92A4-4C2F-9B6E-7D8F34A2B1C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -69,6 +71,10 @@ Global
 		{716D28C2-B1F2-C491-F657-BF050F6C0AC2}.Debug|x64.Build.0 = Debug|Any CPU
 		{716D28C2-B1F2-C491-F657-BF050F6C0AC2}.Release|x64.ActiveCfg = Release|Any CPU
 		{716D28C2-B1F2-C491-F657-BF050F6C0AC2}.Release|x64.Build.0 = Release|Any CPU
+		{B4E15D83-92A4-4C2F-9B6E-7D8F34A2B1C3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B4E15D83-92A4-4C2F-9B6E-7D8F34A2B1C3}.Debug|x64.Build.0 = Debug|Any CPU
+		{B4E15D83-92A4-4C2F-9B6E-7D8F34A2B1C3}.Release|x64.ActiveCfg = Release|Any CPU
+		{B4E15D83-92A4-4C2F-9B6E-7D8F34A2B1C3}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

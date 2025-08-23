@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace ODTE.Historical.Providers
 {
@@ -29,7 +30,7 @@ namespace ODTE.Historical.Providers
                 return calendar;
             }
 
-            _logger.LogWarning("No calendar found for product {Product}, using default", product);
+            // _logger?.LogWarning($"No calendar found for product {product}, using default");
             return _calendars["DEFAULT"];
         }
 
@@ -155,15 +156,13 @@ namespace ODTE.Historical.Providers
 
             if (windowStart < sessionStart)
             {
-                _logger.LogWarning("Decision window start {WindowStart} before session open {SessionStart}, adjusting",
-                    windowStart, sessionStart);
+                // _logger?.LogWarning($"Decision window start {windowStart} before session open {sessionStart}, adjusting");
                 windowStart = sessionStart;
             }
 
             if (windowEnd > sessionEnd)
             {
-                _logger.LogWarning("Decision window end {WindowEnd} after session close {SessionEnd}, adjusting",
-                    windowEnd, sessionEnd);
+                // _logger?.LogWarning($"Decision window end {windowEnd} after session close {sessionEnd}, adjusting");
                 windowEnd = sessionEnd;
             }
 

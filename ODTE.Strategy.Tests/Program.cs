@@ -10,6 +10,8 @@ namespace ODTE.Strategy.Tests;
 ///   optimized   - Run PM250 optimized system validation  
 ///   genetic     - Run radical genetic breakthrough optimizer
 ///   ultra       - Run ultra-optimized implementation test
+///   spx30dte    - Run SPX 30DTE 16-mutation tournament
+///   backtest    - Run comprehensive SPX30DTE 20-year backtest with SQLite ledgers
 ///   help        - Show this help message
 /// </summary>
 public class Program
@@ -49,6 +51,16 @@ public class Program
                     PM250_UltraOptimized_ImplementationTest.RunTest(remainingArgs);
                     break;
 
+                case "spx30dte":
+                    Console.WriteLine("🏆 Running SPX 30DTE 16-Mutation Tournament...\n");
+                    SPX30DTE_TournamentRunner.RunTournament(remainingArgs);
+                    break;
+
+                case "backtest":
+                    Console.WriteLine("📊 Running Comprehensive SPX30DTE 20-Year Backtest...\n");
+                    SPX30DTE_BacktestRunner.RunBacktest(remainingArgs);
+                    break;
+
                 case "help":
                 case "-h":
                 case "--help":
@@ -81,12 +93,16 @@ public class Program
         Console.WriteLine("  optimized   - Run PM250 optimized system validation");
         Console.WriteLine("  genetic     - Run radical genetic breakthrough optimizer");
         Console.WriteLine("  ultra       - Run ultra-optimized implementation test");
+        Console.WriteLine("  spx30dte    - Run SPX 30DTE 16-mutation tournament");
+        Console.WriteLine("  backtest    - Run comprehensive SPX30DTE 20-year backtest with SQLite ledgers");
         Console.WriteLine("  help        - Show this help message");
         Console.WriteLine();
         Console.WriteLine("Examples:");
         Console.WriteLine("  dotnet run multileg");
         Console.WriteLine("  dotnet run optimized");
         Console.WriteLine("  dotnet run genetic");
+        Console.WriteLine("  dotnet run spx30dte");
+        Console.WriteLine("  dotnet run backtest");
         Console.WriteLine("  dotnet run help");
     }
 }

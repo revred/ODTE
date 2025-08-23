@@ -29,8 +29,6 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
-  </ItemGroup>
+  <!-- No project references to avoid circular dependencies -->
 
 </Project>

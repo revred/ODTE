@@ -33,6 +33,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ODTE.Strategy\ODTE.Strategy.csproj" />
+    <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
+    <ProjectReference Include="..\ODTE.Execution\ODTE.Execution.csproj" />
   </ItemGroup>
 
 </Project>

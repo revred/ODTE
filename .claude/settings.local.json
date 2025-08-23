@@ -58,7 +58,9 @@
       "Bash(done)",
       "Bash(where sqlite3)",
       "Bash(git log:*)",
-      "Bash(if exist obj rd /s /q obj)"
+      "Bash(if exist obj rd /s /q obj)",
+      "Bash(cat:*)",
+      "Bash(./SimpleTournamentDemo.exe)"
     ],
     "deny": [],
     "ask": [],
