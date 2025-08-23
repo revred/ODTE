@@ -61,7 +61,8 @@
       "Bash(if exist obj rd /s /q obj)",
       "Bash(cat:*)",
       "Bash(./SimpleTournamentDemo.exe)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(reportgenerator:*)"
     ],
     "deny": [],
     "ask": [],

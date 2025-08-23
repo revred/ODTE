@@ -90,16 +90,69 @@ namespace ODTE.Contracts.Strategy
     }
 
     /// <summary>
-    /// Strategy optimization result
+    /// Strategy optimization result (consolidated interface)
+    /// Replaces duplicate OptimizationResults classes across projects
     /// </summary>
-    public class OptimizationResult
+    public interface IOptimizationResult
     {
+        string StrategyName { get; set; }
+        decimal FinalPnL { get; set; }
+        double FitnessScore { get; set; }
+        int Generation { get; set; }
+        Dictionary<string, object> Parameters { get; set; }
+        DateTime StartDate { get; set; }
+        DateTime EndDate { get; set; }
+    }
+
+    /// <summary>
+    /// Default implementation of optimization result
+    /// </summary>
+    public class OptimizationResult : IOptimizationResult
+    {
+        public string StrategyName { get; set; } = string.Empty;
+        public decimal FinalPnL { get; set; }
+        public double FitnessScore { get; set; }
+        public int Generation { get; set; }
+        public Dictionary<string, object> Parameters { get; set; } = new();
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        
+        // Legacy properties for backward compatibility
         public IStrategy OptimalStrategy { get; set; } = null!;
         public decimal FinalReturn { get; set; }
         public decimal SharpeRatio { get; set; }
         public decimal MaxDrawdown { get; set; }
         public int TotalTrades { get; set; }
         public decimal WinRate { get; set; }
+    }
+
+    /// <summary>
+    /// Yearly performance interface (consolidated)
+    /// Replaces duplicate YearlyPerformance classes across projects
+    /// </summary>
+    public interface IYearlyPerformance
+    {
+        int Year { get; set; }
+        decimal TotalPnL { get; set; }
+        decimal MaxDrawdown { get; set; }
+        double WinRate { get; set; }
+        int TotalTrades { get; set; }
+        double SharpeRatio { get; set; }
+    }
+
+    /// <summary>
+    /// Default implementation of yearly performance
+    /// </summary>
+    public class YearlyPerformance : IYearlyPerformance
+    {
+        public int Year { get; set; }
+        public decimal TotalPnL { get; set; }
+        public decimal MaxDrawdown { get; set; }
+        public double WinRate { get; set; }
+        public int TotalTrades { get; set; }
+        public double SharpeRatio { get; set; }
+        
+        public override string ToString() => $"Year {Year}: PnL={TotalPnL.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))}, Trades={TotalTrades}, WinRate={WinRate:P1}";
     }
 
     /// <summary>

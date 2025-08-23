@@ -74,4 +74,41 @@ namespace ODTE.Contracts.Data
         Volatile,
         Crisis
     }
+
+    /// <summary>
+    /// Unified date range representation for all ODTE projects
+    /// Consolidates duplicate DateRange classes from multiple namespaces
+    /// </summary>
+    public class DateRange
+    {
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        
+        // Enhanced functionality from ODTE.Historical version
+        public int Days => (EndDate - StartDate).Days + 1;
+        public bool Contains(DateTime date) => date >= StartDate && date <= EndDate;
+        
+        // Backward compatibility aliases for ODTE.Historical version
+        public DateTime Start { get => StartDate; set => StartDate = value; }
+        public DateTime End { get => EndDate; set => EndDate = value; }
+        
+        // Business logic methods
+        public IEnumerable<DateTime> GetTradingDays()
+        {
+            var current = StartDate;
+            while (current <= EndDate)
+            {
+                // Skip weekends (basic business day logic)
+                if (current.DayOfWeek != DayOfWeek.Saturday && current.DayOfWeek != DayOfWeek.Sunday)
+                {
+                    yield return current;
+                }
+                current = current.AddDays(1);
+            }
+        }
+        
+        public bool IsValid => EndDate >= StartDate;
+        
+        public override string ToString() => $"{StartDate:yyyy-MM-dd} to {EndDate:yyyy-MM-dd} ({Days} days)";
+    }
 }
