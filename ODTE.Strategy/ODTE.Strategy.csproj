@@ -30,8 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
     <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
+    <ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+    <ProjectReference Include="..\ODTE.Execution\ODTE.Execution.csproj" />
+    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
   </ItemGroup>
 
 </Project>

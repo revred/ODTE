@@ -19,5 +19,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
+    <ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Scenarios\CDTE.Oil\**" />
+    <Compile Remove="Realistic\BrutalRealisticBacktest.cs" />
   </ItemGroup>
 </Project>

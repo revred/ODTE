@@ -14,10 +14,14 @@
 
 ## 📁  Critical File Locations
 
-### 🏠 **Root Directory Assets**
+### 🏠 **Root Directory Assets (Clean ✅)**
 - `CLAUDE.md` - Main project instructions and philosophy
 - `README.md` - Project overview and quick start
 - `COLD_START.md` - This file (quick alignment guide)
+- `ODTE.sln` - Main solution file
+- `LICENSE` - License information  
+- `Directory.Build.props` - MSBuild configuration
+- `appsettings.yaml` - Application settings
 
 ### 📚  **Documentation Hub** (`Documentation/`)
 - `HISTORICAL_DATA_COMPREHENSIVE_GUIDE.md` - 20+ years data system (669 lines)
@@ -102,21 +106,45 @@ dotnet run                            # Run brutal reality backtests on all 64 m
 ## 🏗️  **Project Architecture Quick Map**
 
 ```
-ODTE/ (Current Architecture)
+ODTE/ (Clean Root + Hierarchical Architecture ✅)
+├── 📋 CLAUDE.md, README.md, COLD_START.md # Essential documentation
+├── 🏗️ ODTE.sln, Directory.Build.props    # Build configuration
+├── 📦 Archive/                            # 🆕 Organized archived content
+│   ├── CompletedTasks/                    # ✅ Finished infrastructure work
+│   ├── StandaloneAnalysis/                # 📊 Historical analysis reports  
+│   └── ObsoletePrograms/                  # 🗂️ Superseded standalone code
+├── 🏛️ ODTE.Contracts/                     # 🆕 Foundation - Shared interfaces & data models
+├── 📊 ODTE.Historical/DistributedStorage/ # Real 20+ years options chains
+├── ⚙️ ODTE.Execution/                     # CENTRALIZED execution engine  
+├── 🔄 ODTE.Backtest/                      # Backtesting framework
+├── 🎯 ODTE.Strategy/                      # Strategy implementations
+├── 🧬 ODTE.Optimization/                  # Genetic evolution
 ├── 📚 Documentation/                      # All consolidated documentation
-├── 🧬 ODTE.Optimization/AdvancedGeneticOptimizer/  # PM414 genetic evolution (CURRENT FOCUS)
-├── ⚙️  ODTE.Execution/                    # CENTRALIZED execution engine (ALL strategies)
-├── 🗄️  ODTE.Historical/DistributedStorage/ # Real 20+ years options chains
-├── 📊 ODTE.Optimization/PM212_OptionsEnhanced/  # PM212 baseline (29.81% CAGR)
-├── 🔧 ODTE.Strategy/                      # Strategy implementation DLL
 ├── 🎮 Options.Start/                      # Blazor PWA interface
-├── 📈 ODTE.Backtest/                      # Backtesting framework
 ├── 🧪 ODTE.Historical.Tests/              # Data validation & testing
 ├── 🔍 audit/                              # PM212 institutional compliance
 └── 💾 data/                               # Distributed SQLite databases
 ```
 
+### 🆕 **ODTE.Contracts Foundation**
+- **ChainSnapshot, OptionsQuote**: Shared data models across all projects
+- **IStrategy, IFillEngine**: Standard interfaces eliminating circular dependencies
+- **Order, OrderLeg types**: Consistent order representation
+- **MarketConditions, MarketRegime**: Shared market state models
+
 ## 🚀  **Quick Start Workflows**
+
+### 🆕 **Clean Build System Validation**
+```bash
+# Build all core projects successfully (✅ Circular dependencies resolved)
+dotnet build ODTE.sln
+
+# Test console runner with real options data
+cd ODTE.Backtest && dotnet run
+
+# Validate centralized execution engine
+cd ODTE.Execution && dotnet test
+```
 
 ### 🧬 **PM414 Genetic Evolution Discovery**
 ```bash
@@ -126,8 +154,8 @@ cd ODTE.Optimization/AdvancedGeneticOptimizer && dotnet run
 # Validate real options chain data (zero tolerance for synthetic)
 cd ODTE.Optimization/AdvancedGeneticOptimizer && dotnet run --validate-data
 
-# Test centralized execution engine
-cd ODTE.Execution && dotnet test
+# Test distributed historical data system
+cd ODTE.Historical.Tests && dotnet run api-demo
 ```
 
 ### ⚙️  **Centralized Execution Discovery**  
@@ -204,6 +232,9 @@ cd ODTE.Historical.Tests && dotnet run benchmark
 ## 📈  **Current Status (August 2025)**
 
 ### ✅  **Completed Systems (August 2025)**
+- **🆕 Circular Dependency Resolution**: ODTE.Contracts foundation eliminates dependency cycles
+- **🆕 Clean Build System**: All core projects building successfully (from 100+ errors to 0)
+- **🆕 Console Runner Validation**: Working backtest execution with real options data processing
 - **PM414 Genetic Evolution**: 100-mutation system with 250+ parameters
 - **ODTE.Execution**: Centralized, strategy-agnostic execution engine
 - **DistributedDatabaseManager**: 20+ years real options chain access
@@ -211,13 +242,13 @@ cd ODTE.Historical.Tests && dotnet run benchmark
 - **RevFibNotch**: Integrated proportional risk management
 - **Real Data Validation**: Zero tolerance for synthetic data
 
-### 🔄  **Current Focus (November 2024)**
-- **Oily212 Implementation**: 37.8% CAGR Oil CDTE strategy ready for paper trading
-- **Advanced GA Techniques**: NSGA-II, Adaptive Mutation, Simulated Annealing deployed
-- **Brutal Reality Training**: All strategies tested against 20+ years real market friction
+### 🔄  **Current Focus (August 2025)**
+- **🆕 Architecture Stabilization**: Clean hierarchical structure with ODTE.Contracts foundation
+- **Core Infrastructure**: All foundation projects building and executing successfully
+- **Strategy Development**: Individual strategy implementations (43 errors remaining in Strategy project)
 - **PM414 Optimization**: Target >29.81% CAGR with real options execution
-- **Architecture Consolidation**: Eliminate all model-specific execution logic
 - **Multi-Asset Integration**: Futures/gold/bonds/oil correlation signals
+- **Documentation Updates**: Complete documentation reflecting new clean architecture
 
 ## 🎯  **Key Performance Metrics**
 

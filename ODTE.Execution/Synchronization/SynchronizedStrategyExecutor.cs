@@ -4,7 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using ODTE.Execution.Engine;
 using ODTE.Execution.Models;
-using ODTE.Strategy.Hedging;
+using ODTE.Contracts.Strategy;
+using ODTE.Contracts.Data;
 using ODTE.Historical.DistributedStorage;
 
 namespace ODTE.Execution.Synchronization

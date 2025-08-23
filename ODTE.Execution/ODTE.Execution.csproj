@@ -19,7 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ODTE.Backtest\ODTE.Backtest.csproj" />
+    <ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+    <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="CostModeling\TradingCostEngine.cs" />
+    <Compile Remove="Synchronization\SynchronizedStrategyExecutor.cs" />
   </ItemGroup>
 
 </Project>

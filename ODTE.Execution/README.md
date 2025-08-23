@@ -1,8 +1,26 @@
-# ODTE.Execution - Institutional-Grade Execution Engine
+# ⚙️ ODTE.Execution
 
-## 🏛️ Overview
+**Institutional-Grade Options Execution Engine**
 
-**ODTE.Execution** is the institutional-grade execution engine for the ODTE dual-strategy trading platform. It replaces optimistic execution assumptions with market-microstructure-aware fill simulation, ensuring both PM250 (profit maximization) and PM212 (capital preservation) strategies meet institutional audit requirements.
+ODTE.Execution is the centralized execution engine for the ODTE platform, providing market-microstructure-aware fill simulation that passes institutional audit requirements. Built on ODTE.Contracts foundation, it serves all trading strategies with realistic execution modeling.
+
+## 📦 Dependencies
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+  <ProjectReference Include="..\ODTE.Historical\ODTE.Historical.csproj" />
+</ItemGroup>
+```
+
+**Depends On:**
+- **ODTE.Contracts**: Order models, execution interfaces, shared data types
+- **ODTE.Historical**: Historical volatility, spread data for realistic modeling
+
+**Used By:**
+- **ODTE.Backtest**: Backtesting engine for realistic fill simulation
+- **ODTE.Strategy**: All strategies use centralized execution
+- **ODTE.Optimization**: Genetic algorithms with realistic execution costs
 
 ## 🎯 Key Features
 

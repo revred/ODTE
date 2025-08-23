@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 using ODTE.Backtest.Core;
 using ODTE.Execution.Models;
 using ODTE.Historical.DistributedStorage;
-using ODTE.Historical.Models;
+using ODTE.Contracts.Data;
+using ContractsData = ODTE.Contracts.Data;
 
 namespace ODTE.Strategy.Hedging
 {

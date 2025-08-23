@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using ODTE.Execution.Models;
+using ODTE.Contracts.Orders;
+using ContractsData = ODTE.Contracts.Data;
 
 namespace ODTE.Execution.CostModeling;
 
@@ -25,9 +27,9 @@ public class TradingCostEngine
     /// </summary>
     public async Task<TradingCostResult> CalculateTradingCostsAsync(
         SpreadOrder order, 
-        ChainSnapshot marketData, 
+        ContractsData.ChainSnapshot marketData, 
         int contractCount,
-        MarketConditions conditions)
+        ContractsData.MarketConditions conditions)
     {
         var result = new TradingCostResult
         {
@@ -79,13 +81,13 @@ public class TradingCostEngine
     /// <summary>
     /// Calculate bid-ask spread crossing costs based on real NBBO data
     /// </summary>
-    private decimal CalculateBidAskSpreadCost(SpreadOrder order, ChainSnapshot marketData, int contractCount)
+    private decimal CalculateBidAskSpreadCost(SpreadOrder order, ContractsData.ChainSnapshot marketData, int contractCount)
     {
         decimal totalSpreadCost = 0m;
 
         foreach (var leg in order.Legs)
         {
-            var optionQuote = GetOptionQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
+            var optionQuote = GetContractsData.OptionsQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
             if (optionQuote == null) continue;
 
             // Calculate bid-ask spread
@@ -110,7 +112,7 @@ public class TradingCostEngine
     /// <summary>
     /// Calculate commission costs based on broker fee structure
     /// </summary>
-    private decimal CalculateCommissionCost(SpreadOrder order, int contractCount, MarketConditions conditions)
+    private decimal CalculateCommissionCost(SpreadOrder order, int contractCount, ContractsData.MarketConditions conditions)
     {
         // Base commission per contract
         var perContractFee = _config.CommissionPerContract;
@@ -137,15 +139,15 @@ public class TradingCostEngine
     /// </summary>
     private async Task<decimal> CalculateSlippageCostAsync(
         SpreadOrder order, 
-        ChainSnapshot marketData, 
+        ContractsData.ChainSnapshot marketData, 
         int contractCount, 
-        MarketConditions conditions)
+        ContractsData.MarketConditions conditions)
     {
         decimal totalSlippage = 0m;
 
         foreach (var leg in order.Legs)
         {
-            var optionQuote = GetOptionQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
+            var optionQuote = GetContractsData.OptionsQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
             if (optionQuote == null) continue;
 
             var legContracts = Math.Abs(leg.Quantity) * contractCount;
@@ -172,13 +174,13 @@ public class TradingCostEngine
     /// <summary>
     /// Calculate assignment risk costs for short option positions
     /// </summary>
-    private decimal CalculateAssignmentRiskCost(SpreadOrder order, ChainSnapshot marketData, int contractCount)
+    private decimal CalculateAssignmentRiskCost(SpreadOrder order, ContractsData.ChainSnapshot marketData, int contractCount)
     {
         decimal assignmentRisk = 0m;
 
         foreach (var leg in order.Legs.Where(l => l.Direction == OrderDirection.Sell))
         {
-            var optionQuote = GetOptionQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
+            var optionQuote = GetContractsData.OptionsQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
             if (optionQuote == null) continue;
 
             // Calculate assignment probability
@@ -197,13 +199,13 @@ public class TradingCostEngine
     /// <summary>
     /// Calculate liquidity adjustment based on open interest and volume
     /// </summary>
-    private decimal CalculateLiquidityAdjustment(SpreadOrder order, ChainSnapshot marketData, int contractCount)
+    private decimal CalculateLiquidityAdjustment(SpreadOrder order, ContractsData.ChainSnapshot marketData, int contractCount)
     {
         decimal liquidityAdjustment = 0m;
 
         foreach (var leg in order.Legs)
         {
-            var optionQuote = GetOptionQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
+            var optionQuote = GetContractsData.OptionsQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
             if (optionQuote == null) continue;
 
             var legContracts = Math.Abs(leg.Quantity) * contractCount;
@@ -221,7 +223,7 @@ public class TradingCostEngine
     /// <summary>
     /// Calculate financing costs for margin requirements
     /// </summary>
-    private decimal CalculateFinancingCost(SpreadOrder order, int contractCount, MarketConditions conditions)
+    private decimal CalculateFinancingCost(SpreadOrder order, int contractCount, ContractsData.MarketConditions conditions)
     {
         // For defined risk spreads, financing cost is minimal
         // For undefined risk, calculate based on margin requirement and interest rates
@@ -262,7 +264,7 @@ public class TradingCostEngine
         return 0m; // No discount
     }
 
-    private decimal CalculateMarketImpact(decimal contractCount, OptionQuote quote)
+    private decimal CalculateMarketImpact(decimal contractCount, ContractsData.OptionsQuote quote)
     {
         // Market impact increases non-linearly with position size
         var impactMultiplier = Math.Pow((double)(contractCount / 10m), 0.6); // Square root scaling
@@ -270,7 +272,7 @@ public class TradingCostEngine
         return (decimal)impactMultiplier * baseImpact;
     }
 
-    private decimal CalculateTimingSlippage(OptionQuote quote, MarketConditions conditions)
+    private decimal CalculateTimingSlippage(ContractsData.OptionsQuote quote, ContractsData.MarketConditions conditions)
     {
         // Slippage due to time between decision and execution
         var baseSlippage = quote.Mid * 0.001m; // 0.1% base slippage
@@ -278,7 +280,7 @@ public class TradingCostEngine
         return baseSlippage * volatilityMultiplier;
     }
 
-    private decimal CalculateVolatilitySlippage(OptionQuote quote, MarketConditions conditions)
+    private decimal CalculateVolatilitySlippage(ContractsData.OptionsQuote quote, ContractsData.MarketConditions conditions)
     {
         // Additional slippage during high volatility periods
         if (conditions.VIX > 30m) return quote.Mid * 0.002m; // 0.2% extra slippage in high vol
@@ -286,7 +288,7 @@ public class TradingCostEngine
         return 0m;
     }
 
-    private decimal CalculateLiquiditySlippage(OptionQuote quote, decimal contractCount)
+    private decimal CalculateLiquiditySlippage(ContractsData.OptionsQuote quote, decimal contractCount)
     {
         // Slippage due to poor liquidity
         var spreadRatio = (quote.Ask - quote.Bid) / quote.Mid;
@@ -294,7 +296,7 @@ public class TradingCostEngine
         return 0m;
     }
 
-    private decimal CalculateAssignmentProbability(OrderLeg leg, OptionQuote quote, ChainSnapshot marketData)
+    private decimal CalculateAssignmentProbability(OrderLeg leg, ContractsData.OptionsQuote quote, ContractsData.ChainSnapshot marketData)
     {
         // Simplified assignment probability calculation
         if (leg.OptionType == OptionType.Call)
@@ -318,22 +320,20 @@ public class TradingCostEngine
         return Math.Max(maxRisk, 2000m * contractCount); // Minimum $2000 per spread
     }
 
-    private decimal CalculateNotionalValue(SpreadOrder order, ChainSnapshot marketData, int contractCount)
+    private decimal CalculateNotionalValue(SpreadOrder order, ContractsData.ChainSnapshot marketData, int contractCount)
     {
         return order.Legs.Sum(leg =>
         {
-            var optionQuote = GetOptionQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
+            var optionQuote = GetContractsData.OptionsQuote(marketData, leg.Strike, leg.Expiry, leg.OptionType);
             return optionQuote?.Mid * Math.Abs(leg.Quantity) * contractCount ?? 0m;
         });
     }
 
-    private OptionQuote? GetOptionQuote(ChainSnapshot marketData, decimal strike, DateTime expiry, OptionType optionType)
+    private ContractsData.OptionsQuote? GetOptionsQuote(ContractsData.ChainSnapshot marketData, decimal strike, DateTime expiry, OptionType optionType)
     {
-        // Simplified option quote lookup - in production would use sophisticated matching
-        return marketData.Options.FirstOrDefault(o => 
-            o.Strike == strike && 
-            o.Expiry.Date == expiry.Date && 
-            o.OptionType == optionType);
+        // Look in appropriate dictionary based on option type
+        var dictionary = optionType == OptionType.Call ? marketData.Calls : marketData.Puts;
+        return dictionary.TryGetValue(strike, out var quote) ? quote : null;
     }
 }
 
@@ -388,35 +388,4 @@ public class TradingCostResult
     public decimal EffectiveCostRatio => CostPercentage; // For comparison with expected returns
 }
 
-/// <summary>
-/// Market conditions for cost calculation context
-/// </summary>
-public class MarketConditions
-{
-    public decimal VIX { get; set; }
-    public decimal RealizedVolatility { get; set; }
-    public decimal CorrelationToSPY { get; set; }
-    public TimeSpan TimeToClose { get; set; }
-    public bool IsEconomicEvent { get; set; }
-    public decimal VolumeMultiplier { get; set; } = 1.0m; // Relative to average volume
-}
 
-/// <summary>
-/// Option quote with market data
-/// </summary>
-public class OptionQuote
-{
-    public decimal Strike { get; set; }
-    public DateTime Expiry { get; set; }
-    public OptionType OptionType { get; set; }
-    public decimal Bid { get; set; }
-    public decimal Ask { get; set; }
-    public decimal Mid => (Bid + Ask) / 2;
-    public decimal ImpliedVolatility { get; set; }
-    public int OpenInterest { get; set; }
-    public int Volume { get; set; }
-    public decimal Delta { get; set; }
-    public decimal Gamma { get; set; }
-    public decimal Theta { get; set; }
-    public decimal Vega { get; set; }
-}

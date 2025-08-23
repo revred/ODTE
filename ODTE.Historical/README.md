@@ -2,7 +2,16 @@
 
 ## 📊 Historical Data Management Library
 
-**ODTE.Historical** is a comprehensive .NET library for managing historical market data, synthetic data generation, and data quality validation within the ODTE dual-strategy trading platform. Supports both PM250 (profit maximization) and PM212 (capital preservation) strategies with institutional-grade data quality.
+**ODTE.Historical** is a comprehensive .NET library providing 20+ years of real market data storage and management. Built on the ODTE.Contracts foundation, it serves as the data backbone for authentic strategy backtesting with zero synthetic bias.
+
+## 📦 Dependencies
+
+```xml
+<ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+```
+
+**Depends On:** ODTE.Contracts (ChainSnapshot, OptionsQuote, MarketConditions)  
+**Used By:** ODTE.Execution, ODTE.Backtest, ODTE.Strategy, ODTE.Optimization
 
 ## 🎯 Core Features
 
@@ -226,11 +235,20 @@ Operations:
 - **Options.Start**: Real-time data dashboard
 - **audit/**: PM212 institutional audit compliance validation
 
-### Dependencies
-- **ODTE.Backtest**: Options math and pricing models
-- **ODTE.Execution**: Integration with realistic execution modeling
+### Dependencies Architecture
+```
+ODTE.Contracts (Foundation)
+     ↑
+ODTE.Historical
+     ↑
+┌────┼────┐
+│    │    │
+Execution Backtest Strategy → Optimization
+```
+
+**Package Dependencies:**
 - **Microsoft.Data.Sqlite**: Database operations
-- **Dapper**: Object-relational mapping
+- **Dapper**: Object-relational mapping  
 - **Microsoft.Extensions.Logging**: Logging framework
 
 ## 📖 API Reference

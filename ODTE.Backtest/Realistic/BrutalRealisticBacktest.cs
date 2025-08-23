@@ -24,7 +24,7 @@ namespace ODTE.Backtest.Realistic
     {
         private readonly DistributedDatabaseManager _dataManager;
         private readonly ChainSnapshotProvider _chainProvider;
-        private readonly ILogger<BrutalRealisticBacktest> _logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<BrutalRealisticBacktest> _logger;
         
         // Realistic cost structures
         private readonly double _commissionPerContract = 1.25; // $1.25 per contract each way
@@ -137,7 +137,7 @@ namespace ODTE.Backtest.Realistic
         public BrutalRealisticBacktest(
             DistributedDatabaseManager dataManager,
             ChainSnapshotProvider chainProvider,
-            ILogger<BrutalRealisticBacktest> logger)
+            Microsoft.Extensions.Logging.ILogger<BrutalRealisticBacktest> logger)
         {
             _dataManager = dataManager;
             _chainProvider = chainProvider;

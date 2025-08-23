@@ -87,48 +87,81 @@ dotnet run
 
 ## 🏗️ Architecture
 
-### Core Projects
+### Core Projects (Circular Dependencies Resolved ✅)
 
 ```
-ODTE.Strategy\          # 🎯 Core dual-strategy implementation
-├── PM250Strategy       # Profit maximization (optimal conditions)
-├── PM212Strategy       # Capital preservation (crisis conditions)  
-├── RegimeDetector      # Market classification (91.2% accuracy)
-└── RiskManagement\     # ReverseFibonacci integration
+🏛️ ODTE.Contracts\          # 🆕 Foundation - Shared interfaces & data models
+├── Data\                   # ChainSnapshot, OptionsQuote, MarketConditions
+├── Strategy\               # IStrategy, IBacktester, IFillEngine interfaces
+├── Orders\                 # Order types, execution models
+├── Historical\             # Historical data interfaces
+└── Execution\              # Execution engine contracts
 
-ODTE.Execution\         # 🏛️ Institutional-grade execution engine
-├── Engine\             # RealisticFillEngine with market microstructure
-├── Models\             # Order, Quote, FillResult, MarketState
-├── Configuration\      # YAML-driven execution profiles
-└── RiskManagement\     # Enhanced RiskGate with RevFib integration
+📊 ODTE.Historical\         # 📈 Historical data management (depends on: Contracts)
+├── DistributedStorage\     # DistributedDatabaseManager with connection pooling
+├── DataProviders\          # Multiple data source integration (AlphaVantage, Polygon)
+├── DataCollection\         # Automated 20+ year data acquisition
+├── Models\                 # MarketDataBar, CommodityData
+└── Validation\             # Data quality assurance & integrity checks
 
-ODTE.Optimization\      # 🧬 Genetic algorithm & optimization engine
-├── GeneticAlgorithms\  # GAP01-GAP64 elite configurations
-├── Engine\             # Genetic optimizer implementation
-├── ML\                 # Machine learning integration
-└── Tools\              # Optimization demos and utilities
+⚙️ ODTE.Execution\          # 🏛️ Institutional execution engine (depends on: Contracts, Historical)
+├── Engine\                 # RealisticFillEngine with market microstructure
+├── Models\                 # Order, Quote, FillResult, MarketState
+├── Configuration\          # YAML-driven execution profiles
+└── RiskManagement\         # Enhanced RiskGate with RevFib integration
 
-ODTE.Backtest\          # 🔄 Backtesting engine
-├── Engine\             # Execution and risk management
-├── Data\               # Market data and options chains
-└── Reporting\          # Performance analytics
+🔄 ODTE.Backtest\           # Backtesting engine (depends on: Contracts, Historical)
+├── Engine\                 # Backtester, ExecutionEngine, RiskManager
+├── Data\                   # Market data providers and options chains
+├── Reporting\              # Performance analytics and trade logs
+└── Strategy\               # SpreadBuilder and strategy interfaces
 
-ODTE.Historical\        # 📈 Historical data management
-├── DataProviders\      # Multiple data source integration
-├── DataCollection\     # Automated data acquisition
-└── Validation\         # Data quality assurance
+🎯 ODTE.Strategy\           # Core strategies (depends on: Contracts, Historical, Execution, Backtest)
+├── SPX30DTE\               # SPX 30-day strategies with genetic optimization
+├── CDTE.Oil\               # Oil commodity weekly options (37.8% CAGR)
+├── Hedging\                # VIXHedgeManager for portfolio protection
+├── Risk\                   # RevFibNotch proportional risk management
+└── Mutations\              # Genetic algorithm variants
+
+🧬 ODTE.Optimization\       # Genetic optimization (depends on: Backtest, Strategy, Historical, Contracts)
+├── AdvancedGeneticOptimizer\ # PM414 genetic evolution targeting >29.81% CAGR
+├── PM212_OptionsEnhanced\    # PM212 baseline validation (29.81% CAGR)
+├── GeneticAlgorithms\        # GAP01-GAP64 elite configurations
+└── ML\                       # Machine learning integration
 
 Options.OPM\            # 💼 Options Portfolio Management hub
-├── Options.PM250\      # PM250 strategy implementation
+├── Options.PM250\      # PM250 strategy implementation & documentation
 ├── PM250Tools\         # PM250 analysis and validation tools
 ├── PM212Tools\         # PM212 defensive strategy tools
 └── Documentation\      # Consolidated strategy documentation
 
-Options.Start\          # 🖥️ Trading interface (Blazor PWA)
+ODTE.Start\             # 🖥️ Trading interface (Blazor PWA)
 ├── Services\           # Trading, risk, and optimization services
 ├── Pages\              # Real-time dashboards
 └── Monitoring\         # System health and alerts
 ```
+
+### Dependency Flow (Clean Hierarchical Architecture)
+```
+                    🏛️ ODTE.Contracts (Foundation)
+                           ↑
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+   📊 Historical      ⚙️ Execution      🔄 Backtest
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                    🎯 ODTE.Strategy
+                           │
+                    🧬 ODTE.Optimization
+```
+
+**Key Architectural Benefits:**
+- ✅ **Zero Circular Dependencies**: Clean hierarchical structure
+- ✅ **Shared Contracts**: Consistent interfaces across all projects
+- ✅ **Centralized Data Models**: Single source of truth for types
+- ✅ **Modular Design**: Each project has clear responsibilities
+- ✅ **Easy Testing**: Dependencies can be mocked at contract level
 
 ### Supporting Directories
 
@@ -475,6 +508,10 @@ This software is provided **for educational and research purposes only**:
 - 📋 **Paper Trading Module** - Next major milestone
 
 ### Recent Accomplishments (August 2025)
+- ✅ **🆕 Circular Dependency Resolution**: Complete architectural restructuring with ODTE.Contracts foundation
+- ✅ **🆕 ODTE.Contracts Project**: Shared interfaces and data models eliminating dependency cycles
+- ✅ **🆕 Clean Build System**: All core projects building successfully (from 100+ errors to 0)
+- ✅ **🆕 Console Runner Validation**: Working backtest execution with real options data processing
 - ✅ **Project Reorganization**: Clean structure with Options.OPM and ODTE.Optimization
 - ✅ **Realistic Fill Simulation**: Institutional-grade execution engine (ODTE.Execution)
 - ✅ **PM212 Audit Compliance**: Passes all institutional requirements  
@@ -483,7 +520,7 @@ This software is provided **for educational and research purposes only**:
 - ✅ **ODTE.Strategy.dll**: Complete class library with IStrategyEngine API
 - ✅ **Dual-Strategy Framework**: PM250 (profit) + PM212 (preservation) integration
 - ✅ **24-Day Framework**: Full regime switching implementation  
-- ✅ **Code Quality**: Zero compilation errors, type safety improvements
+- ✅ **Code Quality**: Zero compilation errors in core infrastructure, type safety improvements
 - ✅ **Testing Infrastructure**: Comprehensive API validation suite including audit compliance
 - ✅ **Documentation Update**: Complete documentation reflecting new organized structure
 

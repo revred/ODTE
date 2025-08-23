@@ -29,6 +29,10 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ODTE.Contracts\ODTE.Contracts.csproj" />
+  </ItemGroup>
+
   <!-- No project references to avoid circular dependencies -->
 
 </Project>
