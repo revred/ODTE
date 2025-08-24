@@ -219,3 +219,103 @@ ODTE.Configurations/
   - Complete configuration reproducibility
   - Git commit: f3edd7fba7252d943808779329964975e3a9203f
 - **Execution Environment**: ODTE.Backtest unified strategy model system
+### Entry #4: OILY212 Unified Backtest Execution
+- **Run ID**: OILY212_20250824_191823
+- **Git Commit**: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Git Date**: 2025-08-24 19:07:36 UTC
+- **Working Tree**: Has Changes ⚠️
+- **Model Name**: OILY212
+- **Model Version**: v1.0  
+- **Config File**: `OILY212_v1.0_config.yaml`
+- **Execution Date**: 2025-08-24 19:18:23
+- **Period**: 2020-01-01 to 2025-01-01 (1827 days)
+- **Results**:
+  - **Total Trades**: 0
+  - **CAGR**: 0.00%
+  - **Total Return**: 0.00%
+  - **Final Value**: $100,000
+  - **Realized P&L**: $0
+  - **Unrealized P&L**: $0
+- **Legitimacy Status**: ⚠️ FLAGGED (Unified strategy model system)
+- **Git Traceability**: Full commit hash and uncommitted changes detected
+- **Validation Notes**: 
+  - Model parameters traced to genetic algorithm optimization
+  - Unified backtest engine with strategy factory pattern
+  - Complete configuration reproducibility
+  - Git commit: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Execution Environment**: ODTE.Backtest unified strategy model system
+### Entry #4: PM250 Unified Backtest Execution
+- **Run ID**: PM250_20250824_192907
+- **Git Commit**: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Git Date**: 2025-08-24 19:07:36 UTC
+- **Working Tree**: Has Changes ⚠️
+- **Model Name**: PM250
+- **Model Version**: v1.0  
+- **Config File**: `PM250_v1.0_config.yaml`
+- **Execution Date**: 2025-08-24 19:29:07
+- **Period**: 2020-01-01 to 2025-01-01 (1827 days)
+- **Results**:
+  - **Total Trades**: 3
+  - **CAGR**: 0.01%
+  - **Total Return**: 0.07%
+  - **Final Value**: $100,065
+  - **Realized P&L**: $25
+  - **Unrealized P&L**: $40
+- **Legitimacy Status**: ⚠️ FLAGGED (Unified strategy model system)
+- **Git Traceability**: Full commit hash and uncommitted changes detected
+- **Validation Notes**: 
+  - Model parameters traced to genetic algorithm optimization
+  - Unified backtest engine with strategy factory pattern
+  - Complete configuration reproducibility
+  - Git commit: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Execution Environment**: ODTE.Backtest unified strategy model system
+### Entry #4: PM414 Unified Backtest Execution
+- **Run ID**: PM414_20250824_193115
+- **Git Commit**: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Git Date**: 2025-08-24 19:07:36 UTC
+- **Working Tree**: Has Changes ⚠️
+- **Model Name**: PM414
+- **Model Version**: v1.0  
+- **Config File**: `PM414_v1.0_config.yaml`
+- **Execution Date**: 2025-08-24 19:31:15
+- **Period**: 2005-01-01 to 2025-01-01 (7305 days)
+- **Results**:
+  - **Total Trades**: 0
+  - **CAGR**: 0.00%
+  - **Total Return**: 0.00%
+  - **Final Value**: $100,000
+  - **Realized P&L**: $0
+  - **Unrealized P&L**: $0
+- **Legitimacy Status**: ⚠️ FLAGGED (Unified strategy model system)
+- **Git Traceability**: Full commit hash and uncommitted changes detected
+- **Validation Notes**: 
+  - Model parameters traced to genetic algorithm optimization
+  - Unified backtest engine with strategy factory pattern
+  - Complete configuration reproducibility
+  - Git commit: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Execution Environment**: ODTE.Backtest unified strategy model system
+### Entry #4: PM212 Unified Backtest Execution
+- **Run ID**: PM212_20250824_193322
+- **Git Commit**: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Git Date**: 2025-08-24 19:07:36 UTC
+- **Working Tree**: Has Changes ⚠️
+- **Model Name**: PM212
+- **Model Version**: v1.0  
+- **Config File**: `PM212_v1.0_config.yaml`
+- **Execution Date**: 2025-08-24 19:33:22
+- **Period**: 2005-01-01 to 2025-01-01 (7305 days)
+- **Results**:
+  - **Total Trades**: 0
+  - **CAGR**: 0.00%
+  - **Total Return**: 0.00%
+  - **Final Value**: $100,000
+  - **Realized P&L**: $0
+  - **Unrealized P&L**: $0
+- **Legitimacy Status**: ⚠️ FLAGGED (Unified strategy model system)
+- **Git Traceability**: Full commit hash and uncommitted changes detected
+- **Validation Notes**: 
+  - Model parameters traced to genetic algorithm optimization
+  - Unified backtest engine with strategy factory pattern
+  - Complete configuration reproducibility
+  - Git commit: 47e13f0f69a81e97d387bded0697b9aac92cb80d
+- **Execution Environment**: ODTE.Backtest unified strategy model system

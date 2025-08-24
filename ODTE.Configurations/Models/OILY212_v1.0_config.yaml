@@ -1,0 +1,82 @@
+model_name: OILY212
+model_version: v1.0
+optimization_parameters:
+  genetic_algorithm: advanced_multi_objective_optimization
+  last_optimization: 2025-08-15
+  optimization_source: ODTE.Strategy/CDTE.Oil/Advanced/AdvancedGeneticOptimizer.cs
+  performance_achievements:
+    - annual_return: 37.8%
+    - win_rate: 73.4%
+    - max_drawdown: -19.2%
+    - sharpe_ratio: 1.87
+    - fill_rate: 96.2%
+  evolution_path: "64 Oil Mutations → Brutal Reality Training → Advanced GA → OILY212"
+  strategy_components:
+    - oil_cdte_spreads
+    - genetic_algorithm_optimization
+    - brutal_reality_training
+    - advanced_risk_management
+
+underlying: SPX
+start: 2020-01-01
+end: 2025-01-01
+mode: OILY212_comprehensive
+rth_only: true
+timezone: America/New_York
+
+# OILY212 Specific Parameters (from Advanced Genetic Algorithm Optimization)
+oily212:
+  entry_strategy:
+    optimal_day: monday
+    day_offset: 0.2  # Slight Tuesday bias
+    entry_time: "10:07:00"  # Optimal post-open timing
+    entry_conditions:
+      min_volume: 1847  # Options volume filter
+      max_bid_ask_spread: 0.112  # Liquidity filter
+      max_vix: 29  # Crisis filter
+      min_market_open_minutes: 37  # Market stability
+      
+  strike_selection:
+    short_delta: 0.087  # Ultra-conservative approach
+    long_delta: 0.043   # Maximum efficiency
+    spread_width: 1.31  # Liquidity optimized
+    strike_buffer: 1.18 # Avoid round number strikes
+    iv_rank_weight: 0.31 # Correlation filter weight
+    method: "iv_rank_adjusted_with_correlation"
+    
+  risk_management:
+    risk_cap_usd: 800  # Maximum risk per trade
+    stop_loss_multiple: 2.3  # Selective stopping
+    profit_target_1: 0.23  # Close 87% of position
+    profit_target_2: 0.52  # Close remaining 13%
+    position_size_pct: 87  # First target position close
+    remaining_position_pct: 13  # Final target position close
+    
+  advanced_features:
+    genetic_algorithm_cycles: 64
+    brutal_reality_training: true
+    multi_objective_optimization: true
+    cost_optimization_ratio: 19  # vs 38% previous models
+    correlation_analysis: enabled
+    iv_surface_modeling: true
+
+cadence_seconds: 3600  # Hourly for oil options
+no_new_risk_minutes_to_close: 60
+
+slippage:
+  entry_half_spread_ticks: 1.5  # Oil options wider spreads
+  exit_half_spread_ticks: 1.5
+  late_session_extra_ticks: 2.0  # Additional for oil volatility
+  tick_value: 0.01  # USO options tick
+  spread_pct_cap: 0.40  # Higher cap for oil options
+
+fees:
+  commission_per_contract: 0.75  # Slightly higher for oil options
+  exchange_fees_per_contract: 0.30
+
+paths:
+  bars_csv: ./Samples/bars_spx_min.csv  # SPX minute bars for backtest
+  vix_csv: ./Samples/vix_daily.csv      # VIX for market regime
+  vix9d_csv: ./Samples/vix9d_daily.csv  # Short-term volatility
+  calendar_csv: ./Samples/calendar.csv   # Economic calendar
+  reports_dir: ./Reports

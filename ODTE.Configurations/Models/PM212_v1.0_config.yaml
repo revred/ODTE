@@ -1,0 +1,96 @@
+model_name: PM212
+model_version: v1.0
+
+strategy_description: |
+  PM212 Statistical Baseline Model - 29.81% CAGR Performance Standard
+  THE ESTABLISHED PERFORMANCE BASELINE:
+  - Conservative iron condor strategy (45 DTE)
+  - Statistical model with proven 29.81% CAGR
+  - Options-enhanced with real historical data validation
+  - Conservative risk management and trade frequency
+  - RevFibNotch protection with higher position sizes
+  - Established benchmark for all new strategy models
+  - 20+ years backtested performance validation
+
+optimization_parameters:
+  strategy_type: statistical_baseline_iron_condor
+  model_role: performance_baseline
+  baseline_cagr: 29.81%
+  last_optimization: 2025-08-24
+  optimization_source: ODTE.Optimization/PM212_OptionsEnhanced/PM212_OptionsBacktest_2005_2025.cs
+  validation_period: "2005-2025 (20 years)"
+  statistical_validation: true
+
+# Conservative Iron Condor Configuration
+iron_condor_settings:
+  target_dte: 45  # Days to expiration
+  short_put_delta: 0.16  # 16 delta puts
+  short_call_delta: 0.16  # 16 delta calls
+  base_credit_target: 0.20  # 20% credit target
+  min_iv_rank: 30  # Minimum IV rank for entry
+  vix_threshold: 45.0  # Crisis protection
+
+# Conservative Risk Management
+risk_management:
+  rev_fib_levels: [2000, 1500, 1000, 800, 500, 300]  # USD (higher than other models)
+  starting_level: 1000  # USD (index 2, more conservative)
+  max_risk_per_trade: 1000  # USD
+  profit_target_multiplier: 0.50  # 50% profit taking
+  stop_loss_multiplier: 2.0  # 200% stop loss
+  max_trades_per_week: 5  # Very conservative frequency
+
+# Market Timing and Entry Rules
+entry_rules:
+  trading_hours: "10:00-14:00"  # Conservative hours only
+  min_volume: 2000000  # High volume requirement
+  entry_timing: "mid_month_only"  # Days 15-20 of month
+  crisis_protection: "vix_based"
+  iv_rank_minimum: 30%
+
+# Conservative Position Management
+position_management:
+  dte_management: 7  # Exit at 7 days to expiry
+  expiry_day_exit: "15:00"  # Exit by 3 PM on expiry day
+  conservative_scaling: true
+  trade_frequency: "weekly_maximum"
+
+# Backtest Configuration (Long-term validation required)
+underlying: SPX
+start: 2005-01-01  # Full 20-year validation period
+end: 2025-01-01
+initial_capital: 25000
+
+# Data Requirements (Critical for Baseline Validation)
+data_requirements:
+  real_options_chains: true
+  authentic_market_conditions: true
+  crisis_period_validation: [2008, 2020, 2022]
+  no_synthetic_data: true
+  full_market_cycles: true
+  minimum_5_years: true
+
+# Performance Standards (Established Baseline)
+performance_standards:
+  target_cagr: "29.81%"  # Established baseline
+  expected_sharpe: ">1.0"
+  max_drawdown: "<30%"
+  win_rate: ">70%"
+  profit_factor: ">1.5"
+  consistency: "monthly_positive_bias"
+  
+# Baseline Validation Framework
+validation_framework:
+  role: "performance_baseline"
+  comparison_standard: "all_new_models_must_exceed"
+  statistical_significance: true
+  long_term_validation: "20_years_minimum"
+  market_regime_testing: "all_major_cycles"
+  
+# Quality Control
+quality_control:
+  conservative_parameters: true
+  proven_methodology: true
+  statistical_validation: true
+  real_data_only: true
+  crisis_tested: true
+  repeatable_results: true

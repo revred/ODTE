@@ -1,0 +1,104 @@
+model_name: PM414
+model_version: v1.0
+
+strategy_description: |
+  PM414 Advanced Genetic Evolution Multi-Asset Strategy
+  BREAKTHROUGH GENETIC ALGORITHM OPTIMIZATION:
+  - 100-mutation genetic evolution system
+  - Multi-asset correlation signals (Futures, Gold, Bonds, Oil)
+  - Target >29.81% CAGR (PM212 baseline)
+  - Advanced genetic parameters optimization
+  - Centralized execution through ODTE.Execution
+  - RevFibNotch risk management integration
+  - Real distributed data validation (20+ years)
+
+optimization_parameters:
+  strategy_type: genetic_multi_asset_iron_condor
+  genetic_algorithm: 100_mutation_evolution
+  population_size: 100
+  mutation_rate: 15%
+  crossover_rate: 85%
+  max_generations: 50
+  last_optimization: 2025-08-24
+  optimization_source: ODTE.Optimization/AdvancedGeneticOptimizer/PM414_GeneticEvolution_MultiAsset.cs
+  target_cagr: 29.81%+
+  fitness_function: multi_objective_cagr_sharpe_drawdown
+
+# Genetic Algorithm Optimized Parameters
+genetic_parameters:
+  base_delta: 0.15  # Genetic algorithm optimized
+  width_multiplier: 2.5
+  credit_threshold: 0.25  # 25% credit target
+  stop_loss_multiple: 2.0
+  profit_target_multiple: 0.5
+  max_risk_per_trade: 500  # USD
+  vix_threshold: 30.0
+
+# Multi-Asset Signal Configuration
+multi_asset_signals:
+  futures_weight: 30%  # ES Futures correlation
+  gold_weight: 20%     # Inverse equity correlation
+  bonds_weight: 20%    # Safe haven signals
+  oil_weight: 10%      # Commodity correlation
+  spx_weight: 20%      # Primary underlying
+  correlation_threshold: 60%  # Minimum multi-asset score
+
+# RevFibNotch Risk Management (Inherited from PM250 success)
+risk_management:
+  rev_fib_levels: [1250, 800, 500, 300, 200, 100]  # USD position sizes
+  starting_level: 500  # USD (index 2)
+  escalation_rule: "profit_moves_aggressive"
+  de_escalation_rule: "loss_moves_conservative"
+  max_daily_drawdown: 1000  # USD
+  max_position_correlation: 70%
+
+# Market Regime and Filtering
+market_filters:
+  min_volume: 500000  # Minimum liquidity
+  trading_hours: "09:00-16:00"
+  vix_max: 30.0  # Crisis filter
+  min_delta_range: [0.07, 0.25]  # Delta constraints
+  max_width_points: 4  # Spread width limits
+
+# Centralized Execution Configuration
+execution_engine:
+  engine: "ODTE.Execution.RealisticFillEngine"
+  slippage_model: "conservative"
+  execution_costs: true
+  latency_simulation: true
+  adverse_selection: true
+  worst_case_fills: true
+
+# Backtest Configuration
+underlying: SPX
+start: 2005-01-01  # 20+ years for genetic validation
+end: 2025-01-01
+initial_capital: 25000
+
+# Data Requirements (Critical for Genetic Algorithm Validation)
+data_requirements:
+  real_options_chains: true
+  multi_asset_data: true
+  futures_data: required  # ES, Gold, Treasury, Oil
+  crisis_periods: [2008, 2020, 2022]  # Must survive all major crises
+  authentic_market_conditions: true
+  no_synthetic_data: true
+  distributed_database: true
+
+# Performance Expectations (Genetic Algorithm Targets)
+expected_performance:
+  annual_cagr: ">29.81%"  # Beat PM212 baseline
+  max_drawdown: "<25%"    # RevFibNotch protection
+  sharpe_ratio: ">1.5"    # Risk-adjusted returns
+  win_rate: ">65%"        # Genetic optimization target
+  profit_factor: ">1.8"   # Gross profit / Gross loss
+  monthly_consistency: ">60%"  # Profitable months
+
+# Evolution Framework Integration
+evolution_framework:
+  baseline_model: "PM212"  # 29.81% CAGR benchmark
+  mutation_tracking: true
+  performance_validation: true
+  tournament_selection: true
+  elitism_preservation: 10%  # Preserve top 10% performers
+  convergence_criteria: "sharpe_ratio_improvement"

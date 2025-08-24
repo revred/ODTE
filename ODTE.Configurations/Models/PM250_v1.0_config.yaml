@@ -1,0 +1,73 @@
+model_name: PM250
+model_version: v1.0
+
+strategy_description: |
+  Profit Machine 250 (PM250) - High-Frequency Optimal Strategy
+  THE ULTIMATE HIGH-FREQUENCY PROFIT ENGINE:
+  - Maximum 250 trades per week (50 trades/day)
+  - Minimum 6-minute separation between positions
+  - Maintain >90% win rate with minimal dilution
+  - Smart anti-risk strategy with GoScore optimization
+  - Reverse Fibonacci curtailment for risk management
+  - Maximum drawdown protection
+  - Enhanced P&L through volume optimization
+
+optimization_parameters:
+  strategy_type: high_frequency_iron_condor
+  genetic_algorithm: reverse_fibonacci_optimization
+  last_optimization: 2025-08-24
+  optimization_source: ODTE.Strategy/HighFrequencyOptimalStrategy.cs
+  target_win_rate: 90%
+  expected_edge: 96%
+  reward_to_risk_ratio: 2.5
+
+# High-Frequency Configuration
+high_frequency_settings:
+  max_trades_per_week: 250
+  max_trades_per_day: 50  # 250/5 trading days
+  min_separation_minutes: 6
+  min_goscore_threshold: 75.0  # Higher threshold for quality
+  target_profit_per_trade: 25.00  # USD
+  max_single_loss: 15.00  # USD
+  max_daily_drawdown: 75.00  # USD (3x single loss limit)
+
+# Reverse Fibonacci Risk Management
+risk_management:
+  rev_fib_levels: [1250, 800, 500, 300, 200, 100]  # USD position sizes
+  starting_level: 500  # USD (index 2)
+  escalation_rule: "profit_moves_aggressive"
+  de_escalation_rule: "loss_moves_conservative"
+
+# Trading Hours and Quality Control
+market_timing:
+  valid_hours: 
+    morning: "09:00-11:00"  # Morning session
+    afternoon: "13:00-15:00"  # Afternoon session
+  volume_threshold: 1000000  # Minimum volume for entry
+  go_score_weights:
+    volume: 30%
+    time_of_day: 25% 
+    price_stability: 20%
+    market_regime: 25%
+
+# Backtest Configuration
+underlying: SPY
+start: 2020-01-01
+end: 2025-01-01
+initial_capital: 25000
+
+# Data Requirements
+data_requirements:
+  min_volume: true
+  real_options_chains: true
+  authentic_market_conditions: true
+  no_synthetic_data: true
+
+# Performance Expectations
+expected_performance:
+  monthly_returns: "2-5%"
+  annual_cagr: "25-40%"
+  max_drawdown: "-15%"
+  sharpe_ratio: "1.5-2.0"
+  win_rate: "90%+"
+  profit_factor: "2.5+"
