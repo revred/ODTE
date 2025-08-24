@@ -108,13 +108,13 @@ namespace ODTE.Historical.DataProviders
                 "^SPX" => "^SPX",          // S&P 500 index
                 "^DJI" => "^DJI",          // Dow Jones index
                 "^IXIC" => "^IXIC",        // NASDAQ index
-                
+
                 // Standard ETFs (add .US suffix)
                 "SPY" => "SPY.US",         // SPDR S&P 500 ETF
                 "QQQ" => "QQQ.US",         // PowerShares QQQ ETF
                 "IWM" => "IWM.US",         // iShares Russell 2000 ETF
                 "XSP" => "XSP.TO",         // Canadian ETF (Toronto exchange)
-                
+
                 // Oil & Energy ETFs
                 "USO" => "USO.US",         // United States Oil Fund ETF
                 "UCO" => "UCO.US",         // ProShares Ultra Bloomberg Crude Oil ETF
@@ -126,13 +126,13 @@ namespace ODTE.Historical.DataProviders
                 "DRIP" => "DRIP.US",       // Direxion Daily S&P Oil & Gas Bear 2X
                 "XLE" => "XLE.US",         // Energy Select Sector SPDR Fund
                 "VDE" => "VDE.US",         // Vanguard Energy ETF
-                
+
                 // Commodities ETFs
                 "GLD" => "GLD.US",         // SPDR Gold Trust ETF
                 "SLV" => "SLV.US",         // iShares Silver Trust ETF
                 "UNG" => "UNG.US",         // United States Natural Gas Fund ETF
                 "DBA" => "DBA.US",         // Invesco DB Agriculture Fund ETF
-                
+
                 // Default: Add .US for US stocks/ETFs, keep indices as-is
                 _ => symbol.Contains("^") ? symbol : $"{symbol.ToUpper()}.US"
             };

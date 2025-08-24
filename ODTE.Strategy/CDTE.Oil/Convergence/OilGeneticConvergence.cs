@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy.CDTE.Oil.Convergence
 {
     /// <summary>
@@ -35,7 +30,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             public bool UseEIASignal { get; set; }
             public bool UseAPISignal { get; set; }
             public double EntryVolThreshold { get; set; }
-            
+
             // Strike Selection Genes
             public string StrikeMethod { get; set; } // Delta, IVRank, Skew, Dynamic
             public double BaseShortDelta { get; set; }
@@ -46,7 +41,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             public double SpreadWidth { get; set; }
             public bool UseSkewAdjustment { get; set; }
             public double SkewMultiplier { get; set; }
-            
+
             // Risk Management Genes
             public double StopLossPercent { get; set; }
             public double ProfitTarget1 { get; set; }
@@ -56,7 +51,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             public int MaxRollsPerWeek { get; set; }
             public bool UseTrailingStop { get; set; }
             public double TrailingStopActivation { get; set; }
-            
+
             // Exit Strategy Genes
             public DayOfWeek PrimaryExitDay { get; set; }
             public string ExitTime { get; set; }
@@ -64,20 +59,20 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             public double PinRiskBuffer { get; set; }
             public bool UseTimeDecayOptimal { get; set; }
             public double ThetaGammaRatioTarget { get; set; }
-            
+
             // Position Sizing Genes
             public double BaseRiskPercent { get; set; }
             public double HighIVSizeReduction { get; set; }
             public double ConsecutiveLossReduction { get; set; }
             public int ConsecutiveLossThreshold { get; set; }
-            
+
             // Advanced Genes
             public bool UseContangoSignal { get; set; }
             public double ContangoThreshold { get; set; }
             public bool UseCorrelationFilter { get; set; }
             public double CorrelationThreshold { get; set; }
             public string[] CorrelationAssets { get; set; }
-            
+
             // Performance Metrics (calculated)
             public double? Fitness { get; set; }
             public double? CAGR { get; set; }
@@ -86,7 +81,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             public double? SharpeRatio { get; set; }
             public double? ProfitFactor { get; set; }
             public int? Generation { get; set; }
-            
+
             public StrategyGenome Clone()
             {
                 return (StrategyGenome)this.MemberwiseClone();
@@ -97,7 +92,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         private List<StrategyGenome> GetTop16Seeds()
         {
             var seeds = new List<StrategyGenome>();
-            
+
             // OIL09 - Wednesday Pre-EIA (Best performer)
             seeds.Add(new StrategyGenome
             {
@@ -117,7 +112,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 71,
                 MaxDrawdown = -18.5
             });
-            
+
             // OIL41 - Quick Profit 25%
             seeds.Add(new StrategyGenome
             {
@@ -135,7 +130,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 82,
                 MaxDrawdown = -12.3
             });
-            
+
             // OIL25 - IV Rank Based
             seeds.Add(new StrategyGenome
             {
@@ -156,7 +151,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 68,
                 MaxDrawdown = -21.2
             });
-            
+
             // OIL62 - Time Decay Optimal
             seeds.Add(new StrategyGenome
             {
@@ -176,7 +171,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 73,
                 MaxDrawdown = -16.8
             });
-            
+
             // OIL17 - Ultra-Low Delta
             seeds.Add(new StrategyGenome
             {
@@ -194,7 +189,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 85,
                 MaxDrawdown = -14.2
             });
-            
+
             // OIL34 - Standard Stop with Trailing
             seeds.Add(new StrategyGenome
             {
@@ -214,7 +209,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 76,
                 MaxDrawdown = -15.7
             });
-            
+
             // OIL27 - Term Structure Aware
             seeds.Add(new StrategyGenome
             {
@@ -235,7 +230,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 74,
                 MaxDrawdown = -17.3
             });
-            
+
             // OIL05 - Tuesday API Aware
             seeds.Add(new StrategyGenome
             {
@@ -255,7 +250,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 77,
                 MaxDrawdown = -19.1
             });
-            
+
             // OIL49 - Thursday Morning Exit
             seeds.Add(new StrategyGenome
             {
@@ -272,7 +267,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 79,
                 MaxDrawdown = -13.9
             });
-            
+
             // OIL38 - Delta Roll Strategy
             seeds.Add(new StrategyGenome
             {
@@ -292,7 +287,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 72,
                 MaxDrawdown = -18.6
             });
-            
+
             // OIL13 - Monday+Wednesday Split
             seeds.Add(new StrategyGenome
             {
@@ -311,7 +306,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 81,
                 MaxDrawdown = -11.8
             });
-            
+
             // OIL26 - Skew Adjusted
             seeds.Add(new StrategyGenome
             {
@@ -332,7 +327,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 75,
                 MaxDrawdown = -16.4
             });
-            
+
             // OIL42 - Standard Profit 50%
             seeds.Add(new StrategyGenome
             {
@@ -352,7 +347,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 78,
                 MaxDrawdown = -14.6
             });
-            
+
             // OIL53 - Friday Pin Risk Aware
             seeds.Add(new StrategyGenome
             {
@@ -372,7 +367,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 80,
                 MaxDrawdown = -12.7
             });
-            
+
             // OIL30 - Open Interest Based
             seeds.Add(new StrategyGenome
             {
@@ -391,7 +386,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 76,
                 MaxDrawdown = -15.3
             });
-            
+
             // OIL61 - Profit Cascade
             seeds.Add(new StrategyGenome
             {
@@ -409,7 +404,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 WinRate = 83,
                 MaxDrawdown = -13.1
             });
-            
+
             return seeds;
         }
 
@@ -417,32 +412,32 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         private double CalculateFitness(StrategyGenome genome, BacktestResult result)
         {
             // Hard constraints - return negative fitness if violated
-            if (result.WinRate < 0.80) 
+            if (result.WinRate < 0.80)
                 return -1000 + result.WinRate * 100; // Penalize but allow evolution
-            
+
             if (result.MaxDrawdown < -0.15)
                 return -500 - result.MaxDrawdown * 100; // Penalize high drawdown
-            
+
             // Primary objective: Maximize CAGR
             double fitness = result.CAGR * 100;
-            
+
             // Bonus for exceeding win rate target
             if (result.WinRate > 0.80)
                 fitness += (result.WinRate - 0.80) * 500;
-            
+
             // Bonus for lower drawdown
             if (result.MaxDrawdown > -0.15)
                 fitness += (0.15 + result.MaxDrawdown) * 200;
-            
+
             // Secondary objectives
             fitness += result.SharpeRatio * 10;
             fitness += result.ProfitFactor * 5;
             fitness += result.ConsistencyScore * 20;
-            
+
             // Penalize complexity (fewer parameters is better)
             int activeParameters = CountActiveParameters(genome);
             fitness -= activeParameters * 0.5;
-            
+
             return fitness;
         }
 
@@ -450,14 +445,14 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         private StrategyGenome Crossover(StrategyGenome parent1, StrategyGenome parent2, Random rand)
         {
             var child = new StrategyGenome();
-            
+
             // Entry timing genes (tend to inherit from better performer)
             double bias = parent1.Fitness > parent2.Fitness ? 0.7 : 0.3;
             child.PrimaryEntryDay = rand.NextDouble() < bias ? parent1.PrimaryEntryDay : parent2.PrimaryEntryDay;
             child.EntryTime = rand.NextDouble() < bias ? parent1.EntryTime : parent2.EntryTime;
             child.UseEIASignal = rand.NextDouble() < 0.5 ? parent1.UseEIASignal : parent2.UseEIASignal;
             child.UseAPISignal = rand.NextDouble() < 0.5 ? parent1.UseAPISignal : parent2.UseAPISignal;
-            
+
             // Strike selection genes (blend approaches)
             if (parent1.StrikeMethod == parent2.StrikeMethod)
             {
@@ -466,10 +461,10 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             else
             {
                 // If different methods, pick the one with better win rate
-                child.StrikeMethod = parent1.WinRate > parent2.WinRate ? 
+                child.StrikeMethod = parent1.WinRate > parent2.WinRate ?
                     parent1.StrikeMethod : parent2.StrikeMethod;
             }
-            
+
             // Numeric parameters - use weighted average based on fitness
             double weight1 = parent1.Fitness ?? 0;
             double weight2 = parent2.Fitness ?? 0;
@@ -483,28 +478,28 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             {
                 weight1 = weight2 = 0.5;
             }
-            
+
             child.BaseShortDelta = parent1.BaseShortDelta * weight1 + parent2.BaseShortDelta * weight2;
             child.StopLossPercent = parent1.StopLossPercent * weight1 + parent2.StopLossPercent * weight2;
             child.ProfitTarget1 = parent1.ProfitTarget1 * weight1 + parent2.ProfitTarget1 * weight2;
             child.ProfitTarget1Size = parent1.ProfitTarget1Size * weight1 + parent2.ProfitTarget1Size * weight2;
             child.ProfitTarget2 = parent1.ProfitTarget2 * weight1 + parent2.ProfitTarget2 * weight2;
-            
+
             // Risk management genes
             child.DeltaRollTrigger = parent1.DeltaRollTrigger * weight1 + parent2.DeltaRollTrigger * weight2;
             child.MaxRollsPerWeek = rand.NextDouble() < 0.5 ? parent1.MaxRollsPerWeek : parent2.MaxRollsPerWeek;
-            child.UseTrailingStop = (parent1.UseTrailingStop && parent2.UseTrailingStop) || 
+            child.UseTrailingStop = (parent1.UseTrailingStop && parent2.UseTrailingStop) ||
                                    (rand.NextDouble() < 0.3); // Bias toward trailing stops
-            
+
             // Exit strategy genes
             child.PrimaryExitDay = rand.NextDouble() < bias ? parent1.PrimaryExitDay : parent2.PrimaryExitDay;
             child.ExitTime = rand.NextDouble() < bias ? parent1.ExitTime : parent2.ExitTime;
             child.UsePinRiskExit = parent1.UsePinRiskExit || parent2.UsePinRiskExit; // Inherit safety features
-            
+
             // Position sizing genes
             child.BaseRiskPercent = Math.Min(parent1.BaseRiskPercent, parent2.BaseRiskPercent); // Conservative
             child.HighIVSizeReduction = Math.Max(parent1.HighIVSizeReduction, parent2.HighIVSizeReduction);
-            
+
             return child;
         }
 
@@ -517,59 +512,59 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 var days = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday };
                 genome.PrimaryEntryDay = days[rand.Next(days.Length)];
             }
-            
+
             if (rand.NextDouble() < 0.1 * mutationStrength)
             {
                 var times = new[] { "09:30", "09:35", "10:00", "10:30", "11:00" };
                 genome.EntryTime = times[rand.Next(times.Length)];
             }
-            
+
             // Delta mutations (small adjustments)
             if (rand.NextDouble() < 0.15 * mutationStrength)
             {
                 genome.BaseShortDelta += (rand.NextDouble() - 0.5) * 0.03;
                 genome.BaseShortDelta = Math.Max(0.05, Math.Min(0.30, genome.BaseShortDelta));
             }
-            
+
             // Stop loss mutations
             if (rand.NextDouble() < 0.12 * mutationStrength)
             {
                 genome.StopLossPercent += (rand.NextDouble() - 0.5) * 25;
                 genome.StopLossPercent = Math.Max(50, Math.Min(300, genome.StopLossPercent));
             }
-            
+
             // Profit target mutations
             if (rand.NextDouble() < 0.15 * mutationStrength)
             {
                 genome.ProfitTarget1 += (rand.NextDouble() - 0.5) * 5;
                 genome.ProfitTarget1 = Math.Max(15, Math.Min(40, genome.ProfitTarget1));
             }
-            
+
             if (rand.NextDouble() < 0.12 * mutationStrength)
             {
                 genome.ProfitTarget1Size += (rand.NextDouble() - 0.5) * 20;
                 genome.ProfitTarget1Size = Math.Max(25, Math.Min(100, genome.ProfitTarget1Size));
             }
-            
+
             // Exit timing mutations
             if (rand.NextDouble() < 0.1 * mutationStrength)
             {
                 var exitDays = new[] { DayOfWeek.Thursday, DayOfWeek.Friday };
                 genome.PrimaryExitDay = exitDays[rand.Next(exitDays.Length)];
             }
-            
+
             if (rand.NextDouble() < 0.1 * mutationStrength)
             {
                 var exitTimes = new[] { "09:35", "10:00", "11:00", "12:00", "14:00", "15:00", "15:30" };
                 genome.ExitTime = exitTimes[rand.Next(exitTimes.Length)];
             }
-            
+
             // Advanced feature mutations (rare)
             if (rand.NextDouble() < 0.05 * mutationStrength)
             {
                 genome.UseEIASignal = !genome.UseEIASignal;
             }
-            
+
             if (rand.NextDouble() < 0.05 * mutationStrength)
             {
                 genome.UseTrailingStop = !genome.UseTrailingStop;
@@ -578,7 +573,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                     genome.TrailingStopActivation = 30 + rand.Next(40);
                 }
             }
-            
+
             if (rand.NextDouble() < 0.05 * mutationStrength)
             {
                 genome.UsePinRiskExit = !genome.UsePinRiskExit;
@@ -594,40 +589,40 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         {
             var rand = new Random(42); // Deterministic seed for reproducibility
             var population = InitializePopulation(config.PopulationSize, rand);
-            
+
             StrategyGenome bestEver = null;
             double bestFitness = double.MinValue;
             int stagnationCount = 0;
-            
+
             for (int generation = 0; generation < config.MaxGenerations; generation++)
             {
                 // Evaluate fitness for entire population
                 await EvaluatePopulationAsync(population);
-                
+
                 // Sort by fitness
                 population = population.OrderByDescending(g => g.Fitness ?? double.MinValue).ToList();
-                
+
                 // Track best
                 if (population[0].Fitness > bestFitness)
                 {
                     bestEver = population[0].Clone();
                     bestFitness = population[0].Fitness.Value;
                     stagnationCount = 0;
-                    
+
                     LogProgress(generation, bestEver);
                 }
                 else
                 {
                     stagnationCount++;
                 }
-                
+
                 // Check convergence criteria
                 if (CheckConvergence(population, config))
                 {
                     Console.WriteLine($"Converged at generation {generation}!");
                     break;
                 }
-                
+
                 // Check stagnation
                 if (stagnationCount >= config.StagnationLimit)
                 {
@@ -635,21 +630,21 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                     InjectDiversity(population, rand, config.PopulationSize / 4);
                     stagnationCount = 0;
                 }
-                
+
                 // Create next generation
                 var nextGeneration = new List<StrategyGenome>();
-                
+
                 // Elitism - keep best performers
                 for (int i = 0; i < config.EliteCount; i++)
                 {
                     nextGeneration.Add(population[i].Clone());
                 }
-                
+
                 // Generate offspring
                 while (nextGeneration.Count < config.PopulationSize)
                 {
                     StrategyGenome offspring;
-                    
+
                     if (rand.NextDouble() < config.CrossoverRate)
                     {
                         // Tournament selection for parents
@@ -662,21 +657,21 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                         // Clone a random elite
                         offspring = population[rand.Next(config.EliteCount)].Clone();
                     }
-                    
+
                     // Apply mutation
                     if (rand.NextDouble() < config.MutationRate)
                     {
                         double mutationStrength = 1.0 - (generation / (double)config.MaxGenerations) * 0.5;
                         Mutate(offspring, rand, mutationStrength);
                     }
-                    
+
                     offspring.Generation = generation + 1;
                     nextGeneration.Add(offspring);
                 }
-                
+
                 population = nextGeneration;
             }
-            
+
             return bestEver;
         }
 
@@ -685,26 +680,26 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         {
             var population = new List<StrategyGenome>();
             var seeds = GetTop16Seeds();
-            
+
             // Add all seeds
             population.AddRange(seeds);
-            
+
             // Fill rest with mutated versions of seeds
             while (population.Count < size)
             {
                 var seed = seeds[rand.Next(seeds.Count)];
                 var variant = seed.Clone();
-                
+
                 // Apply multiple mutations for diversity
                 for (int i = 0; i < rand.Next(1, 5); i++)
                 {
                     Mutate(variant, rand, 1.5); // Stronger initial mutations
                 }
-                
+
                 variant.Generation = 0;
                 population.Add(variant);
             }
-            
+
             return population;
         }
 
@@ -713,7 +708,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         {
             // In production, this would run actual backtests
             // For now, simulate with heuristic evaluation
-            
+
             foreach (var genome in population.Where(g => !g.Fitness.HasValue))
             {
                 var result = SimulateBacktest(genome);
@@ -724,7 +719,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 genome.SharpeRatio = result.SharpeRatio;
                 genome.ProfitFactor = result.ProfitFactor;
             }
-            
+
             await Task.CompletedTask;
         }
 
@@ -734,7 +729,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             // Base performance from delta
             double baseWinRate = 0.95 - genome.BaseShortDelta * 2;
             double baseCAGR = 20 + (0.20 - genome.BaseShortDelta) * 100;
-            
+
             // Adjust for profit targets
             if (genome.ProfitTarget1 < 30)
             {
@@ -746,7 +741,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 baseWinRate -= 0.05;
                 baseCAGR += 3;
             }
-            
+
             // Adjust for stop loss
             if (genome.StopLossPercent < 100)
             {
@@ -758,38 +753,38 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 baseWinRate += 0.03;
                 baseCAGR += 2;
             }
-            
+
             // Wednesday EIA bonus
             if (genome.PrimaryEntryDay == DayOfWeek.Wednesday && genome.UseEIASignal)
             {
                 baseCAGR += 8;
                 baseWinRate -= 0.02; // Slightly more risk
             }
-            
+
             // Thursday exit bonus (avoid Friday gamma)
             if (genome.PrimaryExitDay == DayOfWeek.Thursday)
             {
                 baseWinRate += 0.04;
                 baseCAGR -= 2;
             }
-            
+
             // Trailing stop bonus
             if (genome.UseTrailingStop)
             {
                 baseWinRate += 0.02;
                 baseCAGR += 1;
             }
-            
+
             // Calculate drawdown based on risk parameters
             double baseDrawdown = -5 - genome.BaseShortDelta * 50;
             baseDrawdown *= (genome.StopLossPercent / 100);
             baseDrawdown = Math.Max(baseDrawdown, -30);
-            
+
             // Calculate other metrics
             double sharpe = baseCAGR / Math.Abs(baseDrawdown) * 0.5;
-            double profitFactor = baseWinRate > 0.5 ? 
+            double profitFactor = baseWinRate > 0.5 ?
                 (baseWinRate * 1.5) / ((1 - baseWinRate) * 1.0) : 0.8;
-            
+
             return new BacktestResult
             {
                 CAGR = Math.Max(0, baseCAGR + (rand.NextDouble() - 0.5) * 5),
@@ -800,14 +795,14 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 ConsistencyScore = 0.7 + (rand.NextDouble() - 0.5) * 0.2
             };
         }
-        
+
         private Random rand = new Random();
 
         // Tournament selection
         private StrategyGenome TournamentSelect(List<StrategyGenome> population, Random rand, int tournamentSize)
         {
             StrategyGenome best = null;
-            
+
             for (int i = 0; i < tournamentSize; i++)
             {
                 var candidate = population[rand.Next(population.Count)];
@@ -816,7 +811,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                     best = candidate;
                 }
             }
-            
+
             return best;
         }
 
@@ -834,13 +829,13 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                 var avgFitness = top10.Average(g => g.Fitness ?? 0);
                 var variance = top10.Select(g => Math.Pow((g.Fitness ?? 0) - avgFitness, 2)).Average();
                 var stdDev = Math.Sqrt(variance);
-                
+
                 if (stdDev / avgFitness < config.ConvergenceThreshold)
                 {
                     return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -848,7 +843,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         private void InjectDiversity(List<StrategyGenome> population, Random rand, int count)
         {
             var seeds = GetTop16Seeds();
-            
+
             for (int i = population.Count - count; i < population.Count; i++)
             {
                 if (rand.NextDouble() < 0.5)
@@ -869,7 +864,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
                     population[i] = Crossover(parent1, parent2, rand);
                     Mutate(population[i], rand, 1.5);
                 }
-                
+
                 population[i].Fitness = null; // Force re-evaluation
             }
         }
@@ -878,7 +873,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
         private int CountActiveParameters(StrategyGenome genome)
         {
             int count = 5; // Base parameters always active
-            
+
             if (genome.UseEIASignal) count++;
             if (genome.UseAPISignal) count++;
             if (genome.UseSkewAdjustment) count += 2;
@@ -888,7 +883,7 @@ namespace ODTE.Strategy.CDTE.Oil.Convergence
             if (genome.UseContangoSignal) count += 2;
             if (genome.UseCorrelationFilter) count += 3;
             if (genome.MaxRollsPerWeek > 0) count += 2;
-            
+
             return count;
         }
 

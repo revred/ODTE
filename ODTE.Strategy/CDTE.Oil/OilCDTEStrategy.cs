@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy.CDTE.Oil
 {
     public sealed class OilCDTEStrategy : IStrategy
@@ -39,7 +36,7 @@ namespace ODTE.Strategy.CDTE.Oil
                 var fridayDte = (fridayExpiry - oil10Et.Timestamp.Date).Days;
 
                 var coreIC = OilStrikes.BuildIC(spot, thursdayDte, expectedMove, oil10Et.GetNearestStrike);
-                var carryIC = _config.IsHighIv(atmIv) 
+                var carryIC = _config.IsHighIv(atmIv)
                     ? OilStrikes.BuildIF(spot, fridayDte, oil10Et.GetNearestStrike)
                     : OilStrikes.BuildIC(spot, fridayDte, expectedMove, oil10Et.GetNearestStrike);
 
@@ -89,12 +86,12 @@ namespace ODTE.Strategy.CDTE.Oil
                 if (corePosition != null)
                 {
                     var profitPct = corePosition.GetProfitPercentage();
-                    
+
                     if (profitPct >= cfg.TakeProfitCorePct)
                     {
                         return new DecisionPlan(GuardAction.Close, "Take profit: Core >= 70%", corePosition);
                     }
-                    
+
                     if (Math.Abs(profitPct) < cfg.NeutralBandPct)
                     {
                         var rollPlan = CreateRollPlan(corePosition, oil1230Et, cfg);
@@ -103,7 +100,7 @@ namespace ODTE.Strategy.CDTE.Oil
                             return new DecisionPlan(GuardAction.RollOutAndAway, "Neutral roll Core->Fri", rollPlan);
                         }
                     }
-                    
+
                     if (profitPct <= -cfg.MaxDrawdownPct)
                     {
                         return new DecisionPlan(GuardAction.Close, "Stop loss: Core >= 50% loss", corePosition);
@@ -127,7 +124,7 @@ namespace ODTE.Strategy.CDTE.Oil
                 {
                     var allPositions = state.GetAllPositions();
                     var exitOrders = CreateExitOrders(allPositions, exitWindow);
-                    
+
                     return new ExitReport(
                         success: true,
                         reason: "Force exit before session close",
@@ -183,10 +180,10 @@ namespace ODTE.Strategy.CDTE.Oil
             var newExpiry = GetFridayExpiry(snapshot.Timestamp);
             var newDte = (newExpiry - snapshot.Timestamp.Date).Days;
             var newEM = OilSignals.CalculateExpectedMove(snapshot.GetAtmImpliedVolatility(), snapshot.Timestamp);
-            
+
             var newIC = OilStrikes.BuildIC(snapshot.UnderlyingPrice, newDte, newEM, snapshot.GetNearestStrike);
             var rollDebit = CalculateRollDebit(corePosition, newIC, snapshot);
-            
+
             return new RollPlan(newIC, newExpiry, rollDebit);
         }
 
@@ -205,8 +202,8 @@ namespace ODTE.Strategy.CDTE.Oil
             if (!snapshot.HasZeroDteOptions()) return null;
 
             var lottoIC = OilStrikes.BuildIC(
-                snapshot.UnderlyingPrice, 
-                0, 
+                snapshot.UnderlyingPrice,
+                0,
                 OilSignals.CalculateExpectedMove(snapshot.GetAtmImpliedVolatility(), snapshot.Timestamp),
                 snapshot.GetNearestStrike
             );
@@ -216,13 +213,14 @@ namespace ODTE.Strategy.CDTE.Oil
                 lottoIC.Legs,
                 snapshot.Timestamp,
                 "0DTE lotto"
-            ) { SizeMultiplier = 0.5 };
+            )
+            { SizeMultiplier = 0.5 };
         }
 
-        private DateTime GetThursdayExpiry(DateTime fromDate) => 
+        private DateTime GetThursdayExpiry(DateTime fromDate) =>
             GetNextWeekday(fromDate, DayOfWeek.Thursday);
 
-        private DateTime GetFridayExpiry(DateTime fromDate) => 
+        private DateTime GetFridayExpiry(DateTime fromDate) =>
             GetNextWeekday(fromDate, DayOfWeek.Friday);
 
         private DateTime GetNextWeekday(DateTime from, DayOfWeek target)

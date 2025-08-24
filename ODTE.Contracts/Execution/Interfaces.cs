@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ODTE.Contracts.Data;
 using ODTE.Contracts.Orders;
 using ODTE.Contracts.Strategy;
@@ -54,7 +51,7 @@ namespace ODTE.Contracts.Execution
     public enum FillQuality
     {
         Excellent,
-        Good, 
+        Good,
         Fair,
         Poor
     }

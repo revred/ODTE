@@ -62,7 +62,8 @@
       "Bash(cat:*)",
       "Bash(./SimpleTournamentDemo.exe)",
       "Bash(gh run list:*)",
-      "Bash(reportgenerator:*)"
+      "Bash(reportgenerator:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": [],

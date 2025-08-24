@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using ODTE.Strategy;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -35,7 +31,7 @@ namespace ODTE.Strategy.Tests
         {
             Console.WriteLine("🔧 DEPLOYING ULTRA-OPTIMIZED CONFIGURATION...");
             Console.WriteLine();
-            
+
             InitializeUltraOptimizedSystem();
             ValidateRevFibNotchLimits();
             ValidateUltraOptimizedParameters();
@@ -43,7 +39,7 @@ namespace ODTE.Strategy.Tests
             TestCrisisProtection();
             TestWinRateProtection();
             TestMovementAgility();
-            
+
             Console.WriteLine();
             Console.WriteLine("✅ ULTRA-OPTIMIZED CONFIGURATION DEPLOYED SUCCESSFULLY");
             PrintConfigurationSummary();
@@ -66,7 +62,7 @@ namespace ODTE.Strategy.Tests
             };
 
             _ultraOptimizedManager = new RevFibNotchManager(ultraOptimizedConfig);
-            
+
             Console.WriteLine("✓ Ultra-optimized RevFibNotch manager initialized");
             Console.WriteLine($"  Limits: [{string.Join(", ", _ultraOptimizedManager.AllRFibLimits)}]");
             Console.WriteLine($"  Win Rate Threshold: {ultraOptimizedConfig.WinRateThreshold:P1}");
@@ -89,7 +85,7 @@ namespace ODTE.Strategy.Tests
                 var level = i switch
                 {
                     0 => "Maximum",
-                    1 => "Aggressive", 
+                    1 => "Aggressive",
                     2 => "Balanced",
                     3 => "Conservative",
                     4 => "Defensive",
@@ -208,7 +204,7 @@ namespace ODTE.Strategy.Tests
             {
                 _ultraOptimizedManager.ResetToNotch(2, "RESET");
                 var result = _ultraOptimizedManager.ProcessDailyPnL(-30m, DateTime.Now, scenario.WinRate);
-                
+
                 var protection = result.NotchMovement > 0 ? "PROTECTED" : "No Protection";
                 Console.WriteLine($"  Win Rate {scenario.WinRate:P0}: {protection} (Expected: {scenario.Expected})");
             }
@@ -239,7 +235,7 @@ namespace ODTE.Strategy.Tests
             {
                 _ultraOptimizedManager.ResetToNotch(2, "RESET");
                 var result = _ultraOptimizedManager.ProcessDailyPnL(test.Loss, DateTime.Now);
-                
+
                 Console.WriteLine($"  {test.Description} ({test.Loss:C}): Movement = {result.NotchMovement} notches");
                 Console.WriteLine($"    → 2.26x sensitivity applied, new limit: {result.NewRFibLimit:C}");
             }
@@ -254,7 +250,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine("📋 ULTRA-OPTIMIZED CONFIGURATION SUMMARY:");
             Console.WriteLine("=========================================");
             Console.WriteLine();
-            
+
             Console.WriteLine("🏆 GENETIC ALGORITHM OPTIMIZED PARAMETERS:");
             Console.WriteLine($"  RevFib Limits: [1280, 500, 300, 200, 100, 50]");
             Console.WriteLine($"  Win Rate Threshold: 71.0% (was 68%)");
@@ -264,13 +260,13 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"  Loss Reaction Speed: 1.62 (new parameter)");
             Console.WriteLine($"  Profit Reaction Speed: 1.14 (new parameter)");
             Console.WriteLine();
-            
+
             Console.WriteLine("🌍 MARKET REGIME MULTIPLIERS:");
             Console.WriteLine($"  Volatile Markets: 0.85x position sizing");
-            Console.WriteLine($"  Crisis Markets: 0.30x position sizing");  
+            Console.WriteLine($"  Crisis Markets: 0.30x position sizing");
             Console.WriteLine($"  Bull Markets: 1.01x position sizing");
             Console.WriteLine();
-            
+
             Console.WriteLine("📊 OPTIMIZATION RESULTS:");
             Console.WriteLine($"  Generations: 50 (converged early)");
             Console.WriteLine($"  Population Size: 150 chromosomes");
@@ -278,7 +274,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"  Dataset: 20 years, 5,369 trading days");
             Console.WriteLine($"  Parameters Optimized: 24-dimensional space");
             Console.WriteLine();
-            
+
             Console.WriteLine("⚡ EXPECTED IMPROVEMENTS:");
             Console.WriteLine($"  • 50% faster loss protection responses");
             Console.WriteLine($"  • 71% win rate threshold eliminates marginal trades");
@@ -286,13 +282,13 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"  • Enhanced multi-objective fitness optimization");
             Console.WriteLine($"  • Validated across all major market crises (2008, 2020, 2022)");
             Console.WriteLine();
-            
+
             Console.WriteLine("🎯 IMPLEMENTATION STATUS: ✅ DEPLOYED");
             Console.WriteLine($"  System ready for live trading with ultra-optimized parameters");
             Console.WriteLine($"  Configuration validated against 20-year historical dataset");
             Console.WriteLine($"  All protection mechanisms operational and tested");
             Console.WriteLine();
-            
+
             Console.WriteLine("🚀 NEXT STEPS:");
             Console.WriteLine($"  1. Monitor first 30 days for parameter validation");
             Console.WriteLine($"  2. Track protection trigger frequency vs old system");

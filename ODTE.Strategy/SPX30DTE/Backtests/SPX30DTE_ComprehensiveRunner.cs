@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
-using ODTE.Historical.DistributedStorage;
 using ODTE.Execution.Engine;
+using ODTE.Historical.DistributedStorage;
 
 namespace ODTE.Strategy.SPX30DTE.Backtests
 {
@@ -16,7 +11,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
     {
         private readonly DistributedDatabaseManager _dataManager;
         private readonly RealisticFillEngine _fillEngine;
-        
+
         public SPX30DTE_ComprehensiveRunner()
         {
             _dataManager = new DistributedDatabaseManager();
@@ -58,7 +53,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 catch (Exception ex)
                 {
                     Console.WriteLine($"        ❌ Error: {ex.Message}");
-                    
+
                     // Create fallback result for failed backtest
                     results.Add(new ComprehensiveMutationResult
                     {
@@ -83,21 +78,21 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             Console.WriteLine();
             Console.WriteLine("🏆 COMPREHENSIVE BACKTEST RESULTS");
             Console.WriteLine("═══════════════════════════════════════════════════════════════════════");
-            
+
             DisplayComprehensiveResults(results);
-            
+
             Console.WriteLine();
             Console.WriteLine("🗄️  GENERATING SQLITE LEDGERS FOR TOP 4 PERFORMERS");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             await GenerateSQLiteLedgers(results.Take(4).ToList(), startDate, endDate);
-            
+
             return results;
         }
 
         private async Task<ComprehensiveMutationResult> RunSingleMutationBacktest(
-            MutationConfiguration mutation, 
-            DateTime startDate, 
+            MutationConfiguration mutation,
+            DateTime startDate,
             DateTime endDate)
         {
             // Initialize backtest parameters
@@ -115,7 +110,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
 
             // Strategy-specific parameters
             var (baseCagr, baseDrawdown, baseWinRate) = GetStrategyParameters(mutation.Strategy, random);
-            
+
             while (currentDate < endDate)
             {
                 if (IsWeekday(currentDate))
@@ -123,10 +118,10 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     // Simulate daily P&L
                     var dailyReturn = GenerateDailyReturn(random, baseCagr, baseDrawdown);
                     var dailyPnLAmount = currentCapital * dailyReturn;
-                    
+
                     currentCapital += dailyPnLAmount;
                     dailyPnL[currentDate] = dailyPnLAmount;
-                    
+
                     // Track drawdown
                     if (currentCapital > highWaterMark)
                     {
@@ -145,7 +140,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                         trades.Add(GenerateTradeRecord(currentDate, random, mutation.Strategy, baseWinRate));
                     }
                 }
-                
+
                 currentDate = currentDate.AddDays(1);
             }
 
@@ -155,7 +150,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var actualWinRate = trades.Any() ? trades.Count(t => t.RealizedPnL > 0) / (decimal)trades.Count : 0m;
             var profitFactor = CalculateProfitFactor(trades);
             var sharpeRatio = CalculateSharpeRatio(dailyPnL.Values.ToList());
-            
+
             // Multi-criteria scoring matching tournament system
             var cagrScore = Math.Min(actualCagr / 0.40m, 1.0m) * 35; // 35% weight
             var riskScore = (1 - Math.Min(maxDrawdown / 0.20m, 1.0m)) * 30; // 30% weight
@@ -198,12 +193,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             // Convert annual CAGR to daily volatility
             var dailyReturn = annualCagr / 252m;
             var dailyVolatility = maxDrawdown * 0.05m; // Approximate daily vol from max drawdown
-            
+
             // Generate normally distributed returns
             var u1 = random.NextDouble();
             var u2 = random.NextDouble();
             var normalRandom = Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2);
-            
+
             return dailyReturn + (decimal)normalRandom * dailyVolatility;
         }
 
@@ -224,7 +219,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var isWinner = random.NextDouble() < (double)baseWinRate;
             var tradeSize = 100 + random.Next(400); // $100-$500 per trade
 
-            var realizedPnL = isWinner 
+            var realizedPnL = isWinner
                 ? tradeSize * (0.1m + (decimal)(random.NextDouble() * 0.3m)) // 10-40% profit
                 : -tradeSize * (0.05m + (decimal)(random.NextDouble() * 0.2m)); // 5-25% loss
 
@@ -244,21 +239,21 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private decimal CalculateProfitFactor(List<TradeRecord> trades)
         {
             if (!trades.Any()) return 1.0m;
-            
+
             var grossProfit = trades.Where(t => t.RealizedPnL > 0).Sum(t => t.RealizedPnL);
             var grossLoss = Math.Abs(trades.Where(t => t.RealizedPnL < 0).Sum(t => t.RealizedPnL));
-            
+
             return grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 2.0m : 1.0m;
         }
 
         private decimal CalculateSharpeRatio(List<decimal> dailyReturns)
         {
             if (dailyReturns.Count < 2) return 0m;
-            
+
             var avgReturn = dailyReturns.Average();
             var variance = dailyReturns.Sum(r => (r - avgReturn) * (r - avgReturn)) / (dailyReturns.Count - 1);
             var stdDev = (decimal)Math.Sqrt((double)variance);
-            
+
             return stdDev > 0 ? avgReturn / stdDev * (decimal)Math.Sqrt(252) : 0m; // Annualized
         }
 
@@ -301,7 +296,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 var trophy = i switch
                 {
                     0 => "🥇",
-                    1 => "🥈", 
+                    1 => "🥈",
                     2 => "🥉",
                     _ when i < 8 => "🏅",
                     _ => "  "

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using ODTE.Strategy.RiskManagement;
-
 namespace ODTE.Strategy.SPX30DTE.Risk
 {
     /// <summary>
@@ -33,7 +28,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         private int _consecutiveProfitableWeeks;
         private decimal _monthToDatePnL;
         private decimal _peakMonthValue;
-        
+
         public SPX30DTERevFibNotchManager(SPX30DTENotchConfig config = null)
         {
             _config = config ?? GetDefaultConfig();
@@ -57,7 +52,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         public override decimal UpdateNotchAfterTrade(decimal tradePnL, decimal totalPortfolioValue)
         {
             var today = DateTime.Now.Date;
-            
+
             // Record trade result
             var dayResult = new TradingDayResult
             {
@@ -67,10 +62,10 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 NotchLimitAtTime = GetCurrentNotchLimit(),
                 NotchLevel = GetCurrentNotchLevel()
             };
-            
+
             _tradingHistory.Add(dayResult);
             _monthToDatePnL += tradePnL;
-            
+
             // Update consecutive tracking
             if (tradePnL > 0)
             {
@@ -80,16 +75,16 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             {
                 _consecutiveProfitableDays = 0;
             }
-            
+
             // Check for notch changes
             CheckForNotchAdjustment(dayResult);
-            
+
             // Monthly reset tracking
             if (IsNewMonth(today))
             {
                 ProcessMonthlyReset(today);
             }
-            
+
             return GetCurrentNotchLimit();
         }
 
@@ -105,13 +100,13 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 MonthToDatePnL = _monthToDatePnL,
                 MonthToDateReturn = _peakMonthValue > 0 ? _monthToDatePnL / _peakMonthValue : 0
             };
-            
+
             // Calculate potential movements
             analysis.CanMoveUp = CanUpgrade();
             analysis.RiskOfDowngrade = CalculateDowngradeRisk();
             analysis.DaysUntilPossibleUpgrade = CalculateDaysUntilUpgrade();
             analysis.ProtectiveStopLevel = CalculateProtectiveStopLevel();
-            
+
             // Performance metrics
             if (_tradingHistory.Count >= 30)
             {
@@ -120,19 +115,19 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 analysis.Last30DayAvgReturn = last30Days.Average(d => d.PnL / d.PortfolioValue);
                 analysis.Last30DayMaxDrawdown = CalculateMaxDrawdown(last30Days);
             }
-            
+
             return analysis;
         }
 
         public EmergencyProtocol CheckEmergencyConditions(decimal currentPortfolioValue)
         {
             var protocol = new EmergencyProtocol { IsTriggered = false };
-            
+
             // Calculate various loss metrics
             var monthLoss = _peakMonthValue > 0 ? (_peakMonthValue - currentPortfolioValue) / _peakMonthValue : 0;
             var dayLoss = _tradingHistory.LastOrDefault()?.PnL ?? 0;
             var dayLossPercent = currentPortfolioValue > 0 ? dayLoss / currentPortfolioValue : 0;
-            
+
             // Emergency triggers
             if (monthLoss >= _config.EmergencyMonthLossThreshold)
             {
@@ -155,14 +150,14 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 protocol.RecommendedAction = EmergencyAction.ReducePositionSizing;
                 protocol.NewNotchLevel = (SPX30DTENotchLevel)Math.Max(0, _currentNotchIndex - 1);
             }
-            
+
             return protocol;
         }
 
         private void CheckForNotchAdjustment(TradingDayResult dayResult)
         {
             var daysSinceLastChange = (DateTime.Now.Date - _lastNotchChange.Date).Days;
-            
+
             // Upgrade conditions (more stringent for higher capital)
             if (CanUpgrade() && ShouldUpgrade(dayResult, daysSinceLastChange))
             {
@@ -185,40 +180,40 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             // Minimum time requirements
             if (daysSinceLastChange < _config.MinDaysForUpgrade)
                 return false;
-                
+
             var currentLevel = (SPX30DTENotchLevel)_currentNotchIndex;
-            
+
             switch (currentLevel)
             {
                 case SPX30DTENotchLevel.Survival:
                 case SPX30DTENotchLevel.Defensive:
                     // Need 10+ profitable days and positive month
                     return _consecutiveProfitableDays >= 10 && _monthToDatePnL > 0;
-                    
+
                 case SPX30DTENotchLevel.Conservative:
                     // Need 15+ profitable days and +5% month
-                    return _consecutiveProfitableDays >= 15 && 
+                    return _consecutiveProfitableDays >= 15 &&
                            _monthToDatePnL / _peakMonthValue >= 0.05m;
-                    
+
                 case SPX30DTENotchLevel.Balanced:
                     // Need 20+ profitable days and +8% month
-                    return _consecutiveProfitableDays >= 20 && 
+                    return _consecutiveProfitableDays >= 20 &&
                            _monthToDatePnL / _peakMonthValue >= 0.08m &&
                            _consecutiveProfitableWeeks >= 4;
-                    
+
                 case SPX30DTENotchLevel.Growth:
                     // Need 25+ profitable days, +12% month, and 6+ profitable weeks
-                    return _consecutiveProfitableDays >= 25 && 
+                    return _consecutiveProfitableDays >= 25 &&
                            _monthToDatePnL / _peakMonthValue >= 0.12m &&
                            _consecutiveProfitableWeeks >= 6;
-                    
+
                 case SPX30DTENotchLevel.Aggressive:
                     // Need exceptional performance for maximum level
-                    return _consecutiveProfitableDays >= 30 && 
+                    return _consecutiveProfitableDays >= 30 &&
                            _monthToDatePnL / _peakMonthValue >= 0.15m &&
                            _consecutiveProfitableWeeks >= 8 &&
                            GetLast90DayWinRate() >= 0.70m;
-                    
+
                 default:
                     return false;
             }
@@ -226,50 +221,50 @@ namespace ODTE.Strategy.SPX30DTE.Risk
 
         private bool ShouldDowngrade(TradingDayResult dayResult)
         {
-            var monthLossPercent = _peakMonthValue > 0 ? 
+            var monthLossPercent = _peakMonthValue > 0 ?
                 (_peakMonthValue - dayResult.PortfolioValue) / _peakMonthValue : 0;
-            
-            var dayLossPercent = dayResult.PortfolioValue > 0 ? 
+
+            var dayLossPercent = dayResult.PortfolioValue > 0 ?
                 dayResult.PnL / dayResult.PortfolioValue : 0;
-            
+
             // Immediate downgrade triggers
             if (monthLossPercent >= _config.MonthlyLossDowngradeThreshold)
                 return true;
-                
+
             if (dayLossPercent <= -_config.DailyLossDowngradeThreshold)
                 return true;
-                
+
             // Consecutive loss trigger
             var recentLosses = _tradingHistory.TakeLast(5).Count(d => d.PnL < 0);
             if (recentLosses >= 4) // 4 out of last 5 days are losses
                 return true;
-                
+
             return false;
         }
 
         private void UpgradeNotch()
         {
             if (!CanUpgrade()) return;
-            
+
             var oldLevel = (SPX30DTENotchLevel)_currentNotchIndex;
             _currentNotchIndex++;
             var newLevel = (SPX30DTENotchLevel)_currentNotchIndex;
-            
+
             _lastNotchChange = DateTime.Now;
-            
+
             LogNotchChange(oldLevel, newLevel, "UPGRADE", "Performance criteria met");
         }
 
         private void DowngradeNotch(TradingDayResult dayResult)
         {
             if (_currentNotchIndex <= 0) return;
-            
+
             var oldLevel = (SPX30DTENotchLevel)_currentNotchIndex;
-            
+
             // Determine downgrade severity
-            var monthLossPercent = _peakMonthValue > 0 ? 
+            var monthLossPercent = _peakMonthValue > 0 ?
                 (_peakMonthValue - dayResult.PortfolioValue) / _peakMonthValue : 0;
-            
+
             if (monthLossPercent >= 0.25m) // 25%+ loss - drop 2 levels
             {
                 _currentNotchIndex = Math.Max(0, _currentNotchIndex - 2);
@@ -282,13 +277,13 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             {
                 _currentNotchIndex = Math.Max(0, _currentNotchIndex - 1);
             }
-            
+
             var newLevel = (SPX30DTENotchLevel)_currentNotchIndex;
-            
+
             _lastNotchChange = DateTime.Now;
             _consecutiveProfitableDays = 0; // Reset on downgrade
-            
-            LogNotchChange(oldLevel, newLevel, "DOWNGRADE", 
+
+            LogNotchChange(oldLevel, newLevel, "DOWNGRADE",
                 $"Month loss: {monthLossPercent:P2}, Day PnL: {dayResult.PnL:C}");
         }
 
@@ -298,7 +293,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             var previousMonth = newMonthStart.AddMonths(-1);
             var monthReturn = _peakMonthValue > 0 ? _monthToDatePnL / _peakMonthValue : 0;
             _monthlyReturns[previousMonth] = monthReturn;
-            
+
             // Update weekly consecutive tracking
             if (_monthToDatePnL > 0)
             {
@@ -308,15 +303,15 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             {
                 _consecutiveProfitableWeeks = 0;
             }
-            
+
             // Reset monthly tracking
             _monthToDatePnL = 0;
             _peakMonthValue = GetCurrentNotchLimit();
-            
+
             // Clean old history (keep 6 months)
             var cutoffDate = DateTime.Now.AddMonths(-6);
             _tradingHistory.RemoveAll(h => h.Date < cutoffDate);
-            
+
             var oldMonths = _monthlyReturns.Keys.Where(k => k < cutoffDate).ToList();
             foreach (var oldMonth in oldMonths)
             {
@@ -326,7 +321,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
 
         private bool IsNewMonth(DateTime date)
         {
-            return !_tradingHistory.Any() || 
+            return !_tradingHistory.Any() ||
                    _tradingHistory.Last().Date.Month != date.Month ||
                    _tradingHistory.Last().Date.Year != date.Year;
         }
@@ -334,16 +329,16 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         private decimal CalculateDowngradeRisk()
         {
             if (_monthToDatePnL >= 0) return 0;
-            
-            var currentLossPercent = _peakMonthValue > 0 ? 
+
+            var currentLossPercent = _peakMonthValue > 0 ?
                 Math.Abs(_monthToDatePnL) / _peakMonthValue : 0;
-            
+
             var remainingBuffer = _config.MonthlyLossDowngradeThreshold - currentLossPercent;
-            
+
             // Return risk as percentage (0-100)
             if (remainingBuffer <= 0) return 100m; // Already at downgrade threshold
             if (remainingBuffer >= 0.10m) return 0m; // Safe buffer
-            
+
             return (1 - remainingBuffer / 0.10m) * 100m;
         }
 
@@ -351,7 +346,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         {
             var daysSinceLastChange = (DateTime.Now.Date - _lastNotchChange.Date).Days;
             var minDaysRequired = _config.MinDaysForUpgrade;
-            
+
             return Math.Max(0, minDaysRequired - daysSinceLastChange);
         }
 
@@ -359,27 +354,27 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         {
             var currentValue = _peakMonthValue + _monthToDatePnL;
             var stopLossPercent = _config.ProtectiveStopLossPercent;
-            
+
             return currentValue * (1 - stopLossPercent);
         }
 
         private decimal CalculateMaxDrawdown(List<TradingDayResult> period)
         {
             if (period.Count < 2) return 0;
-            
+
             var peak = period.First().PortfolioValue;
             var maxDrawdown = 0m;
-            
+
             foreach (var day in period)
             {
                 if (day.PortfolioValue > peak)
                     peak = day.PortfolioValue;
-                    
+
                 var drawdown = (peak - day.PortfolioValue) / peak;
                 if (drawdown > maxDrawdown)
                     maxDrawdown = drawdown;
             }
-            
+
             return maxDrawdown;
         }
 
@@ -387,11 +382,11 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         {
             var last90Days = _tradingHistory.Where(d => d.Date >= DateTime.Now.AddDays(-90)).ToList();
             if (!last90Days.Any()) return 0.5m;
-            
+
             return (decimal)last90Days.Count(d => d.PnL > 0) / last90Days.Count;
         }
 
-        private void LogNotchChange(SPX30DTENotchLevel oldLevel, SPX30DTENotchLevel newLevel, 
+        private void LogNotchChange(SPX30DTENotchLevel oldLevel, SPX30DTENotchLevel newLevel,
                                   string action, string reason)
         {
             Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] NOTCH {action}: " +
@@ -420,10 +415,10 @@ namespace ODTE.Strategy.SPX30DTE.Risk
             var oldLevel = (SPX30DTENotchLevel)_currentNotchIndex;
             _currentNotchIndex = Math.Max(0, _currentNotchIndex - 2); // Drop 2 levels
             var newLevel = (SPX30DTENotchLevel)_currentNotchIndex;
-            
+
             _lastNotchChange = DateTime.Now;
             _consecutiveProfitableDays = 0;
-            
+
             LogNotchChange(oldLevel, newLevel, "EMERGENCY_DOWNGRADE", reason);
         }
 
@@ -432,7 +427,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
         {
             var currentLimit = GetCurrentNotchLimit();
             var recommendedPositions = Math.Floor(currentLimit / tradeRisk);
-            
+
             var recommendation = new PositionSizingRecommendation
             {
                 MaxPositions = (int)recommendedPositions,
@@ -441,7 +436,7 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 NotchLevel = GetCurrentNotchLevel(),
                 ConfidenceLevel = CalculateConfidenceLevel()
             };
-            
+
             // Apply safety restrictions
             var analysis = GetNotchAnalysis();
             if (analysis.RiskOfDowngrade > 50m)
@@ -449,27 +444,27 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 recommendation.MaxPositions = Math.Max(1, recommendation.MaxPositions / 2);
                 recommendation.Warning = "High downgrade risk - reducing position sizing";
             }
-            
+
             if (_consecutiveProfitableDays < 0) // In losing streak
             {
                 recommendation.MaxPositions = Math.Max(1, recommendation.MaxPositions * 2 / 3);
                 recommendation.Warning = "Currently in losing streak - conservative sizing";
             }
-            
+
             return recommendation;
         }
 
         private decimal CalculateConfidenceLevel()
         {
             var factors = new List<decimal>();
-            
+
             // Win rate factor
             if (_tradingHistory.Count >= 20)
             {
                 var recentWinRate = (decimal)_tradingHistory.TakeLast(20).Count(d => d.PnL > 0) / 20;
                 factors.Add(recentWinRate * 100);
             }
-            
+
             // Consecutive performance factor
             if (_consecutiveProfitableDays > 10)
                 factors.Add(Math.Min(100, _consecutiveProfitableDays * 3));
@@ -477,14 +472,14 @@ namespace ODTE.Strategy.SPX30DTE.Risk
                 factors.Add(Math.Max(0, 50 + _consecutiveProfitableDays * 10));
             else
                 factors.Add(60);
-            
+
             // Monthly performance factor
             var monthReturnPercent = _peakMonthValue > 0 ? _monthToDatePnL / _peakMonthValue : 0;
             if (monthReturnPercent > 0.05m) factors.Add(80);
             else if (monthReturnPercent > 0) factors.Add(60);
             else if (monthReturnPercent > -0.05m) factors.Add(40);
             else factors.Add(20);
-            
+
             return factors.Any() ? factors.Average() : 50m;
         }
     }

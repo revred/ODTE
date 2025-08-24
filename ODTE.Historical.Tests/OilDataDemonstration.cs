@@ -1,6 +1,3 @@
-using ODTE.Historical;
-using ODTE.Historical.DataProviders;
-
 namespace ODTE.Historical.Tests;
 
 /// <summary>
@@ -16,16 +13,16 @@ public class OilDataDemonstration
         Console.WriteLine();
 
         var demoDb = Path.Combine(Path.GetTempPath(), $"oil_demo_{DateTime.Now:yyyyMMdd}.db");
-        
+
         try
         {
             using var dataManager = new HistoricalDataManager(demoDb);
             Console.WriteLine("1️⃣ Initializing ODTE.Historical for oil data...");
             await dataManager.InitializeAsync();
-            
+
             Console.WriteLine();
             Console.WriteLine("2️⃣ Testing oil ETF data acquisition...");
-            
+
             var oilInstruments = new Dictionary<string, string>
             {
                 ["USO"] = "United States Oil Fund ETF",
@@ -42,22 +39,22 @@ public class OilDataDemonstration
                 Console.WriteLine($"\n🔄 Acquiring {instrument.Key} data...");
                 Console.WriteLine($"   Description: {instrument.Value}");
                 Console.WriteLine($"   Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
-                
+
                 try
                 {
                     var data = await dataManager.GetMarketDataAsync(instrument.Key, startDate, endDate);
-                    
+
                     if (data.Any())
                     {
                         Console.WriteLine($"   ✅ SUCCESS: {data.Count} data points acquired");
                         Console.WriteLine($"   📈 Price Range: ${data.Min(d => d.Low):F2} - ${data.Max(d => d.High):F2}");
                         Console.WriteLine($"   📊 Latest Close: ${data.Last().Close:F2}");
                         Console.WriteLine($"   📅 Last Date: {data.Last().Timestamp:yyyy-MM-dd}");
-                        
+
                         // Calculate simple volatility
                         if (data.Count > 1)
                         {
-                            var returns = data.Zip(data.Skip(1), (prev, curr) => 
+                            var returns = data.Zip(data.Skip(1), (prev, curr) =>
                                 Math.Log((double)(curr.Close / prev.Close)));
                             var volatility = Math.Sqrt(returns.Sum(r => r * r) / returns.Count()) * Math.Sqrt(252);
                             Console.WriteLine($"   📊 Annualized Volatility: {volatility:P1}");
@@ -76,7 +73,7 @@ public class OilDataDemonstration
 
             Console.WriteLine();
             Console.WriteLine("3️⃣ Testing futures symbols...");
-            
+
             var futuresSymbols = new[]
             {
                 "CL=F",  // WTI Crude Oil Futures
@@ -112,12 +109,12 @@ public class OilDataDemonstration
             var totalRecords = dailyRecordsPerSymbol * yearsToStore * symbolsToStore;
             var bytesPerRecord = 44; // Compressed record size
             var projectedSizeMB = (totalRecords * bytesPerRecord) / 1024.0 / 1024.0;
-            
+
             Console.WriteLine($"   📊 Projected 20-year oil data storage:");
             Console.WriteLine($"      - Symbols: {symbolsToStore} (USO, UCO, SCO, XLE, CL=F)");
             Console.WriteLine($"      - Records: {totalRecords:N0}");
             Console.WriteLine($"      - Storage Size: ~{projectedSizeMB:F1} MB");
-            Console.WriteLine($"      - Annual Growth: ~{projectedSizeMB/20:F1} MB/year");
+            Console.WriteLine($"      - Annual Growth: ~{projectedSizeMB / 20:F1} MB/year");
 
             Console.WriteLine();
             Console.WriteLine("6️⃣ Options trading preparation...");

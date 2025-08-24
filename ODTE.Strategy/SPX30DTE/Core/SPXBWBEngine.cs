@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ODTE.Backtest.Core;
-using ODTE.Backtest.Data;
-using ODTE.Backtest.Strategy;
+using ODTE.Contracts.Data;
 using ODTE.Execution.Engine;
 using ODTE.Execution.Models;
+using ODTE.Historical;
 using ODTE.Historical.DistributedStorage;
-using ODTE.Historical.Models;
 using ODTE.Strategy.MultiLegStrategies;
 using ODTE.Strategy.SPX30DTE.Probes;
 
@@ -30,7 +25,7 @@ namespace ODTE.Strategy.SPX30DTE.Core
         private readonly BWBConfiguration _config;
         private readonly List<BWBPosition> _activePositions;
         private readonly Dictionary<string, BWBPerformance> _performanceHistory;
-        
+
         public SPXBWBEngine(
             DistributedDatabaseManager dataManager,
             RealisticFillEngine fillEngine,
@@ -73,13 +68,13 @@ namespace ODTE.Strategy.SPX30DTE.Core
 
             // Get options for target expiration
             var expiryChain = spxChain.Where(o => o.Expiration == targetExpiration).ToList();
-            
+
             // Calculate BWB strikes
             var strikes = CalculateBWBStrikes(spotPrice, _config);
-            
+
             // Build BWB structure
             var bwb = await BuildBWBStructure(expiryChain, strikes, date);
-            
+
             // Validate BWB meets requirements
             if (!ValidateBWB(bwb))
             {
@@ -105,7 +100,7 @@ namespace ODTE.Strategy.SPX30DTE.Core
             // Get SPX data
             var spxPrice = await _dataManager.GetUnderlyingPrice("SPX", date);
             var spxChain = await _dataManager.GetOptionsChain("SPX", date);
-            
+
             if (spxChain == null || !spxChain.Any())
             {
                 analysis.NoDataReason = "No SPX options data available";
@@ -124,11 +119,11 @@ namespace ODTE.Strategy.SPX30DTE.Core
             {
                 var dte = (expiration - date).Days;
                 var expiryChain = spxChain.Where(o => o.Expiration == expiration).ToList();
-                
+
                 // Calculate potential BWB
                 var strikes = CalculateBWBStrikes(spxPrice, _config);
                 var opportunity = await EvaluateBWBOpportunity(expiryChain, strikes, dte, spxPrice);
-                
+
                 if (opportunity != null && opportunity.ExpectedValue > 0)
                 {
                     analysis.Opportunities.Add(opportunity);
@@ -175,7 +170,7 @@ namespace ODTE.Strategy.SPX30DTE.Core
 
             // Update current pricing
             await UpdatePositionPricing(position, currentDate);
-            
+
             // Check DTE-based exit
             position.DTE = (position.Expiration - currentDate).Days;
             if (position.DTE <= _config.ForcedExitDTE)
@@ -234,41 +229,41 @@ namespace ODTE.Strategy.SPX30DTE.Core
             var greeks = new PortfolioGreeks();
             var timeToExpiry = position.DTE / 365.0m;
             var riskFreeRate = 0.05m; // Current risk-free rate
-            
+
             // Calculate Greeks for each leg
             // Long Lower Put
             var lowerLongGreeks = OptionMath.CalculateGreeks(
-                spotPrice, position.LongLowerStrike, timeToExpiry, 
+                spotPrice, position.LongLowerStrike, timeToExpiry,
                 volatility, riskFreeRate, OptionType.Put);
-            
+
             // Short Middle Puts (2x)
             var shortGreeks = OptionMath.CalculateGreeks(
-                spotPrice, position.ShortStrike, timeToExpiry, 
+                spotPrice, position.ShortStrike, timeToExpiry,
                 volatility, riskFreeRate, OptionType.Put);
-            
+
             // Long Upper Put
             var upperLongGreeks = OptionMath.CalculateGreeks(
-                spotPrice, position.LongUpperStrike, timeToExpiry, 
+                spotPrice, position.LongUpperStrike, timeToExpiry,
                 volatility, riskFreeRate, OptionType.Put);
-            
+
             // Aggregate Greeks (remember short strike has -2 quantity)
             greeks.NetDelta = lowerLongGreeks.Delta - 2 * shortGreeks.Delta + upperLongGreeks.Delta;
             greeks.NetGamma = lowerLongGreeks.Gamma - 2 * shortGreeks.Gamma + upperLongGreeks.Gamma;
             greeks.NetTheta = lowerLongGreeks.Theta - 2 * shortGreeks.Theta + upperLongGreeks.Theta;
             greeks.NetVega = lowerLongGreeks.Vega - 2 * shortGreeks.Vega + upperLongGreeks.Vega;
             greeks.NetRho = lowerLongGreeks.Rho - 2 * shortGreeks.Rho + upperLongGreeks.Rho;
-            
+
             // Calculate risk metrics
             greeks.DeltaAdjustedExposure = greeks.NetDelta * spotPrice * 100; // SPX multiplier
             greeks.GammaRisk = greeks.NetGamma * spotPrice * spotPrice * 0.01m * 100; // 1% move
             greeks.DailyThetaDecay = greeks.NetTheta;
             greeks.VegaExposure = greeks.NetVega * 0.01m; // Per 1% vol change
-            
+
             // Store component Greeks
             greeks.ComponentGreeks["LongLower"] = lowerLongGreeks.Delta;
             greeks.ComponentGreeks["Short"] = -2 * shortGreeks.Delta;
             greeks.ComponentGreeks["LongUpper"] = upperLongGreeks.Delta;
-            
+
             return greeks;
         }
 
@@ -281,14 +276,14 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 {
                     return false;
                 }
-                
+
                 // Need sufficient probe wins
                 if (probeSignal.RecentWinRate < _config.MinProbeWins / 10m)
                 {
                     return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -300,7 +295,7 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 .Distinct()
                 .OrderBy(e => Math.Abs((e - currentDate).Days - targetDTE))
                 .ToList();
-                
+
             return expirations.FirstOrDefault();
         }
 
@@ -325,60 +320,60 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 LongUpperStrike = strikes.LongUpperStrike,
                 Quantities = new[] { 1, -2, 1 }
             };
-            
+
             // Get option quotes
-            var lowerLong = chain.FirstOrDefault(o => 
+            var lowerLong = chain.FirstOrDefault(o =>
                 o.Strike == strikes.LongLowerStrike && o.OptionType == "PUT");
-            var shortOpt = chain.FirstOrDefault(o => 
+            var shortOpt = chain.FirstOrDefault(o =>
                 o.Strike == strikes.ShortStrike && o.OptionType == "PUT");
-            var upperLong = chain.FirstOrDefault(o => 
+            var upperLong = chain.FirstOrDefault(o =>
                 o.Strike == strikes.LongUpperStrike && o.OptionType == "PUT");
-            
+
             if (lowerLong != null && shortOpt != null && upperLong != null)
             {
                 // Calculate theoretical credit (before execution costs)
                 bwb.Credit = -lowerLong.Ask + 2 * shortOpt.Bid - upperLong.Ask;
-                
+
                 // Calculate max risk
                 var wingWidth = strikes.ShortStrike - strikes.LongUpperStrike;
                 bwb.MaxRisk = (wingWidth * 100) - bwb.Credit; // SPX multiplier
             }
-            
+
             return bwb;
         }
 
         private bool ValidateBWB(BWBEntry bwb)
         {
             if (bwb == null) return false;
-            
+
             // Check credit meets minimum
             if (bwb.Credit < _config.MinCredit)
                 return false;
-                
+
             // Check risk is within limits
             if (bwb.MaxRisk > _config.MaxRisk)
                 return false;
-                
+
             // Check strikes are properly ordered
-            if (bwb.LongUpperStrike >= bwb.ShortStrike || 
+            if (bwb.LongUpperStrike >= bwb.ShortStrike ||
                 bwb.ShortStrike >= bwb.LongLowerStrike)
                 return false;
-                
+
             return true;
         }
 
         private async Task<BWBExecutionCost> CalculateExecutionCost(BWBEntry bwb, List<OptionsQuote> chain)
         {
             var cost = new BWBExecutionCost();
-            
+
             // Get realistic fills for each leg
-            var lowerLong = chain.FirstOrDefault(o => 
+            var lowerLong = chain.FirstOrDefault(o =>
                 o.Strike == bwb.LongLowerStrike && o.OptionType == "PUT");
-            var shortOpt = chain.FirstOrDefault(o => 
+            var shortOpt = chain.FirstOrDefault(o =>
                 o.Strike == bwb.ShortStrike && o.OptionType == "PUT");
-            var upperLong = chain.FirstOrDefault(o => 
+            var upperLong = chain.FirstOrDefault(o =>
                 o.Strike == bwb.LongUpperStrike && o.OptionType == "PUT");
-            
+
             if (lowerLong != null && shortOpt != null && upperLong != null)
             {
                 // Buy orders fill at ask + slippage
@@ -386,39 +381,39 @@ namespace ODTE.Strategy.SPX30DTE.Core
                     new Order { Side = "BUY", Quantity = 1, LimitPrice = lowerLong.Ask },
                     new Quote { Bid = lowerLong.Bid, Ask = lowerLong.Ask },
                     MarketState.Normal);
-                    
+
                 // Sell orders fill at bid - slippage
                 var shortFill = await _fillEngine.GetRealisticFill(
                     new Order { Side = "SELL", Quantity = 2, LimitPrice = shortOpt.Bid },
                     new Quote { Bid = shortOpt.Bid, Ask = shortOpt.Ask },
                     MarketState.Normal);
-                    
+
                 var upperLongFill = await _fillEngine.GetRealisticFill(
                     new Order { Side = "BUY", Quantity = 1, LimitPrice = upperLong.Ask },
                     new Quote { Bid = upperLong.Bid, Ask = upperLong.Ask },
                     MarketState.Normal);
-                
+
                 // Calculate net credit after realistic fills
-                cost.NetCredit = -lowerLongFill.FillPrice + 
-                                 2 * shortFill.FillPrice - 
+                cost.NetCredit = -lowerLongFill.FillPrice +
+                                 2 * shortFill.FillPrice -
                                  upperLongFill.FillPrice;
-                                 
-                cost.Slippage = (lowerLongFill.Slippage + 
-                                shortFill.Slippage + 
+
+                cost.Slippage = (lowerLongFill.Slippage +
+                                shortFill.Slippage +
                                 upperLongFill.Slippage) * 100; // SPX multiplier
-                                
+
                 cost.Commission = 3 * 1.0m; // $1 per contract typical
-                
+
                 var wingWidth = bwb.ShortStrike - bwb.LongUpperStrike;
                 cost.MaxRisk = (wingWidth * 100) - cost.NetCredit;
             }
-            
+
             return cost;
         }
 
         private async Task<BWBOpportunity> EvaluateBWBOpportunity(
-            List<OptionsQuote> chain, 
-            BWBStrikes strikes, 
+            List<OptionsQuote> chain,
+            BWBStrikes strikes,
             int dte,
             decimal spotPrice)
         {
@@ -428,32 +423,32 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 DTE = dte,
                 Strikes = strikes
             };
-            
+
             // Get option quotes
-            var lowerLong = chain.FirstOrDefault(o => 
+            var lowerLong = chain.FirstOrDefault(o =>
                 o.Strike == strikes.LongLowerStrike && o.OptionType == "PUT");
-            var shortOpt = chain.FirstOrDefault(o => 
+            var shortOpt = chain.FirstOrDefault(o =>
                 o.Strike == strikes.ShortStrike && o.OptionType == "PUT");
-            var upperLong = chain.FirstOrDefault(o => 
+            var upperLong = chain.FirstOrDefault(o =>
                 o.Strike == strikes.LongUpperStrike && o.OptionType == "PUT");
-            
+
             if (lowerLong == null || shortOpt == null || upperLong == null)
                 return null;
-            
+
             // Calculate credit and risk
             opp.Credit = -lowerLong.Ask + 2 * shortOpt.Bid - upperLong.Ask;
             var wingWidth = strikes.ShortStrike - strikes.LongUpperStrike;
             opp.MaxRisk = (wingWidth * 100) - opp.Credit;
-            
+
             // Calculate probability of profit (simplified)
             var probITM = 1 - Math.Abs(shortOpt.Delta); // Probability of expiring OTM
             opp.ProbabilityOfProfit = probITM;
-            
+
             // Calculate expected value
             var winAmount = opp.Credit * 0.65m; // Target 65% profit
             var lossAmount = opp.MaxRisk;
             opp.ExpectedValue = (probITM * winAmount) - ((1 - probITM) * lossAmount);
-            
+
             // Calculate Greeks
             var greeks = new PortfolioGreeks
             {
@@ -462,17 +457,17 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 NetVega = lowerLong.Vega - 2 * shortOpt.Vega + upperLong.Vega
             };
             opp.Greeks = greeks;
-            
+
             // Score the opportunity (0-100)
             opp.Score = CalculateOpportunityScore(opp);
-            
+
             return opp;
         }
 
         private decimal CalculateOpportunityScore(BWBOpportunity opp)
         {
             var score = 50m; // Base score
-            
+
             // Credit quality (higher is better)
             if (opp.Credit > _config.TargetCredit)
                 score += 15;
@@ -480,24 +475,24 @@ namespace ODTE.Strategy.SPX30DTE.Core
                 score += 5;
             else
                 score -= 10;
-            
+
             // Risk/reward ratio
             var riskReward = opp.Credit / opp.MaxRisk;
             score += riskReward * 50; // Up to 25 points for 0.5 R/R
-            
+
             // Probability of profit
             score += (opp.ProbabilityOfProfit - 0.5m) * 40; // +/- 20 points
-            
+
             // Expected value
             if (opp.ExpectedValue > 0)
                 score += Math.Min(15, opp.ExpectedValue / 10);
-            
+
             // Greeks assessment
             if (opp.Greeks.NetTheta > 0)
                 score += 5;
             if (Math.Abs(opp.Greeks.NetDelta) < 0.1m)
                 score += 5;
-            
+
             return Math.Min(100, Math.Max(0, score));
         }
 
@@ -505,31 +500,31 @@ namespace ODTE.Strategy.SPX30DTE.Core
         {
             // Get current SPX price
             position.CurrentSpotPrice = await _dataManager.GetUnderlyingPrice("SPX", currentDate);
-            
+
             // Get current options prices
             var chain = await _dataManager.GetOptionsChain("SPX", currentDate);
             if (chain == null || !chain.Any()) return;
-            
+
             var currentChain = chain.Where(o => o.Expiration == position.Expiration).ToList();
-            
-            var lowerLong = currentChain.FirstOrDefault(o => 
+
+            var lowerLong = currentChain.FirstOrDefault(o =>
                 o.Strike == position.LongLowerStrike && o.OptionType == "PUT");
-            var shortOpt = currentChain.FirstOrDefault(o => 
+            var shortOpt = currentChain.FirstOrDefault(o =>
                 o.Strike == position.ShortStrike && o.OptionType == "PUT");
-            var upperLong = currentChain.FirstOrDefault(o => 
+            var upperLong = currentChain.FirstOrDefault(o =>
                 o.Strike == position.LongUpperStrike && o.OptionType == "PUT");
-            
+
             if (lowerLong != null && shortOpt != null && upperLong != null)
             {
                 // Calculate current value (closing cost)
                 var currentValue = lowerLong.Bid - 2 * shortOpt.Ask + upperLong.Bid;
-                
+
                 // P&L = Credit received - Current closing cost
                 position.UnrealizedPnL = position.Credit + currentValue;
-                
+
                 // Update IV for Greeks calculation
-                position.CurrentIV = (lowerLong.ImpliedVolatility + 
-                                     shortOpt.ImpliedVolatility + 
+                position.CurrentIV = (lowerLong.ImpliedVolatility +
+                                     shortOpt.ImpliedVolatility +
                                      upperLong.ImpliedVolatility) / 3;
             }
         }

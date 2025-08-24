@@ -1,7 +1,6 @@
-using ODTE.Historical;
+using Microsoft.Data.Sqlite;
 using ODTE.Historical.DistributedStorage;
 using System.Text;
-using Microsoft.Data.Sqlite;
 
 namespace ODTE.Optimization.PM212_OptionsEnhanced;
 
@@ -35,7 +34,7 @@ public class PM212_OptionsBacktest_2005_2025
 
         var startDate = new DateTime(2005, 1, 3);
         var endDate = new DateTime(2025, 7, 31);
-        
+
         var results = new PM212EnhancedResults
         {
             StartDate = startDate,
@@ -49,16 +48,16 @@ public class PM212_OptionsBacktest_2005_2025
         {
             // Phase 1: Load REAL historical data
             await LoadRealHistoricalData(startDate, endDate);
-            
+
             // Phase 2: Simulate options data and execute strategy
             await ExecuteOptionsEnhancedStrategy(results);
-            
+
             // Phase 3: Calculate comprehensive metrics
             CalculateEnhancedMetrics(results);
-            
+
             // Phase 4: Generate detailed report
             await GenerateComprehensiveReport(results);
-            
+
             return results;
         }
         catch (Exception ex)
@@ -72,28 +71,28 @@ public class PM212_OptionsBacktest_2005_2025
     {
         Console.WriteLine("📊 Loading 20+ years from single index SQLite database...");
         Console.WriteLine("🗄️ Accessing: PM212_Trading_Ledger_2005_2025.db (20+ years index data)");
-        
+
         try
         {
             // Use the single SQLite file for 20+ years of index data (relative paths)
             var dbPath = Path.Combine("..", "..", "Options.OPM", "PM212Tools", "PM212TradingLedger", "PM212_Trading_Ledger_2005_2025.db");
-            
+
             if (!File.Exists(dbPath))
             {
                 // Fallback to other location
                 dbPath = Path.Combine("..", "..", "audit", "PM212_Trading_Ledger_2005_2025.db");
             }
-            
-            
+
+
             if (!File.Exists(dbPath))
             {
                 Console.WriteLine("❌ PM212 trading ledger database not found");
                 return;
             }
-            
+
             // Load SPY data from single SQLite file using lightweight approach
             await LoadDataFromSingleSQLiteFile(dbPath, startDate, endDate);
-            
+
             _detailedLog.AppendLine($"SINGLE SQLITE DATA Loading:");
             _detailedLog.AppendLine($"- SPY Data Points: {_realSPYData.Count} (from single SQLite)");
             _detailedLog.AppendLine($"- Period: {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
@@ -111,7 +110,7 @@ public class PM212_OptionsBacktest_2005_2025
     {
         using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
         await connection.OpenAsync();
-        
+
         // Load SPY market data and VIX data from PM212 trades table (market_conditions is empty)
         await LoadDataFromTradesTable(connection, startDate, endDate);
     }
@@ -125,7 +124,7 @@ public class PM212_OptionsBacktest_2005_2025
             using var countCommand = new SqliteCommand(countQuery, connection);
             var totalRows = await countCommand.ExecuteScalarAsync();
             Console.WriteLine($"📊 trades table has {totalRows} total rows");
-            
+
             // Load daily data from trades table
             var query = @"
                 SELECT entry_date, 
@@ -134,12 +133,12 @@ public class PM212_OptionsBacktest_2005_2025
                 FROM trades 
                 WHERE entry_date IS NOT NULL 
                 ORDER BY entry_date";
-            
+
             using var command = new SqliteCommand(query, connection);
             using var reader = await command.ExecuteReaderAsync();
             var spyCount = 0;
             var vixCount = 0;
-            
+
             while (await reader.ReadAsync())
             {
                 var dateStr = reader.GetString(0);
@@ -147,7 +146,7 @@ public class PM212_OptionsBacktest_2005_2025
                 {
                     var spyPrice = reader.GetDouble(1);
                     var vixLevel = reader.GetDouble(2);
-                    
+
                     // Store SPY data
                     _realSPYData[date.Date] = new RealMarketDataBar
                     {
@@ -159,7 +158,7 @@ public class PM212_OptionsBacktest_2005_2025
                         Volume = 1000000
                     };
                     spyCount++;
-                    
+
                     // Store VIX data
                     _realVIXData[date.Date] = new VIXDataBar
                     {
@@ -172,7 +171,7 @@ public class PM212_OptionsBacktest_2005_2025
                     vixCount++;
                 }
             }
-            
+
             Console.WriteLine($"✅ SPY Data: {spyCount} trading days loaded from trades table");
             Console.WriteLine($"✅ VIX Data: {vixCount} trading days loaded from trades table");
         }
@@ -191,12 +190,12 @@ public class PM212_OptionsBacktest_2005_2025
             using var countCommand = new SqliteCommand(countQuery, connection);
             var totalRows = await countCommand.ExecuteScalarAsync();
             Console.WriteLine($"📊 market_conditions table has {totalRows} total rows");
-            
+
             // Check a few sample rows to see data format
             var sampleQuery = "SELECT month, spx_open, spx_close, vix_close FROM market_conditions LIMIT 5";
             using var sampleCommand = new SqliteCommand(sampleQuery, connection);
             using var sampleReader = await sampleCommand.ExecuteReaderAsync();
-            
+
             Console.WriteLine($"📊 Sample market_conditions data:");
             while (await sampleReader.ReadAsync())
             {
@@ -206,14 +205,14 @@ public class PM212_OptionsBacktest_2005_2025
                 var vixClose = sampleReader.IsDBNull(3) ? "NULL" : sampleReader.GetDouble(3).ToString("F2");
                 Console.WriteLine($"   {month}: SPX {spxOpen}->{spxClose}, VIX {vixClose}");
             }
-            
+
             // Use market_conditions table for SPY data
             var query = "SELECT month as Date, spx_open as Open, spx_high as High, spx_low as Low, spx_close as Close, 1000000 as Volume FROM market_conditions ORDER BY month";
-            
+
             using var command = new SqliteCommand(query, connection);
             using var reader = await command.ExecuteReaderAsync();
             var count = 0;
-            
+
             while (await reader.ReadAsync())
             {
                 var dateStr = reader.GetString(0);
@@ -231,7 +230,7 @@ public class PM212_OptionsBacktest_2005_2025
                     count++;
                 }
             }
-            
+
             Console.WriteLine($"✅ SPY Data: {count} trading days loaded from market_conditions table");
         }
         catch (Exception ex)
@@ -246,13 +245,13 @@ public class PM212_OptionsBacktest_2005_2025
     {
         // Use market_conditions table for VIX data
         var query = "SELECT month as Date, vix_open, vix_high, vix_low, vix_close FROM market_conditions ORDER BY month";
-        
+
         try
         {
             using var command = new SqliteCommand(query, connection);
             using var reader = await command.ExecuteReaderAsync();
             var count = 0;
-            
+
             while (await reader.ReadAsync())
             {
                 var dateStr = reader.GetString(0);
@@ -269,7 +268,7 @@ public class PM212_OptionsBacktest_2005_2025
                     count++;
                 }
             }
-            
+
             Console.WriteLine($"✅ VIX Data: {count} trading days loaded from market_conditions table");
         }
         catch (Exception ex)
@@ -284,7 +283,7 @@ public class PM212_OptionsBacktest_2005_2025
         {
             using var command = new SqliteCommand("SELECT name FROM sqlite_master WHERE type='table'", connection);
             using var reader = await command.ExecuteReaderAsync();
-            
+
             Console.WriteLine("📋 Available tables:");
             while (await reader.ReadAsync())
             {
@@ -304,7 +303,7 @@ public class PM212_OptionsBacktest_2005_2025
         {
             using var command = new SqliteCommand($"PRAGMA table_info({tableName})", connection);
             using var reader = await command.ExecuteReaderAsync();
-            
+
             Console.WriteLine($"📋 Columns in {tableName}:");
             while (await reader.ReadAsync())
             {
@@ -322,17 +321,17 @@ public class PM212_OptionsBacktest_2005_2025
     private async Task ExecuteOptionsEnhancedStrategy(PM212EnhancedResults results)
     {
         Console.WriteLine("🎯 Executing PM212 Options-Enhanced Strategy...");
-        
+
         var currentCapital = results.InitialCapital;
         var currentRevFibLevel = 2; // Start at $500 level
         var consecutiveProfitDays = 0;
         var consecutiveLossDays = 0;
-        
+
         var revFibLimits = new decimal[] { 1250, 800, 500, 300, 200, 100 };
-        
+
         var currentDate = results.StartDate;
         var tradeCount = 0;
-        
+
         while (currentDate <= results.EndDate)
         {
             // Skip weekends
@@ -341,35 +340,35 @@ public class PM212_OptionsBacktest_2005_2025
                 currentDate = currentDate.AddDays(1);
                 continue;
             }
-            
+
             // Skip holidays (major ones)
             if (IsMarketHoliday(currentDate))
             {
                 currentDate = currentDate.AddDays(1);
                 continue;
             }
-            
+
             // Generate market conditions for this day
             var marketCondition = GenerateEnhancedMarketConditions(currentDate, currentCapital);
-            
+
             // Check if we should trade today (PM212 trades selectively)
             if (ShouldTradeToday(marketCondition, currentDate))
             {
                 var trade = await ExecuteSingleOptionsEnhancedTrade(
-                    currentDate, marketCondition, currentCapital, 
+                    currentDate, marketCondition, currentCapital,
                     revFibLimits[currentRevFibLevel], currentRevFibLevel, tradeCount);
-                
+
                 if (trade != null)
                 {
                     results.Trades.Add(trade);
                     currentCapital += trade.NetPnL;
-                    
+
                     // Update RevFib level based on performance
                     if (trade.NetPnL > 0)
                     {
                         consecutiveProfitDays++;
                         consecutiveLossDays = 0;
-                        
+
                         // Move up RevFib ladder after 2 consecutive profitable days
                         if (consecutiveProfitDays >= 2 && currentRevFibLevel > 0)
                         {
@@ -381,18 +380,18 @@ public class PM212_OptionsBacktest_2005_2025
                     {
                         consecutiveLossDays++;
                         consecutiveProfitDays = 0;
-                        
+
                         // Move down RevFib ladder immediately on loss
                         if (currentRevFibLevel < revFibLimits.Length - 1)
                         {
                             currentRevFibLevel++;
                         }
                     }
-                    
+
                     // Prevent negative capital
                     currentCapital = Math.Max(5000m, currentCapital);
                     tradeCount++;
-                    
+
                     // Log progress every 100 trades
                     if (tradeCount % 100 == 0)
                     {
@@ -400,32 +399,32 @@ public class PM212_OptionsBacktest_2005_2025
                     }
                 }
             }
-            
+
             currentDate = currentDate.AddDays(1);
         }
-        
+
         results.FinalCapital = currentCapital;
         Console.WriteLine($"✅ Strategy execution complete: {results.Trades.Count} trades over {(results.EndDate - results.StartDate).Days} days");
     }
 
     private async Task<PM212EnhancedTrade?> ExecuteSingleOptionsEnhancedTrade(
-        DateTime tradeDate, EnhancedMarketCondition market, decimal capital, 
+        DateTime tradeDate, EnhancedMarketCondition market, decimal capital,
         decimal positionLimit, int revFibLevel, int tradeNumber)
     {
         try
         {
             // Simulate options chain for this date
             var optionsChain = GenerateOptionsChain(tradeDate, market.UsoPrice, market.ImpliedVolatility);
-            
+
             // Select Iron Condor strikes based on options flow analysis
             var strategy = SelectOptimalIronCondor(optionsChain, market);
-            
+
             if (strategy == null)
                 return null;
-            
+
             // Calculate position size based on RevFib limit and options analysis
             var positionSize = CalculateEnhancedPositionSize(positionLimit, market, optionsChain);
-            
+
             // Execute the trade
             var trade = new PM212EnhancedTrade
             {
@@ -440,21 +439,21 @@ public class PM212_OptionsBacktest_2005_2025
                 ImpliedVolatility = market.ImpliedVolatility,
                 VixLevel = market.VixLevel,
                 MarketRegime = market.Regime,
-                
+
                 // Options legs
                 CallStrike = strategy.CallStrike,
                 PutStrike = strategy.PutStrike,
                 CallPremium = strategy.CallPremium,
                 PutPremium = strategy.PutPremium,
                 TotalCredit = strategy.TotalCredit * positionSize,
-                
+
                 // Greeks
                 NetDelta = strategy.NetDelta * positionSize,
                 NetGamma = strategy.NetGamma * positionSize,
                 NetTheta = strategy.NetTheta * positionSize,
                 NetVega = strategy.NetVega * positionSize
             };
-            
+
             // Simulate trade outcome
             var outcome = SimulateTradeOutcome(trade, market);
             trade.GrossPnL = outcome.GrossPnL;
@@ -463,12 +462,12 @@ public class PM212_OptionsBacktest_2005_2025
             trade.NetPnL = trade.GrossPnL - trade.Commission - trade.Slippage;
             trade.WinRate = outcome.WinProbability;
             trade.DaysHeld = outcome.DaysHeld;
-            
+
             // Options flow metrics
             trade.PutCallRatio = optionsChain.PutCallVolumeRatio;
             trade.TotalVolume = optionsChain.TotalVolume;
             trade.MaxPain = optionsChain.MaxPain;
-            
+
             return trade;
         }
         catch (Exception ex)
@@ -481,23 +480,23 @@ public class PM212_OptionsBacktest_2005_2025
     private EnhancedMarketCondition GenerateEnhancedMarketConditions(DateTime date, decimal capital)
     {
         var dateKey = date.Date;
-        
+
         // Get real SPY data from database
         decimal spyPrice = 100m;
         if (_realSPYData.ContainsKey(dateKey))
         {
             spyPrice = (decimal)_realSPYData[dateKey].Close;
         }
-        
+
         // Get real VIX data from database (no more calculation needed!)
         decimal vixLevel = 20m; // Default fallback
         if (_realVIXData.ContainsKey(dateKey))
         {
             vixLevel = (decimal)_realVIXData[dateKey].Close;
         }
-        
+
         var impliedVol = Math.Max(0.15m, vixLevel / 100m * 1.2m);
-        
+
         return new EnhancedMarketCondition
         {
             Date = date,
@@ -523,64 +522,64 @@ public class PM212_OptionsBacktest_2005_2025
             ExpirationDate = GetNextFridayExpiration(date),
             Options = new List<EnhancedOptionContract>()
         };
-        
+
         // Generate strikes around current price
         var strikes = new List<decimal>();
         for (var strike = underlyingPrice - 5m; strike <= underlyingPrice + 5m; strike += 0.5m)
         {
             strikes.Add(strike);
         }
-        
+
         var totalCallVolume = 0L;
         var totalPutVolume = 0L;
         var totalCallOI = 0L;
         var totalPutOI = 0L;
-        
+
         foreach (var strike in strikes)
         {
             var dte = (chain.ExpirationDate - date).Days;
-            
+
             // Call option
             var call = GenerateOptionContract(strike, OptionType.Call, underlyingPrice, impliedVol, dte);
             chain.Options.Add(call);
             totalCallVolume += call.Volume;
             totalCallOI += call.OpenInterest;
-            
+
             // Put option
             var put = GenerateOptionContract(strike, OptionType.Put, underlyingPrice, impliedVol, dte);
             chain.Options.Add(put);
             totalPutVolume += put.Volume;
             totalPutOI += put.OpenInterest;
         }
-        
+
         // Calculate chain-level metrics
         chain.TotalVolume = totalCallVolume + totalPutVolume;
         chain.PutCallVolumeRatio = totalCallVolume > 0 ? (decimal)totalPutVolume / totalCallVolume : 1m;
         chain.PutCallOIRatio = totalCallOI > 0 ? (decimal)totalPutOI / totalCallOI : 1m;
         chain.MaxPain = CalculateMaxPain(chain.Options, underlyingPrice);
-        
+
         return chain;
     }
 
     private IronCondorStrategy? SelectOptimalIronCondor(EnhancedOptionsChain chain, EnhancedMarketCondition market)
     {
         var underlyingPrice = market.UsoPrice;
-        
+
         // PM212 approach: Sell 15-20 delta options, but be more flexible
         var targetDelta = 0.16m;
         var tolerance = 0.10m; // Increased tolerance from 0.04 to 0.10
-        
+
         // Find suitable strikes - more flexible approach
         var calls = chain.Options.Where(o => o.Type == OptionType.Call && o.Strike > underlyingPrice).ToList();
         var puts = chain.Options.Where(o => o.Type == OptionType.Put && o.Strike < underlyingPrice).ToList();
-        
+
         if (!calls.Any() || !puts.Any())
             return null;
-        
+
         // Select strikes that are out of the money by reasonable amounts
         var selectedCall = calls.OrderBy(c => Math.Abs(c.Strike - underlyingPrice * 1.02m)).First(); // 2% OTM
         var selectedPut = puts.OrderBy(p => Math.Abs(p.Strike - underlyingPrice * 0.98m)).First();  // 2% OTM
-        
+
         // Create Iron Condor strategy
         return new IronCondorStrategy
         {
@@ -594,7 +593,7 @@ public class PM212_OptionsBacktest_2005_2025
             NetTheta = selectedCall.Theta + selectedPut.Theta,
             NetVega = selectedCall.Vega + selectedPut.Vega,
             MaxProfit = selectedCall.Mark + selectedPut.Mark,
-            MaxLoss = Math.Min(underlyingPrice - selectedPut.Strike, selectedCall.Strike - underlyingPrice) - 
+            MaxLoss = Math.Min(underlyingPrice - selectedPut.Strike, selectedCall.Strike - underlyingPrice) -
                      (selectedCall.Mark + selectedPut.Mark)
         };
     }
@@ -602,57 +601,57 @@ public class PM212_OptionsBacktest_2005_2025
     private decimal CalculateEnhancedPositionSize(decimal baseLimit, EnhancedMarketCondition market, EnhancedOptionsChain chain)
     {
         var baseSize = baseLimit / (market.UsoPrice * 100); // SPY price * 100 (option multiplier)
-        
+
         // Adjust based on volatility
         var volAdjustment = 1.0m - Math.Min(0.5m, (market.ImpliedVolatility - 0.20m) * 2);
-        
+
         // Adjust based on liquidity
         var liquidityAdjustment = Math.Min(1.0m, chain.TotalVolume / 10000m);
-        
+
         // Adjust based on options flow sentiment
         var flowAdjustment = chain.PutCallVolumeRatio > 1.2m ? 0.8m : 1.0m; // Reduce size if bearish flow
-        
+
         return Math.Max(1m, baseSize * volAdjustment * liquidityAdjustment * flowAdjustment);
     }
 
     private void CalculateEnhancedMetrics(PM212EnhancedResults results)
     {
         Console.WriteLine("📊 Calculating comprehensive performance metrics...");
-        
+
         if (!results.Trades.Any())
         {
             Console.WriteLine("⚠️ No trades to analyze");
             return;
         }
-        
+
         var totalTrades = results.Trades.Count;
         var winningTrades = results.Trades.Where(t => t.NetPnL > 0).ToList();
         var losingTrades = results.Trades.Where(t => t.NetPnL <= 0).ToList();
-        
+
         // Basic metrics
         results.TotalTrades = totalTrades;
         results.WinningTrades = winningTrades.Count;
         results.LosingTrades = losingTrades.Count;
         results.WinRate = (decimal)winningTrades.Count / totalTrades;
-        
+
         // P&L metrics
         results.TotalPnL = results.FinalCapital - results.InitialCapital;
         results.TotalReturn = results.TotalPnL / results.InitialCapital;
         results.CAGR = (decimal)Math.Pow((double)(results.FinalCapital / results.InitialCapital), 1.0 / 20.5) - 1;
-        
+
         // Commission and slippage
         results.TotalCommissions = results.Trades.Sum(t => t.Commission);
         results.TotalSlippage = results.Trades.Sum(t => t.Slippage);
         results.TotalCosts = results.TotalCommissions + results.TotalSlippage;
-        
+
         // Risk metrics
         CalculateDrawdownMetrics(results);
         CalculateRiskMetrics(results);
         CalculateOptionsSpecificMetrics(results);
-        
+
         // Performance by year
         CalculateYearlyPerformance(results);
-        
+
         Console.WriteLine($"✅ Metrics calculated for {totalTrades} trades over {(results.EndDate - results.StartDate).Days} days");
     }
 
@@ -665,11 +664,11 @@ public class PM212_OptionsBacktest_2005_2025
         var drawdownDuration = 0;
         var maxDrawdownDuration = 0;
         var drawdownStart = results.StartDate;
-        
+
         foreach (var trade in results.Trades.OrderBy(t => t.Date))
         {
             runningCapital += trade.NetPnL;
-            
+
             if (runningCapital > peak)
             {
                 peak = runningCapital;
@@ -687,13 +686,13 @@ public class PM212_OptionsBacktest_2005_2025
                 {
                     drawdownStart = trade.Date;
                 }
-                
+
                 currentDrawdown = (peak - runningCapital) / peak;
                 drawdownDuration = (trade.Date - drawdownStart).Days;
                 maxDrawdown = Math.Max(maxDrawdown, currentDrawdown);
             }
         }
-        
+
         results.MaxDrawdown = maxDrawdown;
         results.MaxDrawdownDuration = maxDrawdownDuration;
     }
@@ -702,7 +701,7 @@ public class PM212_OptionsBacktest_2005_2025
     {
         var returns = new List<decimal>();
         var runningCapital = results.InitialCapital;
-        
+
         foreach (var trade in results.Trades.OrderBy(t => t.Date))
         {
             var prevCapital = runningCapital;
@@ -710,16 +709,16 @@ public class PM212_OptionsBacktest_2005_2025
             var dailyReturn = runningCapital / prevCapital - 1;
             returns.Add(dailyReturn);
         }
-        
+
         if (returns.Any())
         {
             var avgReturn = returns.Average();
             var variance = returns.Sum(r => (r - avgReturn) * (r - avgReturn)) / returns.Count;
             var stdDev = (decimal)Math.Sqrt((double)variance);
-            
+
             results.SharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * (decimal)Math.Sqrt(252) : 0;
             results.Volatility = stdDev * (decimal)Math.Sqrt(252);
-            
+
             // Profit factor
             var grossProfit = results.Trades.Where(t => t.NetPnL > 0).Sum(t => t.NetPnL);
             var grossLoss = Math.Abs(results.Trades.Where(t => t.NetPnL < 0).Sum(t => t.NetPnL));
@@ -733,16 +732,16 @@ public class PM212_OptionsBacktest_2005_2025
         results.AvgImpliedVolatility = results.Trades.Average(t => t.ImpliedVolatility);
         results.AvgDaysHeld = (decimal)results.Trades.Average(t => t.DaysHeld);
         results.TotalPremiumCollected = results.Trades.Sum(t => t.TotalCredit);
-        
+
         // Greeks analysis
         results.MaxNetDelta = results.Trades.Max(t => Math.Abs(t.NetDelta));
         results.MaxNetGamma = results.Trades.Max(t => Math.Abs(t.NetGamma));
         results.AvgTheta = results.Trades.Average(t => t.NetTheta);
-        
+
         // Put/call flow analysis
         var avgPutCallRatio = results.Trades.Where(t => t.PutCallRatio > 0).Average(t => t.PutCallRatio);
         results.AvgPutCallRatio = avgPutCallRatio;
-        
+
         Console.WriteLine($"📈 Options Metrics: Avg IV = {results.AvgImpliedVolatility:P1}, Avg Days = {results.AvgDaysHeld:F1}, P/C Ratio = {results.AvgPutCallRatio:F2}");
     }
 
@@ -767,13 +766,13 @@ public class PM212_OptionsBacktest_2005_2025
     private async Task GenerateComprehensiveReport(PM212EnhancedResults results)
     {
         Console.WriteLine("📄 Generating comprehensive 20+ year performance report...");
-        
+
         var report = new StringBuilder();
-        
+
         report.AppendLine("# 🎯 PM212 OPTIONS-ENHANCED BACKTEST RESULTS");
         report.AppendLine("## 20+ Year Comprehensive Analysis (2005-2025)");
         report.AppendLine();
-        
+
         // Executive Summary
         report.AppendLine("## 📊 Executive Summary");
         report.AppendLine($"- **Strategy**: PM212 Iron Condor with Options Flow Analysis");
@@ -784,7 +783,7 @@ public class PM212_OptionsBacktest_2005_2025
         report.AppendLine($"- **CAGR**: {results.CAGR:P2}");
         report.AppendLine($"- **Total Trades**: {results.TotalTrades:N0}");
         report.AppendLine();
-        
+
         // Performance Metrics
         report.AppendLine("## 📈 Performance Metrics");
         report.AppendLine($"- **Win Rate**: {results.WinRate:P1}");
@@ -793,7 +792,7 @@ public class PM212_OptionsBacktest_2005_2025
         report.AppendLine($"- **Max Drawdown**: {results.MaxDrawdown:P2}");
         report.AppendLine($"- **Volatility**: {results.Volatility:P1}");
         report.AppendLine();
-        
+
         // Options-Specific Metrics
         report.AppendLine("## 📊 Options Analysis");
         report.AppendLine($"- **Total Premium Collected**: ${results.TotalPremiumCollected:N0}");
@@ -804,7 +803,7 @@ public class PM212_OptionsBacktest_2005_2025
         report.AppendLine($"- **Max Net Gamma**: {results.MaxNetGamma:F4}");
         report.AppendLine($"- **Average Theta**: {results.AvgTheta:F2}");
         report.AppendLine();
-        
+
         // Cost Analysis
         report.AppendLine("## 💰 Cost Analysis");
         report.AppendLine($"- **Total Commissions**: ${results.TotalCommissions:N0}");
@@ -812,18 +811,18 @@ public class PM212_OptionsBacktest_2005_2025
         report.AppendLine($"- **Total Costs**: ${results.TotalCosts:N0}");
         report.AppendLine($"- **Cost as % of P&L**: {(results.TotalCosts / Math.Max(1m, Math.Abs(results.TotalPnL))):P2}");
         report.AppendLine();
-        
+
         // Yearly Breakdown
         report.AppendLine("## 📅 Annual Performance");
         report.AppendLine("| Year | Trades | P&L | Win Rate | Avg RevFib | Avg IV | Commissions |");
         report.AppendLine("|------|--------|-----|----------|------------|--------|-------------|");
-        
+
         foreach (var year in results.YearlyPerformance)
         {
             report.AppendLine($"| {year.Year} | {year.Trades} | ${year.PnL:F0} | {year.WinRate:P0} | {year.AvgRevFibLevel:F1} | {year.AvgImpliedVol:P1} | ${year.TotalCommissions:F0} |");
         }
         report.AppendLine();
-        
+
         // Risk Analysis
         report.AppendLine("## ⚠️ Risk Analysis");
         report.AppendLine($"- **Maximum Drawdown**: {results.MaxDrawdown:P2}");
@@ -831,12 +830,12 @@ public class PM212_OptionsBacktest_2005_2025
         report.AppendLine($"- **Winning Trades**: {results.WinningTrades} ({results.WinRate:P1})");
         report.AppendLine($"- **Losing Trades**: {results.LosingTrades} ({(1 - results.WinRate):P1})");
         report.AppendLine();
-        
+
         // Strategy Evolution
         report.AppendLine("## 🔄 Strategy Evolution Insights");
         report.AppendLine("### RevFibNotch System Performance");
         report.AppendLine("The RevFibNotch risk management system showed strong capital preservation during volatile periods:");
-        
+
         var revFibStats = results.Trades.GroupBy(t => t.RevFibLevel).Select(g => new
         {
             Level = g.Key,
@@ -844,7 +843,7 @@ public class PM212_OptionsBacktest_2005_2025
             AvgPnL = g.Average(t => t.NetPnL),
             WinRate = g.Count(t => t.NetPnL > 0) / (decimal)g.Count()
         }).OrderBy(x => x.Level);
-        
+
         report.AppendLine("| Level | Limit | Trades | Avg P&L | Win Rate |");
         report.AppendLine("|-------|-------|--------|---------|----------|");
         var revFibLimits = new decimal[] { 1250, 800, 500, 300, 200, 100 };
@@ -853,10 +852,10 @@ public class PM212_OptionsBacktest_2005_2025
             report.AppendLine($"| {stat.Level} | ${revFibLimits[stat.Level]} | {stat.Trades} | ${stat.AvgPnL:F0} | {stat.WinRate:P1} |");
         }
         report.AppendLine();
-        
+
         // Conclusion
         report.AppendLine("## 🎯 Conclusion");
-        
+
         if (results.CAGR > 0.15m)
         {
             report.AppendLine("### ✅ OUTSTANDING PERFORMANCE");
@@ -877,47 +876,47 @@ public class PM212_OptionsBacktest_2005_2025
             report.AppendLine("### ⚠️ MODEST PERFORMANCE");
             report.AppendLine($"While the strategy preserved capital, the {results.CAGR:P2} CAGR suggests room for optimization.");
         }
-        
+
         report.AppendLine();
         report.AppendLine($"**Generated**: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         report.AppendLine($"**Total Analysis Time**: 20.5 years");
         report.AppendLine($"**Data Points Analyzed**: {results.TotalTrades:N0} trades");
-        
+
         // Save report
         var reportPath = $"PM212_OptionsEnhanced_Report_{DateTime.Now:yyyyMMdd_HHmmss}.md";
         await File.WriteAllTextAsync(reportPath, report.ToString());
-        
+
         Console.WriteLine($"✅ Comprehensive report generated: {reportPath}");
         Console.WriteLine($"📊 Report size: {report.Length / 1024}KB");
     }
 
     // Helper methods for market simulation and data generation
-    
+
     private bool ShouldTradeToday(EnhancedMarketCondition market, DateTime date)
     {
         // PM212 trades selectively based on conditions
-        if (market.VixLevel > 40m) 
+        if (market.VixLevel > 40m)
         {
             Console.WriteLine($"📊 {date:yyyy-MM-dd}: Skipping - VIX too high ({market.VixLevel:F1})");
             return false; // Skip extreme volatility
         }
-        if (market.EconomicEvents.Any(e => e.Impact > 0.8m)) 
+        if (market.EconomicEvents.Any(e => e.Impact > 0.8m))
         {
             Console.WriteLine($"📊 {date:yyyy-MM-dd}: Skipping - Major economic events");
             return false; // Skip major events
         }
-        
+
         // Trade probability based on market conditions
         var baseProbability = 0.80; // Increased from 0.25 to 0.80 for more trading
-        
+
         // Adjust for volatility
         if (market.VixLevel < 20m) baseProbability += 0.10; // More aggressive in calm markets
         if (market.VixLevel > 30m) baseProbability -= 0.15; // More defensive in volatile markets
-        
+
         var shouldTrade = _random.NextDouble() < baseProbability;
-        
+
         // Remove excessive debug logging for clean output
-        
+
         return shouldTrade;
     }
 
@@ -927,13 +926,13 @@ public class PM212_OptionsBacktest_2005_2025
         if (date.Month == 1 && date.Day == 1) return true; // New Year
         if (date.Month == 7 && date.Day == 4) return true; // July 4th
         if (date.Month == 12 && date.Day == 25) return true; // Christmas
-        
+
         // Memorial Day (last Monday in May)
         if (date.Month == 5 && date.DayOfWeek == DayOfWeek.Monday && date.Day > 24) return true;
-        
+
         // Labor Day (first Monday in September)
         if (date.Month == 9 && date.DayOfWeek == DayOfWeek.Monday && date.Day <= 7) return true;
-        
+
         return false;
     }
 
@@ -941,16 +940,16 @@ public class PM212_OptionsBacktest_2005_2025
     {
         // Model volatility based on historical events
         var baseVol = 0.25m;
-        
+
         // 2008 Financial Crisis
         if (date.Year == 2008 && date.Month >= 9) baseVol = 0.60m;
-        
+
         // 2020 COVID-19
         if (date.Year == 2020 && date.Month >= 3 && date.Month <= 5) baseVol = 0.55m;
-        
+
         // 2018 Volmageddon
         if (date.Year == 2018 && date.Month == 2) baseVol = 0.45m;
-        
+
         // Add random component
         var noise = (decimal)(_random.NextDouble() - 0.5) * 0.10m;
         return Math.Max(0.10m, Math.Min(0.80m, baseVol + noise));
@@ -960,13 +959,13 @@ public class PM212_OptionsBacktest_2005_2025
     {
         // Model VIX based on historical patterns
         var baseVix = 18m;
-        
+
         // Major volatility events
         if (date.Year == 2008 && date.Month >= 9) baseVix = 45m;
         if (date.Year == 2020 && date.Month >= 3 && date.Month <= 5) baseVix = 40m;
         if (date.Year == 2018 && date.Month == 2) baseVix = 35m;
         if (date.Year == 2022) baseVix = 28m; // Ukraine war / inflation
-        
+
         var noise = (decimal)(_random.NextDouble() - 0.5) * 8m;
         return Math.Max(10m, Math.Min(80m, baseVix + noise));
     }
@@ -982,12 +981,12 @@ public class PM212_OptionsBacktest_2005_2025
     {
         // Simulate oil supply/demand dynamics
         var baseTension = 0.5m;
-        
+
         // Middle East tensions
         if (date.Year >= 2010 && date.Year <= 2012) baseTension = 0.8m; // Arab Spring
         if (date.Year >= 2014 && date.Year <= 2016) baseTension = 0.3m; // Oil glut
         if (date.Year >= 2020 && date.Year <= 2021) baseTension = 0.9m; // COVID supply disruption
-        
+
         return baseTension;
     }
 
@@ -1001,7 +1000,7 @@ public class PM212_OptionsBacktest_2005_2025
     private List<EconomicEvent> GetEconomicEvents(DateTime date)
     {
         var events = new List<EconomicEvent>();
-        
+
         // FOMC meetings (8 per year, roughly every 6 weeks)
         if (date.Day <= 2 && date.Month % 2 == 1) // Simplified: odd months
         {
@@ -1012,7 +1011,7 @@ public class PM212_OptionsBacktest_2005_2025
                 Date = date
             });
         }
-        
+
         // Monthly employment reports (first Friday)
         if (date.DayOfWeek == DayOfWeek.Friday && date.Day <= 7)
         {
@@ -1023,7 +1022,7 @@ public class PM212_OptionsBacktest_2005_2025
                 Date = date
             });
         }
-        
+
         return events;
     }
 
@@ -1032,7 +1031,7 @@ public class PM212_OptionsBacktest_2005_2025
         // Find next Friday (simplified weekly expiration)
         var daysUntilFriday = ((int)DayOfWeek.Friday - (int)date.DayOfWeek + 7) % 7;
         if (daysUntilFriday == 0) daysUntilFriday = 7; // If today is Friday, next Friday
-        
+
         return date.AddDays(daysUntilFriday);
     }
 
@@ -1041,19 +1040,19 @@ public class PM212_OptionsBacktest_2005_2025
         // Black-Scholes approximation for option pricing
         var moneyness = underlying / strike;
         var timeValue = (decimal)Math.Sqrt(dte / 365.0) * iv;
-        
-        decimal intrinsic = type == OptionType.Call 
+
+        decimal intrinsic = type == OptionType.Call
             ? Math.Max(0, underlying - strike)
             : Math.Max(0, strike - underlying);
-            
+
         var extrinsic = timeValue * underlying * 0.1m; // Simplified time value
         var theoreticalPrice = intrinsic + extrinsic;
-        
+
         // Greeks approximation
-        var delta = type == OptionType.Call 
+        var delta = type == OptionType.Call
             ? Math.Max(0, Math.Min(1, 0.5m + (underlying - strike) / (2 * strike)))
             : Math.Min(0, Math.Max(-1, -0.5m + (underlying - strike) / (2 * strike)));
-            
+
         return new EnhancedOptionContract
         {
             Strike = strike,
@@ -1086,16 +1085,16 @@ public class PM212_OptionsBacktest_2005_2025
         var callStrike = trade.CallStrike;
         var putStrike = trade.PutStrike;
         var totalCredit = trade.TotalCredit;
-        
+
         // Simulate price movement over trade duration
         var daysHeld = _random.Next(1, 7); // Hold 1-7 days typically
         var priceMovement = GeneratePriceMovement(underlying, market.ImpliedVolatility, daysHeld);
         var finalPrice = underlying + priceMovement;
-        
+
         // Determine if trade is profitable
         var isWithinRange = finalPrice > putStrike && finalPrice < callStrike;
         var winProbability = CalculateWinProbability(underlying, callStrike, putStrike, market.ImpliedVolatility);
-        
+
         decimal grossPnL;
         if (isWithinRange && _random.NextDouble() < (double)winProbability)
         {
@@ -1109,10 +1108,10 @@ public class PM212_OptionsBacktest_2005_2025
                 Math.Abs(finalPrice - putStrike),
                 Math.Abs(finalPrice - callStrike)
             ) - totalCredit;
-            
+
             grossPnL = -Math.Min(totalCredit * 2.0m, maxLoss); // Stop loss at 2x credit
         }
-        
+
         return (grossPnL, winProbability, daysHeld);
     }
 
@@ -1120,13 +1119,13 @@ public class PM212_OptionsBacktest_2005_2025
     {
         var dailyVol = iv / (decimal)Math.Sqrt(252);
         var totalMove = 0m;
-        
+
         for (int i = 0; i < days; i++)
         {
             var dailyMove = (decimal)(_random.NextDouble() - 0.5) * 2 * dailyVol * price;
             totalMove += dailyMove;
         }
-        
+
         return totalMove;
     }
 
@@ -1136,10 +1135,10 @@ public class PM212_OptionsBacktest_2005_2025
         var range = callStrike - putStrike;
         var distanceFromCenter = Math.Abs(underlying - (callStrike + putStrike) / 2);
         var centeredness = 1 - (distanceFromCenter / (range / 2));
-        
+
         var baseProb = 0.70m; // Base probability for iron condor
         var volAdjustment = Math.Max(0.50m, 1 - (iv - 0.20m) * 2); // Lower prob in high vol
-        
+
         return Math.Max(0.30m, Math.Min(0.90m, baseProb * centeredness * volAdjustment));
     }
 
@@ -1147,7 +1146,7 @@ public class PM212_OptionsBacktest_2005_2025
     {
         // Evolution of commission costs 2005-2025
         var year = date.Year;
-        
+
         decimal baseCommission = year switch
         {
             <= 2005 => 8.0m,
@@ -1156,7 +1155,7 @@ public class PM212_OptionsBacktest_2005_2025
             <= 2020 => 1.5m,
             _ => 0.65m // Near zero by 2025
         };
-        
+
         return baseCommission * contracts * 4; // 4 legs in iron condor
     }
 
@@ -1164,7 +1163,7 @@ public class PM212_OptionsBacktest_2005_2025
     {
         var baseSlippage = 2.0m; // Base slippage per contract
         var volMultiplier = 1 + (vix - 20) / 50; // Higher slippage in high vol
-        
+
         return (decimal)Math.Max(0.50, (double)(baseSlippage * volMultiplier)) * contracts;
     }
 
@@ -1173,18 +1172,18 @@ public class PM212_OptionsBacktest_2005_2025
     public static async Task Main(string[] args)
     {
         var backtest = new PM212_OptionsBacktest_2005_2025();
-        
+
         Console.WriteLine("🚀 Starting PM212 Options-Enhanced 20+ Year Backtest...");
         Console.WriteLine();
-        
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         try
         {
             var results = await backtest.RunOptionsEnhancedBacktest();
-            
+
             stopwatch.Stop();
-            
+
             Console.WriteLine();
             Console.WriteLine("🎉 BACKTEST COMPLETED SUCCESSFULLY!");
             Console.WriteLine("═════════════════════════════════");
@@ -1204,7 +1203,7 @@ public class PM212_OptionsBacktest_2005_2025
             Console.WriteLine($"❌ Backtest failed: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
-        
+
         Console.WriteLine("\nPress any key to exit...");
         Console.ReadKey();
     }
@@ -1223,7 +1222,7 @@ public class PM212EnhancedResults
     public decimal TotalPnL { get; set; }
     public decimal TotalReturn { get; set; }
     public decimal CAGR { get; set; }
-    
+
     public int TotalTrades { get; set; }
     public int WinningTrades { get; set; }
     public int LosingTrades { get; set; }
@@ -1233,11 +1232,11 @@ public class PM212EnhancedResults
     public decimal MaxDrawdown { get; set; }
     public int MaxDrawdownDuration { get; set; }
     public decimal Volatility { get; set; }
-    
+
     public decimal TotalCommissions { get; set; }
     public decimal TotalSlippage { get; set; }
     public decimal TotalCosts { get; set; }
-    
+
     // Options-specific metrics
     public decimal TotalPremiumCollected { get; set; }
     public decimal AvgImpliedVolatility { get; set; }
@@ -1246,7 +1245,7 @@ public class PM212EnhancedResults
     public decimal MaxNetDelta { get; set; }
     public decimal MaxNetGamma { get; set; }
     public decimal AvgTheta { get; set; }
-    
+
     public List<PM212EnhancedTrade> Trades { get; set; } = new();
     public List<YearlyPerformance> YearlyPerformance { get; set; } = new();
 }
@@ -1260,25 +1259,25 @@ public class PM212EnhancedTrade
     public int RevFibLevel { get; set; }
     public decimal RevFibLimit { get; set; }
     public decimal PositionSize { get; set; }
-    
+
     public decimal UnderlyingPrice { get; set; }
     public decimal ImpliedVolatility { get; set; }
     public decimal VixLevel { get; set; }
     public MarketRegime MarketRegime { get; set; }
-    
+
     // Options data
     public decimal CallStrike { get; set; }
     public decimal PutStrike { get; set; }
     public decimal CallPremium { get; set; }
     public decimal PutPremium { get; set; }
     public decimal TotalCredit { get; set; }
-    
+
     // Greeks
     public decimal NetDelta { get; set; }
     public decimal NetGamma { get; set; }
     public decimal NetTheta { get; set; }
     public decimal NetVega { get; set; }
-    
+
     // Trade outcome
     public decimal GrossPnL { get; set; }
     public decimal Commission { get; set; }
@@ -1286,7 +1285,7 @@ public class PM212EnhancedTrade
     public decimal NetPnL { get; set; }
     public decimal WinRate { get; set; }
     public int DaysHeld { get; set; }
-    
+
     // Options flow metrics
     public decimal PutCallRatio { get; set; }
     public long TotalVolume { get; set; }
@@ -1370,7 +1369,7 @@ public class EconomicEvent
 public enum MarketRegime
 {
     Bull,
-    Volatile, 
+    Volatile,
     Crisis
 }
 

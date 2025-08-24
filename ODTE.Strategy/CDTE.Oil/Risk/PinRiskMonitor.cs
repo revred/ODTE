@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class PinRiskMonitor
@@ -29,16 +26,16 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         private static ActionPlan CheckPositionPinRisk(Position position, double spot, double pinBand)
         {
             var shortLegs = position.Legs.Where(leg => leg.Quantity < 0).ToArray();
-            
+
             foreach (var shortLeg in shortLegs)
             {
                 var distanceFromStrike = Math.Abs(spot - shortLeg.Strike);
-                
+
                 if (distanceFromStrike <= pinBand)
                 {
                     var riskLevel = CalculatePinRiskLevel(distanceFromStrike, pinBand);
                     var action = DeterminePinAction(riskLevel, shortLeg);
-                    
+
                     return new ActionPlan(
                         action,
                         $"Pin risk detected: Spot ${spot:F2} within ${distanceFromStrike:F2} of {shortLeg.Right} ${shortLeg.Strike} strike (band: ${pinBand:F2})",
@@ -53,7 +50,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         private static PinRiskLevel CalculatePinRiskLevel(double distance, double pinBand)
         {
             var proximityRatio = distance / pinBand;
-            
+
             return proximityRatio switch
             {
                 <= 0.25 => PinRiskLevel.Extreme,

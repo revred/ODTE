@@ -1,21 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
-using ODTE.Historical.DistributedStorage;
-using ODTE.Execution.Engine;
-using ODTE.Strategy.Hedging;
 using ODTE.Contracts.Data;
-using ODTE.Contracts.Strategy;
-using ContractsData = ODTE.Contracts.Data;
+using ODTE.Execution.Engine;
+using ODTE.Historical.DistributedStorage;
+using ODTE.Strategy.Hedging;
 using ODTE.Strategy.SPX30DTE.Core;
 using ODTE.Strategy.SPX30DTE.Probes;
 using ODTE.Strategy.SPX30DTE.Risk;
 
 namespace ODTE.Strategy.SPX30DTE.Backtests
 {
-    public class SPX30DTERealisticBacktester
+    public partial class SPX30DTERealisticBacktester
     {
         private readonly DistributedDatabaseManager _dataManager;
         private readonly RealisticFillEngine _fillEngine;
@@ -23,12 +17,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private readonly SPXBWBEngine _coreEngine;
         private readonly XSPProbeScout _probeScout;
         private readonly SPX30DTERevFibNotchManager _riskManager;
-        
+
         private readonly decimal COMMISSION_PER_CONTRACT = 0.50m;
         private readonly decimal BASE_COMMISSION_PER_TRADE = 1.50m;
         private readonly decimal REGULATORY_FEES_RATE = 0.0000218m; // SEC + FINRA fees
         private readonly decimal EXCHANGE_FEES_PER_CONTRACT = 0.15m;
-        
+
         public SPX30DTERealisticBacktester(
             DistributedDatabaseManager dataManager,
             RealisticFillEngine fillEngine)
@@ -60,7 +54,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             decimal portfolioValue = 100000m; // Starting capital
             decimal currentNotchLimit = 3200m; // Starting at balanced level
             var openPositions = new Dictionary<string, OpenPosition>();
-            
+
             SqliteConnection ledgerConnection = null;
             if (!string.IsNullOrEmpty(ledgerPath))
             {
@@ -70,40 +64,40 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             try
             {
                 var tradingDays = GetTradingDays(startDate, endDate);
-                
+
                 foreach (var date in tradingDays)
                 {
                     var dailyPnL = 0m;
-                    
+
                     // Update open positions and calculate daily P&L
                     dailyPnL += await UpdateOpenPositions(openPositions, date);
-                    
+
                     // Check for position exits
                     await CheckPositionExits(openPositions, date, results.Trades, ledgerConnection);
-                    
+
                     // Update risk management based on recent performance
                     currentNotchLimit = UpdateRiskLimit(results.DailyPnL, currentNotchLimit);
-                    
+
                     // Generate new positions based on strategy rules
                     await GenerateNewPositions(config, date, currentNotchLimit, openPositions, results.Trades, ledgerConnection);
-                    
+
                     // Record daily P&L
                     results.DailyPnL[date] = dailyPnL;
                     portfolioValue += dailyPnL;
-                    
+
                     // Update high water mark and drawdown tracking
                     UpdateDrawdownMetrics(results.RiskMetrics, portfolioValue, date);
-                    
+
                     // Log progress every quarter
                     if (date.Day == 1 && date.Month % 3 == 1)
                     {
                         Console.WriteLine($"Backtest Progress: {date:yyyy-MM-dd}, Portfolio: ${portfolioValue:N0}, Drawdown: {results.RiskMetrics.CurrentDrawdown:P2}");
                     }
                 }
-                
+
                 // Calculate final performance metrics
                 await CalculateFinalMetrics(results, portfolioValue);
-                
+
                 return results;
             }
             finally
@@ -113,8 +107,8 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         }
 
         private async Task GenerateNewPositions(
-            SPX30DTEConfig config, 
-            DateTime date, 
+            SPX30DTEConfig config,
+            DateTime date,
             decimal notchLimit,
             Dictionary<string, OpenPosition> openPositions,
             List<BacktestTrade> trades,
@@ -123,10 +117,10 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             // Get market data for decision making
             var spxPrice = await GetUnderlyingPrice("SPX", date);
             var vixPrice = await GetUnderlyingPrice("VIX", date);
-            
+
             // Probe market sentiment with XSP
             var probeSignal = await _probeScout.AnalyzeMarketMood(date);
-            
+
             // Check if we should enter new SPX BWB position
             if (ShouldEnterCoreBWB(date, openPositions, probeSignal))
             {
@@ -137,7 +131,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     await RecordTradeEntry(bwbTrade, trades, ledgerConnection);
                 }
             }
-            
+
             // Check VIX hedge requirements
             if (ShouldEnterVIXHedge(date, openPositions, vixPrice, probeSignal))
             {
@@ -148,7 +142,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     await RecordTradeEntry(hedgeTrade, trades, ledgerConnection);
                 }
             }
-            
+
             // Enter XSP probe positions if conditions are right
             if (ShouldEnterXSPProbe(date, openPositions, probeSignal))
             {
@@ -162,9 +156,9 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         }
 
         private async Task<OpenPosition> EnterBWBPosition(
-            SPX30DTEConfig config, 
-            DateTime date, 
-            decimal spxPrice, 
+            SPX30DTEConfig config,
+            DateTime date,
+            decimal spxPrice,
             ProbeSignal probeSignal,
             decimal notchLimit)
         {
@@ -173,25 +167,25 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 // Get 30DTE expiry
                 var expiryDate = GetNearestExpiry(date, 30);
                 var spxChain = await _dataManager.GetOptionsChain("SPX", date, expiryDate);
-                
+
                 if (spxChain?.Options == null || !spxChain.Options.Any())
                     return null;
-                
+
                 // Calculate BWB strikes based on market sentiment
                 var strikes = CalculateBWBStrikes(spxPrice, probeSignal, config);
-                
+
                 // Build the BWB structure
                 var longPut = GetClosestOption(spxChain, strikes.LongStrike, OptionType.Put);
                 var shortPut1 = GetClosestOption(spxChain, strikes.ShortStrike1, OptionType.Put);
                 var shortPut2 = GetClosestOption(spxChain, strikes.ShortStrike2, OptionType.Put);
-                
+
                 if (longPut == null || shortPut1 == null || shortPut2 == null)
                     return null;
-                
+
                 // Calculate position size based on notch limit
                 var targetCredit = Math.Min(notchLimit * 0.15m, 2000m); // 15% of notch limit, max $2000
                 var contracts = Math.Max(1, (int)(targetCredit / CalculateExpectedCredit(longPut, shortPut1, shortPut2)));
-                
+
                 // Execute realistic fills
                 var longFill = await _fillEngine.SimulateFill(new OrderRequest
                 {
@@ -201,7 +195,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Buy,
                     Timestamp = date
                 });
-                
+
                 var shortFill1 = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = shortPut1.Symbol,
@@ -210,7 +204,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Sell,
                     Timestamp = date
                 });
-                
+
                 var shortFill2 = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = shortPut2.Symbol,
@@ -219,12 +213,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Sell,
                     Timestamp = date
                 });
-                
+
                 // Calculate net credit received
                 var netCredit = (-longFill.FillPrice + shortFill1.FillPrice + shortFill2.FillPrice) * contracts * 100;
                 var totalCommissions = CalculateCommissions(3, contracts); // 3-leg trade
                 var netCreditAfterCosts = netCredit - totalCommissions;
-                
+
                 return new OpenPosition
                 {
                     TradeId = $"SPX_BWB_{date:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8]}",
@@ -251,8 +245,8 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         }
 
         private async Task<OpenPosition> EnterVIXHedgePosition(
-            SPX30DTEConfig config, 
-            DateTime date, 
+            SPX30DTEConfig config,
+            DateTime date,
             decimal vixPrice,
             decimal notchLimit)
         {
@@ -260,25 +254,25 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             {
                 var expiryDate = GetNearestExpiry(date, 30);
                 var vixChain = await _dataManager.GetOptionsChain("VIX", date, expiryDate);
-                
+
                 if (vixChain?.Options == null || !vixChain.Options.Any())
                     return null;
-                
+
                 // Calculate hedge strikes - closer to ATM for early activation
                 var longStrike = Math.Ceiling(vixPrice) + (vixPrice < 18 ? 1m : 2m);
                 var shortStrike = longStrike + (vixPrice < 18 ? 8m : 12m);
-                
+
                 var longCall = GetClosestOption(vixChain, longStrike, OptionType.Call);
                 var shortCall = GetClosestOption(vixChain, shortStrike, OptionType.Call);
-                
+
                 if (longCall == null || shortCall == null)
                     return null;
-                
+
                 // Position size based on portfolio protection needs (2-3% of notch limit)
                 var hedgeCost = Math.Min(notchLimit * 0.025m, 500m);
                 var expectedDebit = (longCall.Mid - shortCall.Mid) * 100;
                 var contracts = Math.Max(1, (int)(hedgeCost / expectedDebit));
-                
+
                 var longFill = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = longCall.Symbol,
@@ -287,7 +281,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Buy,
                     Timestamp = date
                 });
-                
+
                 var shortFill = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = shortCall.Symbol,
@@ -296,11 +290,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Sell,
                     Timestamp = date
                 });
-                
+
                 var netDebit = (longFill.FillPrice - shortFill.FillPrice) * contracts * 100;
                 var totalCommissions = CalculateCommissions(2, contracts);
                 var totalCost = netDebit + totalCommissions;
-                
+
                 return new OpenPosition
                 {
                     TradeId = $"VIX_HEDGE_{date:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8]}",
@@ -331,7 +325,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var contractCommissions = legs * contracts * COMMISSION_PER_CONTRACT;
             var exchangeFees = legs * contracts * EXCHANGE_FEES_PER_CONTRACT;
             var regulatoryFees = legs * contracts * 100 * REGULATORY_FEES_RATE; // Notional value based
-            
+
             return baseCommission + contractCommissions + exchangeFees + regulatoryFees;
         }
 
@@ -340,13 +334,13 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             // Don't enter if we already have 2+ SPX positions
             var spxPositions = openPositions.Values.Count(p => p.Symbol == "SPX");
             if (spxPositions >= 2) return false;
-            
+
             // Enter on Mondays or Wednesdays typically
             if (date.DayOfWeek != DayOfWeek.Monday && date.DayOfWeek != DayOfWeek.Wednesday) return false;
-            
+
             // Avoid entering during high volatility unless probe signals opportunity
             if (probeSignal.IVRank > 70 && probeSignal.Sentiment != ProbeSentiment.Bullish) return false;
-            
+
             return true;
         }
 
@@ -354,7 +348,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var vixPositions = openPositions.Values.Count(p => p.Symbol == "VIX");
             if (vixPositions >= 1) return false; // Only one VIX hedge at a time
-            
+
             // Enter hedge when VIX is low or market showing stress signs
             return vixPrice < 20 || probeSignal.Sentiment == ProbeSentiment.Bearish;
         }
@@ -363,7 +357,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var connection = new SqliteConnection($"Data Source={ledgerPath}");
             await connection.OpenAsync();
-            
+
             var createTables = @"
                 CREATE TABLE IF NOT EXISTS trades (
                     trade_id TEXT PRIMARY KEY,
@@ -401,10 +395,10 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     PRIMARY KEY (trade_id, leg_number),
                     FOREIGN KEY (trade_id) REFERENCES trades(trade_id)
                 );";
-            
+
             using var command = new SqliteCommand(createTables, connection);
             await command.ExecuteNonQueryAsync();
-            
+
             return connection;
         }
 
@@ -422,9 +416,9 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 MaxLoss = position.MaxLoss,
                 IsOpen = true
             };
-            
+
             trades.Add(trade);
-            
+
             if (ledgerConnection != null)
             {
                 await InsertTradeToLedger(position, ledgerConnection);
@@ -436,13 +430,13 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             // Simple approximation - in reality would query options chain
             var daysToAdd = targetDTE;
             var expiry = date.AddDays(daysToAdd);
-            
+
             // Ensure it's a Friday (typical expiry)
             while (expiry.DayOfWeek != DayOfWeek.Friday)
             {
                 expiry = expiry.AddDays(1);
             }
-            
+
             return expiry;
         }
     }
@@ -522,14 +516,14 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private async Task<decimal> UpdateOpenPositions(Dictionary<string, OpenPosition> openPositions, DateTime date)
         {
             decimal totalPnL = 0m;
-            
+
             foreach (var position in openPositions.Values)
             {
                 var currentValue = await CalculatePositionValue(position, date);
                 position.CurrentValue = currentValue;
                 totalPnL += currentValue - position.EntryCredit;
             }
-            
+
             return totalPnL;
         }
 
@@ -551,7 +545,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                         totalValue += legValue;
                     }
                 }
-                
+
                 return totalValue;
             }
             catch
@@ -561,13 +555,13 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         }
 
         private async Task CheckPositionExits(
-            Dictionary<string, OpenPosition> openPositions, 
-            DateTime date, 
+            Dictionary<string, OpenPosition> openPositions,
+            DateTime date,
             List<BacktestTrade> trades,
             SqliteConnection ledgerConnection)
         {
             var positionsToClose = new List<string>();
-            
+
             foreach (var position in openPositions.Values)
             {
                 var shouldExit = await ShouldExitPosition(position, date);
@@ -575,23 +569,23 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 {
                     var exitValue = await ExecutePositionExit(position, date);
                     var trade = trades.First(t => t.TradeId == position.TradeId);
-                    
+
                     trade.ExitDate = date;
                     trade.ExitValue = exitValue;
                     trade.RealizedPnL = exitValue - position.EntryCredit;
                     trade.DaysHeld = (date - position.EntryDate).Days;
                     trade.ExitReason = shouldExit.reason;
                     trade.IsOpen = false;
-                    
+
                     if (ledgerConnection != null)
                     {
                         await UpdateTradeInLedger(trade, ledgerConnection);
                     }
-                    
+
                     positionsToClose.Add(position.TradeId);
                 }
             }
-            
+
             foreach (var tradeId in positionsToClose)
             {
                 openPositions.Remove(tradeId);
@@ -603,12 +597,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             // Exit at expiry
             if (date >= position.ExpiryDate)
                 return (true, "Expiry");
-            
+
             // Exit if position is very profitable (50%+ of max credit)
             var profitTarget = position.EntryCredit * 0.5m;
             if (position.CurrentValue <= profitTarget && position.EntryCredit > 0)
                 return (true, "Profit Target");
-            
+
             // Exit if position is losing significantly (varies by trade type)
             var lossThreshold = position.TradeType switch
             {
@@ -617,18 +611,18 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 "PROBE" => position.MaxLoss * 0.3m, // Exit probes quickly
                 _ => position.MaxLoss * 0.5m
             };
-            
+
             var currentLoss = position.EntryCredit - position.CurrentValue;
             if (currentLoss > lossThreshold)
                 return (true, "Stop Loss");
-            
+
             return (false, null);
         }
 
         private async Task<decimal> ExecutePositionExit(OpenPosition position, DateTime date)
         {
             decimal totalExitValue = 0m;
-            
+
             foreach (var leg in position.Legs)
             {
                 var exitOrder = new OrderRequest
@@ -639,33 +633,33 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = leg.Side == "Buy" ? OrderSide.Sell : OrderSide.Buy,
                     Timestamp = date
                 };
-                
+
                 var fill = await _fillEngine.SimulateFill(exitOrder);
                 totalExitValue += fill.FillPrice * leg.Quantity * 100 * (leg.Side == "Buy" ? 1 : -1);
             }
-            
+
             // Subtract exit commissions
             var exitCommissions = CalculateCommissions(position.Legs.Count, position.Contracts);
             totalExitValue -= exitCommissions;
-            
+
             return totalExitValue;
         }
 
         private decimal UpdateRiskLimit(Dictionary<DateTime, decimal> dailyPnL, decimal currentLimit)
         {
             if (dailyPnL.Count < 5) return currentLimit; // Need some history
-            
+
             var recentPnL = dailyPnL.TakeLast(5).Sum(kvp => kvp.Value);
-            
+
             // Move up/down RevFibNotch scale based on recent performance
             var limits = new[] { 400m, 800m, 1200m, 2000m, 3200m, 5000m, 8000m };
             var currentIndex = Array.IndexOf(limits, currentLimit);
-            
+
             if (recentPnL > 1000m && currentIndex < limits.Length - 1)
                 return limits[currentIndex + 1]; // Move up
             else if (recentPnL < -2000m && currentIndex > 0)
                 return limits[currentIndex - 1]; // Move down
-            
+
             return currentLimit;
         }
 
@@ -690,18 +684,18 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private async Task CalculateFinalMetrics(BacktestResults results, decimal finalValue)
         {
             results.FinalPortfolioValue = finalValue;
-            
+
             var years = (decimal)(results.EndDate - results.StartDate).TotalDays / 365.25m;
             results.CAGR = (decimal)Math.Pow((double)(finalValue / 100000m), (double)(1m / years)) - 1m;
-            
+
             var winningTrades = results.Trades.Count(t => !t.IsOpen && t.RealizedPnL > 0);
-            results.WinRate = results.Trades.Count(t => !t.IsOpen) > 0 ? 
+            results.WinRate = results.Trades.Count(t => !t.IsOpen) > 0 ?
                 (decimal)winningTrades / results.Trades.Count(t => !t.IsOpen) : 0m;
-            
+
             var grossProfit = results.Trades.Where(t => !t.IsOpen && t.RealizedPnL > 0).Sum(t => t.RealizedPnL);
             var grossLoss = Math.Abs(results.Trades.Where(t => !t.IsOpen && t.RealizedPnL < 0).Sum(t => t.RealizedPnL));
             results.ProfitFactor = grossLoss > 0 ? grossProfit / grossLoss : 0m;
-            
+
             // Calculate Sharpe Ratio
             if (results.DailyPnL.Any())
             {
@@ -710,7 +704,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 var stdDev = (decimal)Math.Sqrt(dailyReturns.Select(r => Math.Pow((double)(r - avgReturn), 2)).Average());
                 results.SharpeRatio = stdDev > 0 ? avgReturn / stdDev * (decimal)Math.Sqrt(252) : 0m;
             }
-            
+
             results.MaxDrawdown = results.RiskMetrics.MaxDrawdown;
         }
 
@@ -718,7 +712,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var tradingDays = new List<DateTime>();
             var current = startDate;
-            
+
             while (current <= endDate)
             {
                 if (current.DayOfWeek != DayOfWeek.Saturday && current.DayOfWeek != DayOfWeek.Sunday)
@@ -727,7 +721,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 }
                 current = current.AddDays(1);
             }
-            
+
             return tradingDays;
         }
 
@@ -748,11 +742,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             decimal spxPrice, ProbeSignal probeSignal, SPX30DTEConfig config)
         {
             var putSkew = probeSignal.Sentiment == ProbeSentiment.Bearish ? 1.1m : 0.9m;
-            
+
             var longStrike = Math.Round(spxPrice * 0.90m / 5m) * 5m; // 10% OTM, round to $5
             var shortStrike1 = Math.Round(spxPrice * 0.95m / 5m) * 5m; // 5% OTM
             var shortStrike2 = Math.Round(spxPrice * 0.92m / 5m) * 5m; // 8% OTM for broken wing
-            
+
             return (longStrike, shortStrike1, shortStrike2);
         }
 
@@ -779,7 +773,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var probePositions = openPositions.Values.Count(p => p.Symbol == "XSP");
             if (probePositions >= 1) return false;
-            
+
             // Enter probes when IV rank is attractive
             return probeSignal.IVRank > 30 && probeSignal.IVRank < 80;
         }
@@ -790,23 +784,23 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             {
                 var expiryDate = GetNearestExpiry(date, 7); // Weekly probe
                 var xspChain = await _dataManager.GetOptionsChain("XSP", date, expiryDate);
-                
+
                 if (xspChain?.Options == null || !xspChain.Options.Any())
                     return null;
-                
+
                 var xspPrice = xspChain.UnderlyingPrice;
                 var shortStrike = Math.Round(xspPrice * 0.95m); // 5% OTM
                 var longStrike = shortStrike - 5m; // $5 wide spread
-                
+
                 var shortPut = GetClosestOption(xspChain, shortStrike, OptionType.Put);
                 var longPut = GetClosestOption(xspChain, longStrike, OptionType.Put);
-                
+
                 if (shortPut == null || longPut == null) return null;
-                
+
                 var targetCredit = Math.Min(notchLimit * 0.05m, 200m); // 5% of notch limit, max $200
                 var expectedCredit = (shortPut.Mid - longPut.Mid) * 100;
                 var contracts = Math.Max(1, (int)(targetCredit / expectedCredit));
-                
+
                 var shortFill = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = shortPut.Symbol,
@@ -815,7 +809,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Sell,
                     Timestamp = date
                 });
-                
+
                 var longFill = await _fillEngine.SimulateFill(new OrderRequest
                 {
                     Symbol = longPut.Symbol,
@@ -824,11 +818,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Side = OrderSide.Buy,
                     Timestamp = date
                 });
-                
+
                 var netCredit = (shortFill.FillPrice - longFill.FillPrice) * contracts * 100;
                 var commissions = CalculateCommissions(2, contracts);
                 var netCreditAfterCosts = netCredit - commissions;
-                
+
                 return new OpenPosition
                 {
                     TradeId = $"XSP_PROBE_{date:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8]}",
@@ -858,7 +852,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var insertTrade = @"
                 INSERT INTO trades (trade_id, symbol, trade_type, entry_date, contracts, entry_credit, max_loss, commissions)
                 VALUES (@tradeId, @symbol, @tradeType, @entryDate, @contracts, @entryCredit, @maxLoss, @commissions)";
-            
+
             using var command = new SqliteCommand(insertTrade, connection);
             command.Parameters.AddWithValue("@tradeId", position.TradeId);
             command.Parameters.AddWithValue("@symbol", position.Symbol);
@@ -868,9 +862,9 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             command.Parameters.AddWithValue("@entryCredit", position.EntryCredit);
             command.Parameters.AddWithValue("@maxLoss", position.MaxLoss);
             command.Parameters.AddWithValue("@commissions", CalculateCommissions(position.Legs.Count, position.Contracts));
-            
+
             await command.ExecuteNonQueryAsync();
-            
+
             // Insert position legs
             for (int i = 0; i < position.Legs.Count; i++)
             {
@@ -878,7 +872,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 var insertLeg = @"
                     INSERT INTO position_legs (trade_id, leg_number, symbol, quantity, side, entry_price)
                     VALUES (@tradeId, @legNumber, @symbol, @quantity, @side, @entryPrice)";
-                
+
                 using var legCommand = new SqliteCommand(insertLeg, connection);
                 legCommand.Parameters.AddWithValue("@tradeId", position.TradeId);
                 legCommand.Parameters.AddWithValue("@legNumber", i);
@@ -886,7 +880,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 legCommand.Parameters.AddWithValue("@quantity", leg.Quantity);
                 legCommand.Parameters.AddWithValue("@side", leg.Side);
                 legCommand.Parameters.AddWithValue("@entryPrice", leg.EntryPrice);
-                
+
                 await legCommand.ExecuteNonQueryAsync();
             }
         }
@@ -898,7 +892,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 SET exit_date = @exitDate, exit_value = @exitValue, realized_pnl = @realizedPnl, 
                     days_held = @daysHeld, exit_reason = @exitReason
                 WHERE trade_id = @tradeId";
-            
+
             using var command = new SqliteCommand(updateTrade, connection);
             command.Parameters.AddWithValue("@tradeId", trade.TradeId);
             command.Parameters.AddWithValue("@exitDate", trade.ExitDate?.ToString("yyyy-MM-dd"));
@@ -906,7 +900,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             command.Parameters.AddWithValue("@realizedPnL", trade.RealizedPnL);
             command.Parameters.AddWithValue("@daysHeld", trade.DaysHeld);
             command.Parameters.AddWithValue("@exitReason", trade.ExitReason);
-            
+
             await command.ExecuteNonQueryAsync();
         }
     }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class RollBudgetEnforcer
@@ -18,15 +14,15 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static RollBudgetAnalysis AnalyzeRollProposal(
-            Position currentPosition, 
-            RollPlan proposedRoll, 
+            Position currentPosition,
+            RollPlan proposedRoll,
             OilRiskGuardrails config)
         {
             var ticketRisk = currentPosition.TicketRisk;
             var rollDebit = proposedRoll.Debit;
             var debitCapPercent = config.RollDebitCapPctOfRisk;
             var maxAllowedDebit = ticketRisk * debitCapPercent;
-            
+
             var isAllowed = rollDebit <= maxAllowedDebit;
             var utilizationPercent = maxAllowedDebit > 0 ? (rollDebit / maxAllowedDebit) * 100 : 0;
             var excessDebit = Math.Max(0, rollDebit - maxAllowedDebit);
@@ -45,8 +41,8 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         private static RollRecommendation DetermineRollRecommendation(
-            double utilizationPercent, 
-            double excessDebit, 
+            double utilizationPercent,
+            double excessDebit,
             Position position)
         {
             if (excessDebit > 0)
@@ -87,16 +83,16 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static bool ValidateMultipleRolls(
-            List<(Position position, RollPlan roll)> proposedRolls, 
+            List<(Position position, RollPlan roll)> proposedRolls,
             OilRiskGuardrails config)
         {
-            return proposedRolls.All(rollPair => 
+            return proposedRolls.All(rollPair =>
                 AllowRoll(rollPair.roll.Debit, rollPair.position.TicketRisk, config));
         }
 
         public static RollOptimizationResult OptimizeRollBudget(
-            Position position, 
-            List<RollPlan> rollOptions, 
+            Position position,
+            List<RollPlan> rollOptions,
             OilRiskGuardrails config)
         {
             var ticketRisk = position.TicketRisk;
@@ -129,18 +125,18 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static WeeklyRollBudgetSummary GenerateWeeklySummary(
-            List<RollTransaction> weeklyRolls, 
+            List<RollTransaction> weeklyRolls,
             double totalWeeklyRisk,
             OilRiskGuardrails config)
         {
             var totalRollDebits = weeklyRolls.Sum(roll => roll.ActualDebit);
             var averageRollCost = weeklyRolls.Any() ? weeklyRolls.Average(roll => roll.ActualDebit) : 0;
             var maxSingleRoll = weeklyRolls.Any() ? weeklyRolls.Max(roll => roll.ActualDebit) : 0;
-            
+
             var weeklyBudgetCap = totalWeeklyRisk * config.RollDebitCapPctOfRisk;
             var weeklyUtilization = weeklyBudgetCap > 0 ? (totalRollDebits / weeklyBudgetCap) * 100 : 0;
 
-            var rollSuccessRate = weeklyRolls.Any() 
+            var rollSuccessRate = weeklyRolls.Any()
                 ? (weeklyRolls.Count(roll => roll.WasSuccessful) / (double)weeklyRolls.Count) * 100
                 : 0;
 

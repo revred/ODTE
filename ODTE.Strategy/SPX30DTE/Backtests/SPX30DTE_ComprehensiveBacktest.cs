@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ODTE.Backtest.Engine;
-using ODTE.Execution.Synchronization;
 using ODTE.Historical.DistributedStorage;
 using ODTE.Strategy.Hedging;
 using ODTE.Strategy.SPX30DTE.Core;
@@ -22,23 +16,23 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private readonly DistributedDatabaseManager _dataManager;
         private readonly SPX30DTEConfig _config;
         private readonly BacktestConfig _backtestConfig;
-        
+
         // Critical test periods for validation
         private static readonly List<CrisisTestPeriod> CRISIS_PERIODS = new()
         {
-            new CrisisTestPeriod("2008 Financial Crisis", 
+            new CrisisTestPeriod("2008 Financial Crisis",
                 new DateTime(2008, 1, 1), new DateTime(2009, 3, 31), -50m),
-            new CrisisTestPeriod("2011 European Debt Crisis", 
+            new CrisisTestPeriod("2011 European Debt Crisis",
                 new DateTime(2011, 5, 1), new DateTime(2011, 10, 31), -18m),
-            new CrisisTestPeriod("2015 China Devaluation", 
+            new CrisisTestPeriod("2015 China Devaluation",
                 new DateTime(2015, 8, 1), new DateTime(2015, 9, 30), -12m),
-            new CrisisTestPeriod("2016 Brexit Referendum", 
+            new CrisisTestPeriod("2016 Brexit Referendum",
                 new DateTime(2016, 6, 1), new DateTime(2016, 7, 31), -8m),
-            new CrisisTestPeriod("2018 October Correction", 
+            new CrisisTestPeriod("2018 October Correction",
                 new DateTime(2018, 9, 1), new DateTime(2018, 12, 31), -20m),
-            new CrisisTestPeriod("2020 COVID-19 Pandemic", 
+            new CrisisTestPeriod("2020 COVID-19 Pandemic",
                 new DateTime(2020, 2, 1), new DateTime(2020, 4, 30), -35m),
-            new CrisisTestPeriod("2022 Bear Market", 
+            new CrisisTestPeriod("2022 Bear Market",
                 new DateTime(2022, 1, 1), new DateTime(2022, 10, 31), -25m)
         };
 
@@ -61,7 +55,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var start = startDate ?? new DateTime(2005, 1, 1);
             var end = endDate ?? new DateTime(2025, 1, 1);
-            
+
             var result = new ComprehensiveBacktestResult
             {
                 StartDate = start,
@@ -71,46 +65,46 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             };
 
             Console.WriteLine($"🚀 Starting comprehensive backtest: {start:yyyy-MM-dd} to {end:yyyy-MM-dd}");
-            
+
             try
             {
                 // Phase 1: Data validation and preparation
                 Console.WriteLine("📊 Phase 1: Validating 20 years of real market data...");
                 await ValidateDataAvailability(start, end);
-                
+
                 // Phase 2: Full period backtest
                 Console.WriteLine("🔄 Phase 2: Running full 20-year simulation...");
                 result.FullPeriodResult = await RunPeriodBacktest(start, end, "FULL_PERIOD");
-                
+
                 // Phase 3: Crisis period testing
                 Console.WriteLine("⚡ Phase 3: Testing crisis period resilience...");
                 result.CrisisResults = await RunCrisisPeriodTests();
-                
+
                 // Phase 4: Market regime analysis
                 Console.WriteLine("📈 Phase 4: Analyzing performance by market regime...");
                 result.RegimeAnalysis = await AnalyzeMarketRegimePerformance(start, end);
-                
+
                 // Phase 5: Monthly/yearly breakdown
                 Console.WriteLine("📅 Phase 5: Generating temporal performance analysis...");
                 result.MonthlyResults = await AnalyzeMonthlyPerformance(start, end);
                 result.YearlyResults = await AnalyzeYearlyPerformance(start, end);
-                
+
                 // Phase 6: Drawdown and risk analysis
                 Console.WriteLine("🛡️ Phase 6: Comprehensive risk and drawdown analysis...");
                 result.DrawdownAnalysis = await AnalyzeDrawdownPeriods(result.FullPeriodResult.DailyResults);
                 result.RiskMetrics = CalculateComprehensiveRiskMetrics(result);
-                
+
                 // Phase 7: Strategy component analysis
                 Console.WriteLine("🔍 Phase 7: Analyzing individual strategy components...");
                 result.ComponentAnalysis = await AnalyzeStrategyComponents(start, end);
-                
+
                 // Phase 8: Generate final assessment
                 Console.WriteLine("✅ Phase 8: Final validation and assessment...");
                 result.FinalAssessment = GenerateFinalAssessment(result);
-                
+
                 result.IsSuccessful = true;
                 result.CompletedAt = DateTime.Now;
-                
+
                 Console.WriteLine($"🎯 Backtest completed successfully!");
                 Console.WriteLine($"📊 Total Return: {result.FullPeriodResult.TotalReturn:P2}");
                 Console.WriteLine($"📈 Annual Return: {result.FullPeriodResult.AnnualizedReturn:P2}");
@@ -132,11 +126,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var requiredInstruments = new[] { "SPX", "XSP", "VIX" };
             var missingData = new List<string>();
-            
+
             foreach (var instrument in requiredInstruments)
             {
                 Console.WriteLine($"   Validating {instrument} data...");
-                
+
                 // Check underlying price data
                 var sampleDate = new DateTime(2010, 6, 15); // Mid-period sample
                 var price = await _dataManager.GetUnderlyingPrice(instrument, sampleDate);
@@ -144,7 +138,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 {
                     missingData.Add($"{instrument} underlying prices");
                 }
-                
+
                 // Check options chain data
                 var chain = await _dataManager.GetOptionsChain(instrument, sampleDate);
                 if (chain == null || !chain.Any())
@@ -156,19 +150,19 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     Console.WriteLine($"   ✅ {instrument}: {chain.Count} options found for sample date");
                 }
             }
-            
+
             if (missingData.Any())
             {
                 throw new InvalidOperationException(
                     $"Missing critical data: {string.Join(", ", missingData)}");
             }
-            
+
             Console.WriteLine("✅ All required market data validated and available");
         }
 
         private async Task<PeriodBacktestResult> RunPeriodBacktest(
-            DateTime start, 
-            DateTime end, 
+            DateTime start,
+            DateTime end,
             string periodName)
         {
             var result = new PeriodBacktestResult
@@ -185,16 +179,16 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var bwbEngine = new SPXBWBEngine(_dataManager, null, _config.SPXCore);
             var hedgeManager = new VIXHedgeManager(_dataManager);
             var revFibNotch = new SPX30DTERevFibNotchManager();
-            
+
             var syncConfig = new SynchronizationConfig
             {
                 TotalCapital = _config.StartingCapital,
                 MaxTotalExposure = _config.MaxPortfolioRisk * _config.StartingCapital,
                 DrawdownLimit = _config.MaxDrawdownLimit
             };
-            
+
             var executor = new SynchronizedStrategyExecutor(null, _dataManager, hedgeManager, syncConfig);
-            
+
             // Portfolio state tracking
             var portfolioValue = _config.StartingCapital;
             var peakValue = portfolioValue;
@@ -203,7 +197,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             var totalTrades = 0;
             var winningTrades = 0;
             var totalPnL = 0m;
-            
+
             var currentDate = start;
             while (currentDate <= end)
             {
@@ -213,35 +207,35 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     try
                     {
                         var dayResult = await ProcessTradingDay(
-                            currentDate, 
-                            executor, 
-                            probeScout, 
-                            bwbEngine, 
+                            currentDate,
+                            executor,
+                            probeScout,
+                            bwbEngine,
                             hedgeManager,
                             revFibNotch,
                             portfolioValue);
-                        
+
                         // Update portfolio metrics
                         portfolioValue += dayResult.NetPnL;
                         totalPnL += dayResult.NetPnL;
-                        
+
                         if (portfolioValue > peakValue)
                         {
                             peakValue = portfolioValue;
                         }
-                        
+
                         currentDrawdown = peakValue - portfolioValue;
                         if (currentDrawdown > maxDrawdown)
                         {
                             maxDrawdown = currentDrawdown;
                         }
-                        
+
                         dayResult.PortfolioValue = portfolioValue;
                         dayResult.CurrentDrawdown = currentDrawdown;
                         dayResult.NotchLevel = revFibNotch.GetCurrentNotchLevel();
-                        
+
                         result.DailyResults.Add(dayResult);
-                        
+
                         // Update trade statistics
                         foreach (var trade in dayResult.TradesExecuted)
                         {
@@ -252,10 +246,10 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                                 result.TradeLog.Add(trade);
                             }
                         }
-                        
+
                         // Update RevFibNotch system
                         revFibNotch.UpdateNotchAfterTrade(dayResult.NetPnL, portfolioValue);
-                        
+
                         // Periodic progress reporting
                         if (currentDate.Day == 1 && currentDate.DayOfWeek == DayOfWeek.Monday)
                         {
@@ -270,14 +264,14 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                         Console.WriteLine($"   Warning: Error processing {currentDate:yyyy-MM-dd}: {ex.Message}");
                     }
                 }
-                
+
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             // Calculate final metrics
             var totalDays = result.DailyResults.Count;
             var yearFraction = (end - start).TotalDays / 365.25;
-            
+
             result.TotalReturn = (portfolioValue - _config.StartingCapital) / _config.StartingCapital;
             result.AnnualizedReturn = result.TotalReturn / (decimal)yearFraction;
             result.MaxDrawdown = maxDrawdown;
@@ -287,7 +281,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             result.SharpeRatio = CalculateSharpeRatio(result.DailyResults);
             result.SortinoRatio = CalculateSortinoRatio(result.DailyResults);
             result.CalmarRatio = result.MaxDrawdown > 0 ? result.AnnualizedReturn / (result.MaxDrawdown / _config.StartingCapital) : 0;
-            
+
             return result;
         }
 
@@ -313,7 +307,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 dayResult.MarketData.SPXPrice = await _dataManager.GetUnderlyingPrice("SPX", date);
                 dayResult.MarketData.XSPPrice = await _dataManager.GetUnderlyingPrice("XSP", date);
                 dayResult.MarketData.VIXLevel = await _dataManager.GetUnderlyingPrice("VIX", date);
-                
+
                 // Generate execution plan
                 var components = new StrategyComponents
                 {
@@ -321,37 +315,37 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     CoreEngine = bwbEngine,
                     HedgeManager = hedgeManager
                 };
-                
+
                 var executionPlan = await executor.GenerateExecutionPlan(date, components);
-                
+
                 // Execute plan if valid
                 if (await executor.ValidateExecutionConstraints(executionPlan))
                 {
                     var executionResult = await executor.ExecutePlan(executionPlan);
-                    
+
                     // Process execution results
                     foreach (var execution in executionResult.ExecutionDetails)
                     {
                         var trade = ConvertExecutionToTrade(execution, date);
                         dayResult.TradesExecuted.Add(trade);
                     }
-                    
+
                     dayResult.NetPnL = executionResult.NetCapitalChange;
                 }
-                
+
                 // Update portfolio state
                 var portfolioState = await executor.GetCurrentPortfolioState();
                 dayResult.PositionsCount = portfolioState.ActivePositions.Count;
                 dayResult.TotalExposure = portfolioState.TotalExposure;
                 dayResult.UnrealizedPnL = portfolioState.UnrealizedPnL;
-                
+
                 // Check emergency conditions
                 var emergencyProtocol = revFibNotch.CheckEmergencyConditions(currentPortfolioValue);
                 if (emergencyProtocol.IsTriggered)
                 {
                     dayResult.EmergencyTriggered = true;
                     dayResult.EmergencyReason = emergencyProtocol.Reason;
-                    
+
                     // Execute emergency protocol
                     if (emergencyProtocol.RecommendedAction == EmergencyAction.ImmediateStop)
                     {
@@ -359,7 +353,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                         dayResult.NetPnL -= portfolioState.TotalExposure * 0.1m; // Assume 10% emergency close cost
                     }
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -373,11 +367,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private async Task<Dictionary<string, CrisisTestResult>> RunCrisisPeriodTests()
         {
             var results = new Dictionary<string, CrisisTestResult>();
-            
+
             foreach (var crisis in CRISIS_PERIODS)
             {
                 Console.WriteLine($"   Testing: {crisis.Name}");
-                
+
                 var crisisResult = new CrisisTestResult
                 {
                     CrisisName = crisis.Name,
@@ -385,41 +379,41 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     EndDate = crisis.EndDate,
                     ExpectedMarketMove = crisis.ExpectedMarketMove
                 };
-                
+
                 // Run backtest for crisis period
                 var backtestResult = await RunPeriodBacktest(
-                    crisis.StartDate, 
-                    crisis.EndDate, 
+                    crisis.StartDate,
+                    crisis.EndDate,
                     crisis.Name);
-                
+
                 crisisResult.ActualReturn = backtestResult.TotalReturn;
                 crisisResult.MaxDrawdown = backtestResult.MaxDrawdown;
                 crisisResult.SharpeRatio = backtestResult.SharpeRatio;
                 crisisResult.WinRate = backtestResult.WinRate;
                 crisisResult.DaysInCrisis = backtestResult.DailyResults.Count;
-                
+
                 // Evaluate hedge effectiveness
                 var hedgePerformance = AnalyzeHedgePerformance(backtestResult.DailyResults);
                 crisisResult.HedgeEffectiveness = hedgePerformance.Effectiveness;
                 crisisResult.HedgeContribution = hedgePerformance.Contribution;
-                
+
                 // Crisis-specific validation
                 crisisResult.PassedProtectionTest = ValidateCrisisProtection(crisisResult);
-                
+
                 results[crisis.Name] = crisisResult;
-                
+
                 Console.WriteLine($"      Result: {crisisResult.ActualReturn:P2} return, " +
                                $"{crisisResult.MaxDrawdown:C} max drawdown, " +
                                $"Protection: {(crisisResult.PassedProtectionTest ? "PASS" : "FAIL")}");
             }
-            
+
             return results;
         }
 
         private async Task<RegimeAnalysis> AnalyzeMarketRegimePerformance(DateTime start, DateTime end)
         {
             var analysis = new RegimeAnalysis();
-            
+
             // Define market regimes based on VIX levels
             var regimes = new Dictionary<string, Func<decimal, bool>>
             {
@@ -428,22 +422,22 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 ["High Volatility"] = vix => vix >= 25 && vix < 35,
                 ["Crisis Volatility"] = vix => vix >= 35
             };
-            
+
             var currentDate = start;
             var regimeResults = new Dictionary<string, List<DailyResult>>();
-            
+
             foreach (var regime in regimes.Keys)
             {
                 regimeResults[regime] = new List<DailyResult>();
             }
-            
+
             // Classify days by regime and run mini-backtests
             while (currentDate <= end)
             {
                 if (IsValidTradingDay(currentDate))
                 {
                     var vix = await _dataManager.GetUnderlyingPrice("VIX", currentDate);
-                    
+
                     foreach (var regime in regimes)
                     {
                         if (regime.Value(vix))
@@ -454,7 +448,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                                 Date = currentDate,
                                 MarketData = new DailyMarketData { VIXLevel = vix }
                             };
-                            
+
                             regimeResults[regime.Key].Add(dayResult);
                             break;
                         }
@@ -462,7 +456,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 }
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             // Analyze performance by regime
             foreach (var regime in regimes.Keys)
             {
@@ -479,7 +473,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     };
                 }
             }
-            
+
             return analysis;
         }
 
@@ -487,15 +481,15 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var monthlyResults = new List<MonthlyResult>();
             var currentDate = new DateTime(start.Year, start.Month, 1);
-            
+
             while (currentDate < end)
             {
                 var monthEnd = currentDate.AddMonths(1).AddDays(-1);
                 if (monthEnd > end) monthEnd = end;
-                
-                var monthResult = await RunPeriodBacktest(currentDate, monthEnd, 
+
+                var monthResult = await RunPeriodBacktest(currentDate, monthEnd,
                     $"{currentDate:yyyy-MM}");
-                
+
                 monthlyResults.Add(new MonthlyResult
                 {
                     Year = currentDate.Year,
@@ -505,27 +499,27 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     TradeCount = monthResult.TotalTrades,
                     WinRate = monthResult.WinRate
                 });
-                
+
                 currentDate = currentDate.AddMonths(1);
             }
-            
+
             return monthlyResults;
         }
 
         private async Task<List<YearlyResult>> AnalyzeYearlyPerformance(DateTime start, DateTime end)
         {
             var yearlyResults = new List<YearlyResult>();
-            
+
             for (int year = start.Year; year <= end.Year; year++)
             {
                 var yearStart = new DateTime(year, 1, 1);
                 var yearEnd = new DateTime(year, 12, 31);
-                
+
                 if (yearStart < start) yearStart = start;
                 if (yearEnd > end) yearEnd = end;
-                
+
                 var yearResult = await RunPeriodBacktest(yearStart, yearEnd, year.ToString());
-                
+
                 yearlyResults.Add(new YearlyResult
                 {
                     Year = year,
@@ -537,7 +531,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     WinRate = yearResult.WinRate
                 });
             }
-            
+
             return yearlyResults;
         }
 
@@ -545,11 +539,11 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var analysis = new DrawdownAnalysis();
             var drawdownPeriods = new List<DrawdownPeriod>();
-            
+
             decimal peakValue = dailyResults.FirstOrDefault()?.PortfolioValue ?? 100000m;
             var currentDrawdownPeriod = new DrawdownPeriod();
             bool inDrawdown = false;
-            
+
             foreach (var day in dailyResults)
             {
                 if (day.PortfolioValue > peakValue)
@@ -559,7 +553,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     {
                         currentDrawdownPeriod.EndDate = day.Date.AddDays(-1);
                         currentDrawdownPeriod.RecoveryDate = day.Date;
-                        currentDrawdownPeriod.RecoveryDays = 
+                        currentDrawdownPeriod.RecoveryDays =
                             (currentDrawdownPeriod.RecoveryDate - currentDrawdownPeriod.StartDate).Days;
                         drawdownPeriods.Add(currentDrawdownPeriod);
                         inDrawdown = false;
@@ -590,36 +584,36 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     }
                 }
             }
-            
+
             // Handle final drawdown period if still active
             if (inDrawdown)
             {
                 currentDrawdownPeriod.EndDate = dailyResults.Last().Date;
                 drawdownPeriods.Add(currentDrawdownPeriod);
             }
-            
+
             analysis.DrawdownPeriods = drawdownPeriods;
             analysis.MaxDrawdownPeriod = drawdownPeriods.OrderByDescending(d => d.MaxDrawdown).FirstOrDefault();
             analysis.LongestDrawdownPeriod = drawdownPeriods.OrderByDescending(d => d.RecoveryDays).FirstOrDefault();
-            analysis.AverageDrawdownDuration = drawdownPeriods.Any() 
-                ? drawdownPeriods.Average(d => d.RecoveryDays) 
+            analysis.AverageDrawdownDuration = drawdownPeriods.Any()
+                ? drawdownPeriods.Average(d => d.RecoveryDays)
                 : 0;
-            analysis.AverageDrawdownMagnitude = drawdownPeriods.Any() 
-                ? drawdownPeriods.Average(d => d.MaxDrawdown) 
+            analysis.AverageDrawdownMagnitude = drawdownPeriods.Any()
+                ? drawdownPeriods.Average(d => d.MaxDrawdown)
                 : 0;
-            
+
             return analysis;
         }
 
         private ComprehensiveRiskMetrics CalculateComprehensiveRiskMetrics(ComprehensiveBacktestResult result)
         {
             var metrics = new ComprehensiveRiskMetrics();
-            
+
             var dailyReturns = result.FullPeriodResult.DailyResults
                 .Where(d => d.PortfolioValue > 0)
                 .Select(d => d.NetPnL / d.PortfolioValue)
                 .ToList();
-            
+
             if (dailyReturns.Any())
             {
                 metrics.DailyVolatility = CalculateStandardDeviation(dailyReturns);
@@ -628,30 +622,30 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 metrics.VaR95 = CalculateVaR(dailyReturns, 0.95m);
                 metrics.VaR99 = CalculateVaR(dailyReturns, 0.99m);
                 metrics.ConditionalVaR95 = CalculateConditionalVaR(dailyReturns, 0.95m);
-                
+
                 // Skewness and kurtosis
                 metrics.Skewness = CalculateSkewness(dailyReturns);
                 metrics.Kurtosis = CalculateKurtosis(dailyReturns);
-                
+
                 // Max consecutive losses
                 metrics.MaxConsecutiveLosses = CalculateMaxConsecutiveLosses(dailyReturns);
-                
+
                 // Stress test metrics
                 metrics.TailRatio = CalculateTailRatio(dailyReturns);
                 metrics.UpsideCaptureRatio = CalculateUpsideCaptureRatio(result);
                 metrics.DownsideCaptureRatio = CalculateDownsideCaptureRatio(result);
             }
-            
+
             return metrics;
         }
 
         private async Task<ComponentAnalysis> AnalyzeStrategyComponents(DateTime start, DateTime end)
         {
             var analysis = new ComponentAnalysis();
-            
+
             // This would involve running component-specific backtests
             // For now, providing structure and placeholder calculations
-            
+
             analysis.ProbeContribution = new ComponentPerformance
             {
                 ComponentName = "XSP Probes",
@@ -660,7 +654,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 EstimatedMaxDrawdown = 800m,
                 SuccessRate = 0.65m
             };
-            
+
             analysis.CoreContribution = new ComponentPerformance
             {
                 ComponentName = "SPX BWB Core",
@@ -669,7 +663,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 EstimatedMaxDrawdown = 3500m,
                 SuccessRate = 0.70m
             };
-            
+
             analysis.HedgeContribution = new ComponentPerformance
             {
                 ComponentName = "VIX Hedges",
@@ -678,29 +672,29 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 EstimatedMaxDrawdown = 500m,
                 ProtectionValue = 4000m // Value during crisis periods
             };
-            
+
             return analysis;
         }
 
         private StrategyAssessment GenerateFinalAssessment(ComprehensiveBacktestResult result)
         {
             var assessment = new StrategyAssessment();
-            
+
             // Validate against target criteria
             assessment.MeetsDrawdownTarget = result.FullPeriodResult.MaxDrawdown <= 5000m;
             assessment.MeetsReturnTarget = result.FullPeriodResult.AnnualizedReturn >= 0.20m;
             assessment.MeetsWinRateTarget = result.FullPeriodResult.WinRate >= 0.60m;
             assessment.MeetsSharpeTarget = result.FullPeriodResult.SharpeRatio >= 1.5m;
-            
+
             // Crisis protection validation
             assessment.ProvidesCrisisProtection = result.CrisisResults.Values
                 .All(c => c.MaxDrawdown <= 6000m); // Allow slight buffer in extreme crisis
-            
+
             // Monthly income consistency
             var monthlyReturns = result.MonthlyResults.Select(m => m.Return).ToList();
             var positiveMonths = monthlyReturns.Count(r => r > 0);
             assessment.MonthlyIncomeConsistency = (decimal)positiveMonths / monthlyReturns.Count;
-            
+
             // Overall grade
             var score = 0;
             if (assessment.MeetsDrawdownTarget) score += 30;
@@ -709,7 +703,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
             if (assessment.MeetsSharpeTarget) score += 15;
             if (assessment.ProvidesCrisisProtection) score += 10;
             if (assessment.MonthlyIncomeConsistency >= 0.70m) score += 5;
-            
+
             assessment.OverallGrade = score switch
             {
                 >= 90 => "A+",
@@ -721,17 +715,17 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 >= 60 => "C+",
                 _ => "C"
             };
-            
+
             assessment.OverallScore = score;
             assessment.IsRecommendedForTrading = score >= 75;
-            
+
             return assessment;
         }
 
         // Helper methods
         private bool IsValidTradingDay(DateTime date)
         {
-            return date.DayOfWeek != DayOfWeek.Saturday && 
+            return date.DayOfWeek != DayOfWeek.Saturday &&
                    date.DayOfWeek != DayOfWeek.Sunday;
             // Additional holiday checking could be added here
         }
@@ -796,7 +790,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var profits = dailyResults.Where(d => d.NetPnL > 0).Sum(d => d.NetPnL);
             var losses = Math.Abs(dailyResults.Where(d => d.NetPnL < 0).Sum(d => d.NetPnL));
-            
+
             return losses > 0 ? profits / losses : profits > 0 ? 10m : 0m;
         }
 
@@ -806,12 +800,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 .Where(d => d.PortfolioValue > 0)
                 .Select(d => d.NetPnL / d.PortfolioValue)
                 .ToList();
-                
+
             if (!dailyReturns.Any()) return 0m;
-            
+
             var meanReturn = dailyReturns.Average();
             var stdDev = CalculateStandardDeviation(dailyReturns);
-            
+
             return stdDev > 0 ? (meanReturn * 252m) / (stdDev * (decimal)Math.Sqrt(252)) : 0m;
         }
 
@@ -821,19 +815,19 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                 .Where(d => d.PortfolioValue > 0)
                 .Select(d => d.NetPnL / d.PortfolioValue)
                 .ToList();
-                
+
             if (!dailyReturns.Any()) return 0m;
-            
+
             var meanReturn = dailyReturns.Average();
             var downsideDeviation = CalculateDownsideDeviation(dailyReturns);
-            
+
             return downsideDeviation > 0 ? (meanReturn * 252m) / (downsideDeviation * (decimal)Math.Sqrt(252)) : 0m;
         }
 
         private decimal CalculateStandardDeviation(List<decimal> values)
         {
             if (values.Count < 2) return 0m;
-            
+
             var mean = values.Average();
             var variance = values.Select(v => Math.Pow((double)(v - mean), 2)).Average();
             return (decimal)Math.Sqrt(variance);
@@ -843,7 +837,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var negativeReturns = returns.Where(r => r < 0).ToList();
             if (!negativeReturns.Any()) return 0m;
-            
+
             var meanNegative = negativeReturns.Average();
             var variance = negativeReturns.Select(r => Math.Pow((double)(r - meanNegative), 2)).Average();
             return (decimal)Math.Sqrt(variance);
@@ -852,10 +846,10 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private decimal CalculateVaR(List<decimal> returns, decimal confidenceLevel)
         {
             if (!returns.Any()) return 0m;
-            
+
             var sortedReturns = returns.OrderBy(r => r).ToList();
             var index = (int)Math.Floor((1 - confidenceLevel) * sortedReturns.Count);
-            
+
             return sortedReturns[Math.Max(0, Math.Min(index, sortedReturns.Count - 1))];
         }
 
@@ -863,19 +857,19 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var var = CalculateVaR(returns, confidenceLevel);
             var tailLosses = returns.Where(r => r <= var).ToList();
-            
+
             return tailLosses.Any() ? tailLosses.Average() : var;
         }
 
         private decimal CalculateSkewness(List<decimal> returns)
         {
             if (returns.Count < 3) return 0m;
-            
+
             var mean = returns.Average();
             var stdDev = CalculateStandardDeviation(returns);
-            
+
             if (stdDev == 0) return 0m;
-            
+
             var skewness = returns.Select(r => Math.Pow((double)((r - mean) / stdDev), 3)).Average();
             return (decimal)skewness;
         }
@@ -883,12 +877,12 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         private decimal CalculateKurtosis(List<decimal> returns)
         {
             if (returns.Count < 4) return 0m;
-            
+
             var mean = returns.Average();
             var stdDev = CalculateStandardDeviation(returns);
-            
+
             if (stdDev == 0) return 0m;
-            
+
             var kurtosis = returns.Select(r => Math.Pow((double)((r - mean) / stdDev), 4)).Average() - 3;
             return (decimal)kurtosis;
         }
@@ -897,7 +891,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             int maxConsecutive = 0;
             int currentConsecutive = 0;
-            
+
             foreach (var ret in returns)
             {
                 if (ret < 0)
@@ -910,7 +904,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
                     currentConsecutive = 0;
                 }
             }
-            
+
             return maxConsecutive;
         }
 
@@ -918,7 +912,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         {
             var var95 = Math.Abs(CalculateVaR(returns, 0.95m));
             var var99 = Math.Abs(CalculateVaR(returns, 0.99m));
-            
+
             return var95 > 0 ? var99 / var95 : 1m;
         }
 
@@ -975,7 +969,7 @@ namespace ODTE.Strategy.SPX30DTE.Backtests
         public bool IsSuccessful { get; set; }
         public string Error { get; set; }
         public DateTime CompletedAt { get; set; }
-        
+
         public PeriodBacktestResult FullPeriodResult { get; set; }
         public Dictionary<string, CrisisTestResult> CrisisResults { get; set; }
         public RegimeAnalysis RegimeAnalysis { get; set; }

@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using ODTE.Strategy;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -31,11 +25,11 @@ namespace ODTE.Strategy.Tests
             Assert.Equal(500m, _manager.CurrentRFibLimit);
             Assert.Equal(2, _manager.CurrentNotchIndex); // Index 2 = $500
             Assert.Equal(0, _manager.ConsecutiveProfitDays);
-            
+
             Console.WriteLine($"Initial Setup: RFib={_manager.CurrentRFibLimit:C}, Notch={_manager.CurrentNotchIndex}");
         }
 
-        [Fact] 
+        [Fact]
         public void Mild_Loss_Single_Notch_Right()
         {
             // Test: 10% loss should move 1 notch right (more conservative)
@@ -112,16 +106,16 @@ namespace ODTE.Strategy.Tests
         public void Two_Consecutive_Profit_Days_One_Notch_Left()
         {
             // Test: 2 consecutive profit days should move 1 notch left
-            
+
             // Day 1: Profit (insufficient alone)
             var profit1 = 50m; // 10% of $500
             var adj1 = _manager.ProcessDailyPnL(profit1, _testDate);
             Assert.Equal(0, adj1.NotchMovement);
 
             // Day 2: Profit (triggers upgrade)
-            var profit2 = 50m; 
+            var profit2 = 50m;
             var adj2 = _manager.ProcessDailyPnL(profit2, _testDate.AddDays(1));
-            
+
             Assert.Equal(-1, adj2.NotchMovement); // 1 notch left (more aggressive)
             Assert.Equal(800m, _manager.CurrentRFibLimit); // $500 → $800
             Assert.Equal(1, _manager.CurrentNotchIndex);
@@ -148,7 +142,7 @@ namespace ODTE.Strategy.Tests
         public void Loss_Interrupts_Profit_Sequence()
         {
             // Test: Loss interrupts consecutive profit sequence
-            
+
             // Day 1: Profit
             _manager.ProcessDailyPnL(50m, _testDate);
             Assert.Equal(1, _manager.ConsecutiveProfitDays);
@@ -171,7 +165,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Cannot move beyond maximum safety position
             _manager.ResetToNotch(5); // Start at $100 (maximum safety)
-            
+
             var catastrophicLoss = 80m; // 80% of $100
             var adjustment = _manager.ProcessDailyPnL(-catastrophicLoss, _testDate);
 
@@ -187,7 +181,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Cannot move beyond maximum aggressive position
             _manager.ResetToNotch(0); // Start at $1250 (maximum aggression)
-            
+
             var majorProfit = 375m; // 30% of $1250
             var adjustment = _manager.ProcessDailyPnL(majorProfit, _testDate);
 
@@ -207,31 +201,31 @@ namespace ODTE.Strategy.Tests
 
             // Journey to maximum safety (series of losses)
             Console.WriteLine("=== JOURNEY TO MAXIMUM SAFETY ===");
-            
+
             // Loss 1: $500 → $300
             results.Add(_manager.ProcessDailyPnL(-50m, currentDate));
             currentDate = currentDate.AddDays(1);
-            
+
             // Loss 2: $300 → $200 
             results.Add(_manager.ProcessDailyPnL(-75m, currentDate)); // 25% of $300
             currentDate = currentDate.AddDays(1);
-            
+
             // Loss 3: $200 → $100
             results.Add(_manager.ProcessDailyPnL(-50m, currentDate)); // 25% of $200
             currentDate = currentDate.AddDays(1);
 
             Assert.Equal(100m, _manager.CurrentRFibLimit);
-            
+
             // Journey back to aggressive (series of profits)
             Console.WriteLine("\n=== JOURNEY BACK TO AGGRESSION ===");
-            
+
             // Two consecutive profits: $100 → $200
             results.Add(_manager.ProcessDailyPnL(10m, currentDate)); // Day 1 profit
             currentDate = currentDate.AddDays(1);
             results.Add(_manager.ProcessDailyPnL(10m, currentDate)); // Day 2 profit (triggers upgrade)
             currentDate = currentDate.AddDays(1);
             Assert.Equal(200m, _manager.CurrentRFibLimit);
-            
+
             // Two consecutive profits: $200 → $300
             results.Add(_manager.ProcessDailyPnL(20m, currentDate)); // Day 1 profit
             currentDate = currentDate.AddDays(1);
@@ -269,14 +263,14 @@ namespace ODTE.Strategy.Tests
         public void Status_Reporting_Accuracy()
         {
             // Test: Status reporting provides accurate information
-            
+
             // Create some history
             _manager.ProcessDailyPnL(50m, _testDate);
             _manager.ProcessDailyPnL(30m, _testDate.AddDays(1)); // Triggers upgrade
             _manager.ProcessDailyPnL(-20m, _testDate.AddDays(2)); // Small loss
-            
+
             var status = _manager.GetStatus();
-            
+
             Assert.Equal(800m, status.CurrentLimit); // After upgrade then small loss back to $500
             Assert.Equal(1, status.CurrentNotchIndex); // Should be at index 1 ($800)
             Assert.Equal("2/6", status.NotchPosition);
@@ -306,11 +300,11 @@ namespace ODTE.Strategy.Tests
             {
                 // Reset to $500 for each test
                 _manager.ResetToNotch(2);
-                
+
                 var adjustment = _manager.ProcessDailyPnL(-testCase.Loss, _testDate);
-                
+
                 Assert.Equal(testCase.ExpectedMovement, adjustment.NotchMovement);
-                
+
                 Console.WriteLine($"✓ {testCase.Description}: {-testCase.Loss:C} → {adjustment.NotchMovement} notches");
             }
         }
@@ -327,12 +321,12 @@ namespace ODTE.Strategy.Tests
             };
 
             var customManager = new RevFibNotchManager(customConfig);
-            
+
             // Test: 2 consecutive profits should NOT trigger upgrade (needs 3)
             customManager.ProcessDailyPnL(75m, _testDate); // 15% profit
             customManager.ProcessDailyPnL(75m, _testDate.AddDays(1)); // 15% profit
             Assert.Equal(500m, customManager.CurrentRFibLimit); // No movement yet
-            
+
             // Test: 3rd consecutive profit SHOULD trigger upgrade
             var adj = customManager.ProcessDailyPnL(75m, _testDate.AddDays(2)); // 15% profit
             Assert.Equal(-1, adj.NotchMovement); // Now triggers upgrade

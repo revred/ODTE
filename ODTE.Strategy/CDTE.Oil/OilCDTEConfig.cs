@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace ODTE.Strategy.CDTE.Oil
@@ -7,10 +6,10 @@ namespace ODTE.Strategy.CDTE.Oil
     {
         [Required]
         public TimeOnly MondayDecisionEt { get; set; } = new(10, 0, 0);
-        
+
         [Required]
         public TimeOnly WednesdayDecisionEt { get; set; } = new(12, 30, 0);
-        
+
         [Required]
         [Range(30, 120)]
         public int ExitCutoffBufferMin { get; set; } = 45;
@@ -18,44 +17,44 @@ namespace ODTE.Strategy.CDTE.Oil
         [Required]
         [Range(100, 2000)]
         public double RiskCapUsd { get; set; } = 800;
-        
+
         [Required]
         [Range(1, 20)]
         public double WeeklyCapPct { get; set; } = 6;
-        
+
         [Required]
         [Range(0.5, 0.9)]
         public double TakeProfitCorePct { get; set; } = 0.70;
-        
+
         [Required]
         [Range(0.3, 0.7)]
         public double MaxDrawdownPct { get; set; } = 0.50;
-        
+
         [Required]
         [Range(0.1, 0.3)]
         public double NeutralBandPct { get; set; } = 0.15;
-        
+
         [Required]
         [Range(0.15, 0.35)]
         public double RollDebitCapPctOfRisk { get; set; } = 0.25;
-        
+
         [Required]
         [Range(20, 50)]
         public double IvHighThresholdPct { get; set; } = 30;
 
         [Required]
         public WingRuleConfig WidthRule { get; set; } = new();
-        
+
         [Required]
         public DeltaTargetsConfig DeltaTargets { get; set; } = new();
-        
+
         [Required]
         public FillPolicyConfig FillPolicy { get; set; } = new();
-        
+
         [Required]
         public OilRiskGuardrails Risk { get; set; } = new();
 
-        public bool IsHighIv(double impliedVolatility) => 
+        public bool IsHighIv(double impliedVolatility) =>
             impliedVolatility > (IvHighThresholdPct / 100.0);
     }
 
@@ -64,7 +63,7 @@ namespace ODTE.Strategy.CDTE.Oil
         [Required]
         [Range(1.0, 5.0)]
         public double PerDayUsd { get; set; } = 2.0;
-        
+
         [Required]
         [Range(0.25, 1.0)]
         public double ZeroDteUsd { get; set; } = 0.5;
@@ -75,7 +74,7 @@ namespace ODTE.Strategy.CDTE.Oil
         [Required]
         [Range(0.10, 0.25)]
         public double IcShortAbs { get; set; } = 0.18;
-        
+
         [Required]
         [Range(0.15, 0.35)]
         public double VertShortAbs { get; set; } = 0.25;
@@ -85,15 +84,15 @@ namespace ODTE.Strategy.CDTE.Oil
     {
         [Required]
         public string Type { get; set; } = "marketable_limit";
-        
+
         [Required]
         [Range(15, 60)]
         public int WindowSec { get; set; } = 30;
-        
+
         [Required]
         [Range(1, 3)]
         public int MaxAdverseTick { get; set; } = 1;
-        
+
         [Required]
         public double[] AggressivenessSteps { get; set; } = new[] { 0.25, 0.40, 0.50 };
     }
@@ -103,31 +102,31 @@ namespace ODTE.Strategy.CDTE.Oil
         [Required]
         [Range(0.05, 0.25)]
         public double PinBandUsd { get; set; } = 0.10;
-        
+
         [Required]
         [Range(0.25, 0.40)]
         public double DeltaGuardAbs { get; set; } = 0.30;
-        
+
         [Required]
         [Range(1000, 5000)]
         public double GammaMaxUsdPer1 { get; set; } = 2500;
-        
+
         [Required]
         [Range(0.15, 0.35)]
         public double RollDebitCapPctOfRisk { get; set; } = 0.25;
-        
+
         [Required]
         [Range(30, 120)]
         public int ExitBufferMin { get; set; } = 45;
-        
+
         [Required]
         [Range(0.25, 0.40)]
         public double DeltaItmGuard { get; set; } = 0.30;
-        
+
         [Required]
         [Range(0.01, 0.05)]
         public double ExtrinsicMin { get; set; } = 0.02;
-        
+
         [Required]
         public EventGuardConfig EventGuard { get; set; } = new();
     }
@@ -136,14 +135,14 @@ namespace ODTE.Strategy.CDTE.Oil
     {
         [Required]
         public bool Enable { get; set; } = true;
-        
+
         [Required]
         [Range(1, 5)]
         public int EiaOpecWithinTMinusDays { get; set; } = 2;
-        
+
         [Required]
         public bool PreferIronFly { get; set; } = true;
-        
+
         [Required]
         public bool EarlyTakeProfit { get; set; } = true;
     }
@@ -187,13 +186,13 @@ namespace ODTE.Strategy.CDTE.Oil
     )
     {
         public double MaxLoss { get; init; }
-        
+
         public PositionPlan WithReducedSize(double factor) =>
             this with { MaxLoss = MaxLoss * factor };
-            
+
         public PositionPlan WithClosed() =>
             this with { MaxLoss = 0 };
-            
+
         public PositionPlan WithConvertedToDebit() =>
             this with { Structure = Structure.ToDebitVertical() };
     }
@@ -257,7 +256,7 @@ namespace ODTE.Strategy.CDTE.Oil
         public DateTime Timestamp { get; set; }
         public double UnderlyingPrice { get; set; }
         public ProductCalendar Calendar { get; set; } = new();
-        
+
         public double GetAtmImpliedVolatility() => 0.25;
         public Func<double, double> GetNearestStrike => strike => Math.Round(strike * 2) / 2;
         public bool HasZeroDteOptions() => true;

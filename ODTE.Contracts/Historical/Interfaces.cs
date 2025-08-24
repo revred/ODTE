@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ODTE.Contracts.Data;
 
 namespace ODTE.Contracts.Historical

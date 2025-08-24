@@ -1,5 +1,3 @@
-using System;
-
 namespace ODTE.Strategy.CDTE.Oil
 {
     public static class OilSignals
@@ -8,13 +6,13 @@ namespace ODTE.Strategy.CDTE.Oil
         {
             var daysToExpiry = 1.0; // For weekly options
             var yearFraction = daysToExpiry / 365.0;
-            
+
             // Expected move = spot * IV * sqrt(time)
             var expectedMovePercent = atmImpliedVolatility * Math.Sqrt(yearFraction);
-            
+
             // For oil, typical spot price around $75
             var spotPrice = 75.0; // This would come from market data in real implementation
-            
+
             return spotPrice * expectedMovePercent;
         }
 
@@ -26,17 +24,17 @@ namespace ODTE.Strategy.CDTE.Oil
         public static double AdjustExpectedMoveForRegime(double baseExpectedMove, double vixLevel, bool hasRecentEvents)
         {
             var adjustment = 1.0;
-            
+
             // Increase expected move during high VIX
             if (vixLevel > 30)
                 adjustment *= 1.2;
             else if (vixLevel > 25)
                 adjustment *= 1.1;
-            
+
             // Increase expected move around events
             if (hasRecentEvents)
                 adjustment *= 1.15;
-                
+
             return baseExpectedMove * adjustment;
         }
     }

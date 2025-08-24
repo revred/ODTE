@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil
 {
     public static class OilStrikes
@@ -14,10 +10,10 @@ namespace ODTE.Strategy.CDTE.Oil
         public static IronCondor BuildIC(double spot, int dte, double expectedMove, Func<double, double> nearestStrike)
         {
             var wingWidth = WingWidth(dte);
-            
+
             var shortCallStrike = nearestStrike(spot + expectedMove);
             var longCallStrike = nearestStrike(shortCallStrike + wingWidth);
-            
+
             var shortPutStrike = nearestStrike(spot - expectedMove);
             var longPutStrike = nearestStrike(shortPutStrike - wingWidth);
 
@@ -28,7 +24,7 @@ namespace ODTE.Strategy.CDTE.Oil
         {
             var wingWidth = WingWidth(dte);
             var atmStrike = nearestStrike(spot);
-            
+
             var longCallStrike = nearestStrike(atmStrike + wingWidth);
             var longPutStrike = nearestStrike(atmStrike - wingWidth);
 
@@ -36,37 +32,37 @@ namespace ODTE.Strategy.CDTE.Oil
         }
 
         public static StrikeSelectionResult OptimizeStrikes(
-            double spot, 
-            int dte, 
-            double expectedMove, 
+            double spot,
+            int dte,
+            double expectedMove,
             ChainSnapshot chainData,
             OilCDTEConfig config)
         {
             var wingWidth = WingWidth(dte);
             var targetDelta = config.DeltaTargets.IcShortAbs;
-            
+
             var candidateShortCall = FindStrikeByDelta(
-                chainData, 
-                OptionRight.Call, 
-                targetDelta, 
+                chainData,
+                OptionRight.Call,
+                targetDelta,
                 spot + expectedMove);
-                
+
             var candidateShortPut = FindStrikeByDelta(
-                chainData, 
-                OptionRight.Put, 
-                targetDelta, 
+                chainData,
+                OptionRight.Put,
+                targetDelta,
                 spot - expectedMove);
 
             var longCallStrike = chainData.GetNearestStrike(candidateShortCall + wingWidth);
             var longPutStrike = chainData.GetNearestStrike(candidateShortPut - wingWidth);
 
             var projectedCredit = EstimateCredit(
-                candidateShortCall, longCallStrike, 
-                candidateShortPut, longPutStrike, 
+                candidateShortCall, longCallStrike,
+                candidateShortPut, longPutStrike,
                 chainData);
 
             var maxLoss = CalculateMaxLoss(candidateShortCall, longCallStrike, projectedCredit);
-            
+
             if (maxLoss > config.RiskCapUsd)
             {
                 return OptimizeForRiskCap(spot, dte, expectedMove, chainData, config);
@@ -88,15 +84,15 @@ namespace ODTE.Strategy.CDTE.Oil
         }
 
         private static StrikeSelectionResult OptimizeForRiskCap(
-            double spot, 
-            int dte, 
-            double expectedMove, 
+            double spot,
+            int dte,
+            double expectedMove,
             ChainSnapshot chainData,
             OilCDTEConfig config)
         {
             var maxRisk = config.RiskCapUsd;
             var wingWidth = WingWidth(dte);
-            
+
             var adjustedWingWidth = wingWidth;
             while (adjustedWingWidth > 0.5)
             {
@@ -111,7 +107,7 @@ namespace ODTE.Strategy.CDTE.Oil
                 if (testMaxLoss <= maxRisk)
                 {
                     var qualityScore = CalculateStrikeQuality(testShortCall, testShortPut, spot, expectedMove, chainData);
-                    
+
                     return new StrikeSelectionResult(
                         ShortCall: testShortCall,
                         LongCall: testLongCall,
@@ -131,9 +127,9 @@ namespace ODTE.Strategy.CDTE.Oil
         }
 
         private static double FindStrikeByDelta(
-            ChainSnapshot chainData, 
-            OptionRight right, 
-            double targetDelta, 
+            ChainSnapshot chainData,
+            OptionRight right,
+            double targetDelta,
             double preferredStrike)
         {
             var nearestToPreferred = chainData.GetNearestStrike(preferredStrike);
@@ -157,7 +153,7 @@ namespace ODTE.Strategy.CDTE.Oil
         {
             var strikes = new List<double>();
             var increment = 0.5;
-            
+
             for (int i = -count; i <= count; i++)
             {
                 strikes.Add(centerStrike + (i * increment));
@@ -169,44 +165,44 @@ namespace ODTE.Strategy.CDTE.Oil
         private static double EstimateDelta(double strike, double spot, OptionRight right)
         {
             var moneyness = spot / strike;
-            var roughDelta = right == OptionRight.Call 
+            var roughDelta = right == OptionRight.Call
                 ? Math.Max(0, Math.Min(1, (moneyness - 0.95) * 5))
                 : Math.Max(0, Math.Min(1, (1.05 - moneyness) * 5));
-                
+
             return right == OptionRight.Call ? roughDelta : -roughDelta;
         }
 
         private static double EstimateCredit(
-            double shortCall, double longCall, 
-            double shortPut, double longPut, 
+            double shortCall, double longCall,
+            double shortPut, double longPut,
             ChainSnapshot chainData)
         {
             var callSpreadCredit = EstimateSpreadCredit(shortCall, longCall, OptionRight.Call, chainData);
             var putSpreadCredit = EstimateSpreadCredit(shortPut, longPut, OptionRight.Put, chainData);
-            
+
             return callSpreadCredit + putSpreadCredit;
         }
 
         private static double EstimateSpreadCredit(
-            double shortStrike, 
-            double longStrike, 
-            OptionRight right, 
+            double shortStrike,
+            double longStrike,
+            OptionRight right,
             ChainSnapshot chainData)
         {
             var shortPrice = EstimateOptionPrice(shortStrike, chainData.UnderlyingPrice, right);
             var longPrice = EstimateOptionPrice(longStrike, chainData.UnderlyingPrice, right);
-            
+
             return Math.Max(0, shortPrice - longPrice);
         }
 
         private static double EstimateOptionPrice(double strike, double spot, OptionRight right)
         {
-            var intrinsic = right == OptionRight.Call 
+            var intrinsic = right == OptionRight.Call
                 ? Math.Max(0, spot - strike)
                 : Math.Max(0, strike - spot);
-                
+
             var timeValue = Math.Max(0.05, Math.Min(2.0, Math.Abs(spot - strike) * 0.02));
-            
+
             return intrinsic + timeValue;
         }
 
@@ -217,22 +213,22 @@ namespace ODTE.Strategy.CDTE.Oil
         }
 
         private static double CalculateStrikeQuality(
-            double shortCall, 
-            double shortPut, 
-            double spot, 
-            double expectedMove, 
+            double shortCall,
+            double shortPut,
+            double spot,
+            double expectedMove,
             ChainSnapshot chainData)
         {
             var callDistance = Math.Abs(shortCall - (spot + expectedMove));
             var putDistance = Math.Abs(shortPut - (spot - expectedMove));
             var symmetry = 1.0 - Math.Abs(callDistance - putDistance) / Math.Max(callDistance, putDistance);
-            
+
             var callLiquidity = EstimateLiquidity(shortCall, chainData);
             var putLiquidity = EstimateLiquidity(shortPut, chainData);
             var avgLiquidity = (callLiquidity + putLiquidity) / 2.0;
-            
+
             var probabilityOfProfit = EstimateProbabilityOfProfit(shortCall, shortPut, spot, expectedMove);
-            
+
             return (symmetry * 0.3) + (avgLiquidity * 0.3) + (probabilityOfProfit * 0.4);
         }
 
@@ -247,17 +243,17 @@ namespace ODTE.Strategy.CDTE.Oil
             var lowerBound = shortPut;
             var profitRange = upperBound - lowerBound;
             var expectedRange = expectedMove * 2;
-            
+
             return Math.Min(1.0, profitRange / Math.Max(expectedRange, profitRange));
         }
 
         public static StrikeAdjustmentResult AdjustForLiquidity(
-            IronCondor originalCondor, 
+            IronCondor originalCondor,
             ChainSnapshot chainData,
             double minLiquidityScore = 0.5)
         {
             var adjustments = new List<StrikeAdjustment>();
-            
+
             var shortCallLiquidity = EstimateLiquidity(originalCondor.ShortCall, chainData);
             if (shortCallLiquidity < minLiquidityScore)
             {
@@ -292,7 +288,7 @@ namespace ODTE.Strategy.CDTE.Oil
             }
 
             var adjustedCondor = ApplyAdjustments(originalCondor, adjustments, chainData);
-            
+
             return new StrikeAdjustmentResult(
                 AdjustedCondor: adjustedCondor,
                 WasAdjusted: true,
@@ -303,7 +299,7 @@ namespace ODTE.Strategy.CDTE.Oil
         private static double FindMoreLiquidStrike(double originalStrike, ChainSnapshot chainData, OptionRight right)
         {
             var candidates = GetStrikesAroundPrice(chainData, originalStrike, 3);
-            
+
             return candidates
                 .OrderByDescending(strike => EstimateLiquidity(strike, chainData))
                 .ThenBy(strike => Math.Abs(strike - originalStrike))
@@ -311,8 +307,8 @@ namespace ODTE.Strategy.CDTE.Oil
         }
 
         private static IronCondor ApplyAdjustments(
-            IronCondor original, 
-            List<StrikeAdjustment> adjustments, 
+            IronCondor original,
+            List<StrikeAdjustment> adjustments,
             ChainSnapshot chainData)
         {
             var shortCall = original.ShortCall;

@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Xunit;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -38,7 +32,7 @@ namespace ODTE.Strategy.Tests
         public void LoadRealTradingData()
         {
             Console.WriteLine("📊 Loading real trading data for loss analysis...");
-            
+
             // Real data from PM250_HONEST_HEALTH_REPORT.csv showing actual poor performance
             _tradingData = new List<TradingMonth>
             {
@@ -61,7 +55,7 @@ namespace ODTE.Strategy.Tests
                 new() { Date = new DateTime(2024, 9, 1), NetPnL = -222.55m, WinRate = 0.708m, Trades = 24, VIX = 20.4m, MarketRegime = "NORMAL", MaxDrawdown = 0.1045m },
                 new() { Date = new DateTime(2024, 10, 1), NetPnL = -191.10m, WinRate = 0.714m, Trades = 35, VIX = 21.7m, MarketRegime = "STRESS", MaxDrawdown = 0.1234m },
                 new() { Date = new DateTime(2024, 12, 1), NetPnL = -620.16m, WinRate = 0.586m, Trades = 29, VIX = 25.3m, MarketRegime = "STRESS", MaxDrawdown = 0.1892m },
-                
+
                 new() { Date = new DateTime(2025, 6, 1), NetPnL = -478.46m, WinRate = 0.522m, Trades = 23, VIX = 23.8m, MarketRegime = "STRESS", MaxDrawdown = 0.1634m },
                 new() { Date = new DateTime(2025, 7, 1), NetPnL = -348.42m, WinRate = 0.697m, Trades = 33, VIX = 21.2m, MarketRegime = "NORMAL", MaxDrawdown = 0.1345m },
                 new() { Date = new DateTime(2025, 8, 1), NetPnL = -523.94m, WinRate = 0.640m, Trades = 25, VIX = 22.9m, MarketRegime = "STRESS", MaxDrawdown = 0.1945m }
@@ -140,7 +134,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine("===============================");
 
             Console.WriteLine("❌ IDENTIFIED REVFIBNOTCH FAILURES:");
-            
+
             // Failure 1: Conservative Sensitivity Too Slow
             Console.WriteLine("\n1. CONSERVATIVE SENSITIVITY FAILURE:");
             Console.WriteLine("   • RevFibNotch requires sustained losses to scale down");
@@ -215,7 +209,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine("==========================================");
 
             Console.WriteLine("🎯 OPTIMIZATION OBJECTIVES:");
-            
+
             Console.WriteLine("\n1. REVFIBNOTCH SENSITIVITY TUNING:");
             Console.WriteLine("   Current Limits: [1250, 800, 500, 300, 200, 100]");
             Console.WriteLine("   Proposed: [1000, 600, 400, 250, 150, 75] (More conservative)");

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Xunit;
 using ODTE.Strategy.ProcessWindow;
 
 namespace ODTE.Strategy.Tests
@@ -105,12 +100,12 @@ namespace ODTE.Strategy.Tests
                 var positionSize = 500m;  // $500 position
                 var vix = 18.5m;          // VIX at 18.5%
                 var expectedCredit = 21.70m; // Expected credit
-                
+
                 // Calculate credit percentage (should be close to 3.5%)
                 var creditPct = expectedCredit / (positionSize * (1.0m + vix / 100m));
 
                 // Act
-                var result = _monitor.CheckParameter("IronCondorCreditPct", creditPct, DateTime.UtcNow, 
+                var result = _monitor.CheckParameter("IronCondorCreditPct", creditPct, DateTime.UtcNow,
                     $"Real scenario: ${expectedCredit} credit on ${positionSize} position, VIX={vix}");
 
                 // Assert

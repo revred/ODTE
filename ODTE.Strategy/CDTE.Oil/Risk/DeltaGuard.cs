@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class DeltaGuard
@@ -29,19 +26,19 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         private static ActionPlan CheckPositionDeltaRisk(Position position, double spot, double deltaThreshold)
         {
             var shortLegs = position.Legs.Where(leg => leg.Quantity < 0).ToArray();
-            
+
             foreach (var shortLeg in shortLegs)
             {
                 var delta = CalculateDelta(shortLeg, spot);
                 var absDelta = Math.Abs(delta);
-                
+
                 if (absDelta > deltaThreshold)
                 {
                     var moneyness = CalculateMoneyness(shortLeg, spot);
                     var rollCost = EstimateRollCost(shortLeg, spot, position.TicketRisk);
-                    
+
                     var action = DetermineDeltaAction(absDelta, deltaThreshold, rollCost, position.TicketRisk);
-                    
+
                     return new ActionPlan(
                         action,
                         $"Delta guard triggered: {shortLeg.Right} ${shortLeg.Strike} has |Δ|={absDelta:F3} > {deltaThreshold:F2} (moneyness: {moneyness:F3})",
@@ -61,7 +58,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             if (absPortfolioDelta > portfolioDeltaLimit)
             {
                 var action = absPortfolioDelta > 0.40 ? GuardAction.ReduceSize : GuardAction.ConvertToDebitVertical;
-                
+
                 return new ActionPlan(
                     action,
                     $"Portfolio delta risk: |Δ|={absPortfolioDelta:F3} > {portfolioDeltaLimit:F2}",
@@ -147,7 +144,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             var riskFreeRate = 0.05;
 
             var moneyness = spot / strike;
-            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) / 
+            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) /
                      (volatility * Math.Sqrt(timeToExpiry));
 
             var callDelta = NormalCDF(d1);
@@ -163,10 +160,10 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
 
         private static double EstimateRollCost(OptionLeg leg, double spot, double ticketRisk)
         {
-            var intrinsic = leg.Right == OptionRight.Call 
+            var intrinsic = leg.Right == OptionRight.Call
                 ? Math.Max(0, spot - leg.Strike)
                 : Math.Max(0, leg.Strike - spot);
-            
+
             var timeValue = Math.Max(0.05, ticketRisk * 0.10);
             return intrinsic + timeValue;
         }
@@ -174,14 +171,14 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         private static double CalculatePortfolioDelta(PortfolioState state, double spot)
         {
             var positions = state.GetAllPositions();
-            return positions.Sum(position => 
-                position.Legs.Sum(leg => 
+            return positions.Sum(position =>
+                position.Legs.Sum(leg =>
                     CalculateDelta(leg, spot) * leg.Quantity));
         }
 
         private static double CalculatePositionDeltaSensitivity(Position position, double spot)
         {
-            return Math.Abs(position.Legs.Sum(leg => 
+            return Math.Abs(position.Legs.Sum(leg =>
             {
                 var delta = CalculateDelta(leg, spot);
                 var gamma = CalculateGamma(leg, spot);
@@ -197,7 +194,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             var riskFreeRate = 0.05;
 
             var moneyness = spot / strike;
-            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) / 
+            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) /
                      (volatility * Math.Sqrt(timeToExpiry));
 
             var phi = Math.Exp(-0.5 * d1 * d1) / Math.Sqrt(2 * Math.PI);
@@ -211,12 +208,12 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
 
         private static double Erf(double x)
         {
-            const double a1 =  0.254829592;
+            const double a1 = 0.254829592;
             const double a2 = -0.284496736;
-            const double a3 =  1.421413741;
+            const double a3 = 1.421413741;
             const double a4 = -1.453152027;
-            const double a5 =  1.061405429;
-            const double p  =  0.3275911;
+            const double a5 = 1.061405429;
+            const double p = 0.3275911;
 
             var sign = x < 0 ? -1 : 1;
             x = Math.Abs(x);
@@ -234,8 +231,8 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
 
             foreach (var shortLeg in shortLegs)
             {
-                var protectingLong = longLegs.FirstOrDefault(ll => 
-                    ll.Right == shortLeg.Right && 
+                var protectingLong = longLegs.FirstOrDefault(ll =>
+                    ll.Right == shortLeg.Right &&
                     ((shortLeg.Right == OptionRight.Call && ll.Strike > shortLeg.Strike) ||
                      (shortLeg.Right == OptionRight.Put && ll.Strike < shortLeg.Strike)));
 

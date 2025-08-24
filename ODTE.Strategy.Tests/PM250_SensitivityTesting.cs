@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -22,7 +17,7 @@ namespace ODTE.Strategy.Tests
 
             var sensitivityTester = new RevFibNotchSensitivityTester();
             var results = sensitivityTester.RunSensitivityTests();
-            
+
             Console.WriteLine("\n✅ SENSITIVITY TESTING COMPLETE");
             Console.WriteLine($"Optimal Configuration Found: {results.BestConfiguration}");
         }
@@ -35,7 +30,7 @@ namespace ODTE.Strategy.Tests
         public SensitivityTestResults RunSensitivityTests()
         {
             LoadTestScenarios();
-            
+
             var configurations = GenerateTestConfigurations();
             var results = new List<ConfigurationResult>();
 
@@ -45,7 +40,7 @@ namespace ODTE.Strategy.Tests
             {
                 var result = TestConfiguration(config);
                 results.Add(result);
-                
+
                 Console.WriteLine($"Config {config.Name}: " +
                     $"Final P&L: ${result.FinalPnL:F2}, " +
                     $"Max DD: {result.MaxDrawdown:P1}, " +
@@ -53,11 +48,11 @@ namespace ODTE.Strategy.Tests
             }
 
             var bestResult = results.OrderByDescending(r => r.OverallScore).First();
-            
+
             Console.WriteLine("\n📊 SENSITIVITY TEST RESULTS:");
             Console.WriteLine("============================");
             PrintDetailedResults(results);
-            
+
             return new SensitivityTestResults
             {
                 BestConfiguration = bestResult.Configuration,
@@ -84,7 +79,7 @@ namespace ODTE.Strategy.Tests
                     ExpectedOutcome = "Should prevent/minimize losses in normal market conditions",
                     CriticalTest = true
                 },
-                
+
                 new()
                 {
                     Name = "2024-Q4 System Breakdown",
@@ -97,7 +92,7 @@ namespace ODTE.Strategy.Tests
                     ExpectedOutcome = "Should detect deteriorating performance and scale down aggressively",
                     CriticalTest = true
                 },
-                
+
                 new()
                 {
                     Name = "2025 Recent Failures",
@@ -240,23 +235,23 @@ namespace ODTE.Strategy.Tests
                 {
                     // Get current position size
                     var positionSize = config.RevFibLimits[currentNotchIndex];
-                    
+
                     // Apply win rate scaling
                     if (period.WinRate < config.WinRateThreshold)
                     {
                         positionSize *= 0.8m; // Reduce size for poor win rate
                     }
-                    
+
                     // Scale P&L by position size (baseline = $500)
                     var scaledPnL = period.PnL * (positionSize / 500m);
                     scenarioPnL += scaledPnL;
                     totalPnL += scaledPnL;
                     runningCapital += scaledPnL;
-                    
+
                     // Check drawdown
                     var drawdownPercent = Math.Abs(Math.Min(0, scaledPnL)) / runningCapital;
                     maxDrawdown = Math.Max(maxDrawdown, drawdownPercent);
-                    
+
                     // Check protective trigger
                     if (scaledPnL <= config.ProtectiveTrigger)
                     {
@@ -267,7 +262,7 @@ namespace ODTE.Strategy.Tests
                             lossesPreventedCount++;
                         }
                     }
-                    
+
                     // Normal scaling logic
                     if (scaledPnL < 0)
                     {
@@ -304,12 +299,12 @@ namespace ODTE.Strategy.Tests
             var criticalScenarioScore = scenarioResults
                 .Where(r => r.IsCritical)
                 .Average(r => r.ScenarioPnL > -100 ? 100 : Math.Max(0, 100 + r.ScenarioPnL / 10));
-            
+
             var profitabilityScore = totalPnL > 0 ? 50 : Math.Max(0, 50 + totalPnL / 100);
             var drawdownScore = Math.Max(0, 50 - maxDrawdown * 1000);
             var protectionScore = lossesPreventedCount * 20;
 
-            var overallScore = criticalScenarioScore * 0.5m + profitabilityScore * 0.2m + 
+            var overallScore = criticalScenarioScore * 0.5m + profitabilityScore * 0.2m +
                               drawdownScore * 0.2m + protectionScore * 0.1m;
 
             return new ConfigurationResult
@@ -328,9 +323,9 @@ namespace ODTE.Strategy.Tests
         {
             Console.WriteLine("Configuration Ranking (by Overall Score):");
             Console.WriteLine("==========================================");
-            
+
             var sortedResults = results.OrderByDescending(r => r.OverallScore).ToList();
-            
+
             for (int i = 0; i < sortedResults.Count; i++)
             {
                 var result = sortedResults[i];
@@ -340,7 +335,7 @@ namespace ODTE.Strategy.Tests
                 Console.WriteLine($"   Max Drawdown: {result.MaxDrawdown:P2}");
                 Console.WriteLine($"   Losses Prevented: {result.LossesPreventedCount}");
                 Console.WriteLine($"   Critical Scenario Performance: {result.CriticalScenarioScore:F1}");
-                
+
                 // Show critical scenario details for top 3
                 if (i < 3)
                 {
@@ -355,10 +350,10 @@ namespace ODTE.Strategy.Tests
 
             Console.WriteLine("\n📈 KEY INSIGHTS:");
             Console.WriteLine("================");
-            
+
             var best = sortedResults.First();
             var current = results.First(r => r.Configuration.Name == "CURRENT");
-            
+
             Console.WriteLine($"Best configuration improves critical scenario performance by {best.CriticalScenarioScore - current.CriticalScenarioScore:F1} points");
             Console.WriteLine($"Best configuration prevents {best.LossesPreventedCount - current.LossesPreventedCount} additional large losses");
             Console.WriteLine($"Best configuration reduces max drawdown by {(current.MaxDrawdown - best.MaxDrawdown) * 100:F1} percentage points");

@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using ODTE.Historical;
-using ODTE.Execution;
-using ODTE.Strategy.SPX30DTE.Backtests;
-
 namespace ODTE.Strategy.SPX30DTE.Mutations
 {
     public class TournamentRunner
@@ -20,9 +13,9 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 // Initialize data manager and fill engine
                 var dataManager = new DistributedDatabaseManager();
                 var fillEngine = new RealisticFillEngine();
-                
+
                 var tournament = new SPX30DTEMutationTournament(dataManager, fillEngine);
-                
+
                 Console.WriteLine("🚀 Starting 20-year tournament with 16 mutations...");
                 Console.WriteLine($"⏰ Start Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 Console.WriteLine();
@@ -37,7 +30,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 Console.WriteLine();
 
                 DisplayTournamentResults(results);
-                
+
                 Console.WriteLine();
                 Console.WriteLine("📊 SQLite ledgers have been generated for top 4 performers:");
                 foreach (var result in results.Take(4))
@@ -56,7 +49,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 Console.WriteLine("Stack trace:");
                 Console.WriteLine(ex.StackTrace);
             }
-            
+
             Console.WriteLine();
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
@@ -75,7 +68,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 var trophy = i switch
                 {
                     0 => "🥇",
-                    1 => "🥈", 
+                    1 => "🥈",
                     2 => "🥉",
                     _ => "  "
                 };
@@ -91,7 +84,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             // Display top 4 detailed results
             Console.WriteLine("🎯 TOP 4 DETAILED ANALYSIS");
             Console.WriteLine("═══════════════════════════════════════════════════════════════════════");
-            
+
             for (int i = 0; i < Math.Min(4, results.Count); i++)
             {
                 var result = results[i];

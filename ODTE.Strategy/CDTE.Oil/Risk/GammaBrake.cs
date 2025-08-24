@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class GammaBrake
@@ -114,7 +111,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
 
         public static double CalculatePositionGamma(Position position)
         {
-            return position.Legs.Sum(leg => 
+            return position.Legs.Sum(leg =>
             {
                 var legGamma = CalculateLegGamma(leg);
                 return legGamma * leg.Quantity;
@@ -126,17 +123,17 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             var timeToExpiry = 7.0 / 365.0;
             var volatility = 0.25;
             var riskFreeRate = 0.05;
-            
+
             var spot = 75.0;
             var strike = leg.Strike;
             var moneyness = spot / strike;
-            
-            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) / 
+
+            var d1 = (Math.Log(moneyness) + (riskFreeRate + 0.5 * volatility * volatility) * timeToExpiry) /
                      (volatility * Math.Sqrt(timeToExpiry));
-            
+
             var phi = Math.Exp(-0.5 * d1 * d1) / Math.Sqrt(2 * Math.PI);
             var gamma = phi / (spot * volatility * Math.Sqrt(timeToExpiry));
-            
+
             return gamma;
         }
 

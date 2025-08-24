@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy.Tests
 {
     public class SPX30DTE_BacktestRunner
@@ -27,14 +24,14 @@ namespace ODTE.Strategy.Tests
                 {
                     Console.WriteLine($"   Inner Exception: {ex.InnerException.Message}");
                 }
-                
+
                 Console.WriteLine();
                 Console.WriteLine("🔧 This comprehensive backtest requires:");
                 Console.WriteLine("  ✅ Access to 20 years of real SPX options data");
                 Console.WriteLine("  ✅ DistributedDatabaseManager connection");
                 Console.WriteLine("  ✅ RealisticFillEngine for execution simulation");
                 Console.WriteLine("  ✅ Sufficient disk space for SQLite ledger generation");
-                
+
                 // Provide demonstration results instead
                 Console.WriteLine();
                 Console.WriteLine("📊 DEMONSTRATION RESULTS (Simulated Performance)");
@@ -53,11 +50,11 @@ namespace ODTE.Strategy.Tests
         private static async Task RunComprehensiveAnalysis()
         {
             Console.WriteLine("🚀 Initializing comprehensive backtest framework...");
-            
+
             // This would use the actual comprehensive runner
             // var runner = new SPX30DTE_ComprehensiveRunner();
             // var results = await runner.RunComprehensiveBacktest();
-            
+
             // For demonstration, simulate the comprehensive analysis
             await SimulateComprehensiveBacktest();
         }
@@ -94,15 +91,15 @@ namespace ODTE.Strategy.Tests
             {
                 var (name, strategy) = mutations[i];
                 Console.WriteLine($"[{i + 1,2}/16] Analyzing {name}...");
-                
+
                 // Simulate backtest processing time
                 await Task.Delay(100);
-                
+
                 // Generate realistic results based on strategy characteristics
                 var (cagr, maxDD, winRate) = GetStrategyParameters(strategy, random);
                 var trades = random.Next(1200, 3500);
                 var finalValue = 100000m * (decimal)Math.Pow(1.0 + (double)cagr, 20);
-                
+
                 // Calculate multi-criteria score
                 var cagrScore = Math.Min(cagr / 0.40m, 1.0m) * 35;
                 var riskScore = (1 - Math.Min(maxDD / 0.20m, 1.0m)) * 30;
@@ -110,7 +107,7 @@ namespace ODTE.Strategy.Tests
                 var score = (decimal)(cagrScore + riskScore + preservationScore);
 
                 results[i] = (name, strategy, cagr, maxDD, winRate, trades, finalValue, score);
-                
+
                 Console.WriteLine($"        💰 Final Value: ${finalValue:N0} | CAGR: {cagr:P1}");
                 Console.WriteLine($"        📉 Max DD: {maxDD:P1} | 🎯 Win Rate: {winRate:P1}");
                 Console.WriteLine($"        🎲 Total Trades: {trades:N0} | 📊 Score: {score:F1}");
@@ -151,7 +148,7 @@ namespace ODTE.Strategy.Tests
                 var result = results[i];
                 var ledgerName = $"SPX30DTE_Rank{i + 1}_{result.Name.Replace(" ", "_")}_20050101_20250101.db";
                 var estimatedSize = EstimateLedgerSize(result.Trades);
-                
+
                 Console.WriteLine($"  {i + 1}. Generating {ledgerName}...");
                 await Task.Delay(50); // Simulate ledger creation
                 Console.WriteLine($"     ✅ Created ({estimatedSize:F1} MB) - {result.Trades:N0} trades, {5479:N0} daily P&L records");
@@ -160,7 +157,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine();
             Console.WriteLine("📂 SQLite Ledgers Location: ./SQLiteLedgers/");
             Console.WriteLine("📊 Each ledger contains: trades, daily P&L, mutation parameters, performance metrics");
-            
+
             DisplayTopPerformerAnalysis(results.Take(4).ToArray());
         }
 

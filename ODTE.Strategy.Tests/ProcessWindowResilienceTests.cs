@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Xunit;
 using ODTE.Strategy.ProcessWindow;
 
 namespace ODTE.Strategy.Tests
@@ -74,13 +69,13 @@ namespace ODTE.Strategy.Tests
             {
                 // Arrange: Open the circuit with failures
                 Func<Task<string>> failingOperation = () => throw new InvalidOperationException("Test failure");
-                
+
                 for (int i = 0; i < 3; i++)
                 {
                     await Assert.ThrowsAsync<InvalidOperationException>(
                         () => _circuitBreaker.ExecuteAsync(failingOperation));
                 }
-                
+
                 _circuitBreaker.State.Should().Be(CircuitBreaker.CircuitBreakerState.Open);
 
                 // Act: Wait for recovery timeout
@@ -120,7 +115,7 @@ namespace ODTE.Strategy.Tests
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
                 await Assert.ThrowsAsync<InvalidOperationException>(
                     () => _circuitBreaker.ExecuteAsync(failingOperation));
-                
+
                 // Circuit should still be closed after 2 failures
                 _circuitBreaker.State.Should().Be(CircuitBreaker.CircuitBreakerState.Closed);
             }
@@ -204,11 +199,11 @@ namespace ODTE.Strategy.Tests
 
                 // Assert: Should have 3 attempts with increasing delays
                 attemptTimes.Count.Should().Be(3);
-                
+
                 // Check delays between attempts (allowing for some variance)
                 var delay1 = attemptTimes[1] - attemptTimes[0];
                 var delay2 = attemptTimes[2] - attemptTimes[1];
-                
+
                 delay1.TotalMilliseconds.Should().BeGreaterOrEqualTo(40); // ~50ms with some tolerance
                 delay2.TotalMilliseconds.Should().BeGreaterThan(delay1.TotalMilliseconds); // Exponential increase
             }
@@ -234,7 +229,7 @@ namespace ODTE.Strategy.Tests
                 healthStatus.Should().NotBeNull();
                 healthStatus.Checks.Should().NotBeEmpty();
                 healthStatus.Status.Should().BeOneOf("Healthy", "Warning"); // May have warnings in test environment
-                
+
                 // Should include all expected health checks
                 var componentNames = healthStatus.Checks.Select(c => c.Component).ToList();
                 componentNames.Should().Contain(new[] { "Memory", "DiskSpace", "ProcessWindow", "HistoricalData" });
@@ -434,7 +429,7 @@ namespace ODTE.Strategy.Tests
                 result.Should().NotBeNull();
                 result.IsValid.Should().BeFalse();
                 result.OperationId.Should().NotBeNullOrEmpty();
-                
+
                 // Should be blocked by either primary, backup, or offline validation
                 if (result.ValidationMethod.Contains("Primary"))
                 {
@@ -488,7 +483,7 @@ namespace ODTE.Strategy.Tests
 
                 // Act
                 var resilientGuard = new ProcessWindowResilientGuard(null, new InMemoryProcessWindowPersistence());
-                var result = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var result = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     positionSize, correctCredit, vix);
 
                 // Assert
@@ -505,7 +500,7 @@ namespace ODTE.Strategy.Tests
 
                 // Act
                 var resilientGuard = new ProcessWindowResilientGuard(null, new InMemoryProcessWindowPersistence());
-                var result = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var result = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     positionSize, buggyCredit, vix);
 
                 // Assert
@@ -516,28 +511,28 @@ namespace ODTE.Strategy.Tests
             public void ValidateIronCondorOffline_EdgeCases_ShouldHandleCorrectly()
             {
                 var resilientGuard = new ProcessWindowResilientGuard(null, new InMemoryProcessWindowPersistence());
-                
+
                 // Test minimum safe boundary
                 var minSafeCredit = 500m * 0.030m * 1.18m; // 3.0% with VIX 18%
-                var minResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var minResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     500m, minSafeCredit, 18.0m);
                 minResult.Should().BeTrue();
 
                 // Test maximum safe boundary
                 var maxSafeCredit = 500m * 0.045m * 1.18m; // 4.5% with VIX 18%
-                var maxResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var maxResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     500m, maxSafeCredit, 18.0m);
                 maxResult.Should().BeTrue();
 
                 // Test just below minimum (should fail)
                 var belowMinCredit = 500m * 0.029m * 1.18m; // 2.9% with VIX 18%
-                var belowMinResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var belowMinResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     500m, belowMinCredit, 18.0m);
                 belowMinResult.Should().BeFalse();
 
                 // Test just above maximum (should fail)
                 var aboveMaxCredit = 500m * 0.046m * 1.18m; // 4.6% with VIX 18%
-                var aboveMaxResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline", 
+                var aboveMaxResult = TestHelper.CallPrivateMethod<bool>(resilientGuard, "ValidateIronCondorOffline",
                     500m, aboveMaxCredit, 18.0m);
                 aboveMaxResult.Should().BeFalse();
             }
@@ -553,7 +548,7 @@ namespace ODTE.Strategy.Tests
                 var validator = new ProcessWindowValidator(monitor);
                 var failingExecutor = new ResilienceTestMockTradeExecutor();
                 failingExecutor.SetupFailedTrade("SYSTEM_ERROR", "Simulated system failure");
-                
+
                 var baseGuard = new ProcessWindowTradeGuard(validator, failingExecutor);
                 var persistence = new InMemoryProcessWindowPersistence();
                 var resilientGuard = new ProcessWindowResilientGuard(baseGuard, persistence);
@@ -596,7 +591,7 @@ namespace ODTE.Strategy.Tests
         {
             public static T CallPrivateMethod<T>(object obj, string methodName, params object[] parameters)
             {
-                var method = obj.GetType().GetMethod(methodName, 
+                var method = obj.GetType().GetMethod(methodName,
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 return (T)method.Invoke(obj, parameters);
             }

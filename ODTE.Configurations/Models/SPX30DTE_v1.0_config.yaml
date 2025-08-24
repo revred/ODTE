@@ -1,0 +1,113 @@
+model_name: SPX30DTE
+model_version: v1.0 
+optimization_parameters:
+  genetic_algorithm: 16_mutation_tournament
+  last_optimization: 2025-08-15
+  optimization_source: ODTE.Strategy/SPX30DTE/SPX30DTEConfig.cs
+  tournament_demo: ODTE.Strategy/SPX30DTE/Mutations/SimpleTournamentDemo/SimpleTournamentDemo.cs
+  target_dte: 30
+  strategy_components:
+    - broken_wing_butterflies
+    - probe_system 
+    - vix_hedging
+    - rev_fib_notch_scaling
+
+underlying: SPX
+start: 2005-01-01
+end: 2025-01-01
+mode: SPX30DTE_comprehensive
+rth_only: true
+timezone: America/New_York
+
+# SPX30DTE Specific Parameters (from SPX30DTEConfig.cs)
+spx30dte:
+  core_strategy:
+    target_dte: 30
+    min_dte: 25
+    max_dte: 35
+    wing_width_points: 50
+    short_strike_offset: 350
+    long_upper_offset: 450
+    long_lower_offset: 300
+    target_credit: 800
+    min_credit: 700
+    max_risk: 4200
+    max_positions: 4
+    profit_target: 0.65
+    stop_loss: 2.0
+    forced_exit_dte: 10
+    delta_threshold: 0.15
+    
+  probe_system:
+    target_dte: 15
+    min_dte: 10
+    max_dte: 20
+    spread_width: 5
+    delta_target: 0.20
+    target_credit: 65
+    min_credit: 60
+    max_risk: 435
+    probes_per_week: 5
+    max_active_probes: 20
+    profit_target: 0.65
+    forced_exit_dte: 5
+    win_rate_threshold: 0.60
+    lookback_period: 10
+    
+  vix_hedging:
+    target_dte: 50
+    min_dte: 45
+    max_dte: 60
+    long_strike: 20
+    short_strike: 30
+    spread_width: 10
+    max_cost_per_hedge: 50
+    max_payoff: 1000
+    base_hedge_count: 2
+    max_hedge_count: 4
+    vix_spike_threshold: 3
+    partial_close_percent: 0.50
+    hedge_cost_budget: 0.02
+    
+  risk_management:
+    max_portfolio_risk: 0.25
+    monthly_income_target: 2500
+    max_drawdown_limit: 5000
+    rev_fib_notch_limits: [5000, 3200, 2000, 1200, 800, 400]
+    current_notch_index: 2
+    days_for_upgrade: 10
+    loss_percent_for_downgrade: 0.15
+    emergency_stop_loss: 0.25
+    
+  synchronization:
+    probes_lead_core: true
+    probe_lead_days: 2
+    min_probe_win_rate: 0.60
+    min_consecutive_probe_wins: 2
+    max_correlated_risk: 0.30
+    auto_freeze_on_drawdown: true
+    drawdown_freeze_threshold: -0.03
+    scale_with_volatility: true
+    high_vol_threshold: 25
+    volatility_scale_factor: 0.50
+
+cadence_seconds: 3600  # Hourly for 30DTE
+no_new_risk_minutes_to_close: 60
+
+slippage:
+  entry_half_spread_ticks: 1.0
+  exit_half_spread_ticks: 1.0
+  late_session_extra_ticks: 1.0
+  tick_value: 0.05
+  spread_pct_cap: 0.30
+
+fees:
+  commission_per_contract: 0.65
+  exchange_fees_per_contract: 0.25
+
+paths:
+  bars_csv: ./Samples/bars_spx_min.csv
+  vix_csv: ./Samples/vix_daily.csv
+  vix9d_csv: ./Samples/vix9d_daily.csv
+  calendar_csv: ./Samples/calendar.csv
+  reports_dir: ./Reports

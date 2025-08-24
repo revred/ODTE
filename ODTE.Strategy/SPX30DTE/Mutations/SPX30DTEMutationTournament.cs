@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Data.SQLite;
-using System.IO;
-using ODTE.Strategy.SPX30DTE.Backtests;
-using ODTE.Strategy.SPX30DTE.Optimization;
 using ODTE.Historical.DistributedStorage;
+using ODTE.Strategy.SPX30DTE.Backtests;
+using System.Data.SQLite;
 
 namespace ODTE.Strategy.SPX30DTE.Mutations
 {
@@ -23,14 +17,14 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private readonly TournamentConfig _config;
 
         public SPX30DTEMutationTournament(
-            DistributedDatabaseManager dataManager, 
+            DistributedDatabaseManager dataManager,
             string resultsDirectory = null)
         {
             _dataManager = dataManager;
             _resultsDirectory = resultsDirectory ?? Path.Combine(Environment.CurrentDirectory, "MutationResults");
             _mutations = new List<SPX30DTEMutation>();
             _config = GetTournamentConfig();
-            
+
             Directory.CreateDirectory(_resultsDirectory);
         }
 
@@ -56,30 +50,30 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 // Step 1: Generate 16 distinct mutations
                 Console.WriteLine("🔬 Step 1: Generating 16 distinct mutations...");
                 await GenerateDistinctMutations();
-                
+
                 // Step 2: Run comprehensive backtests
                 Console.WriteLine("📈 Step 2: Running 20-year backtests for all mutations...");
                 await RunAllMutationBacktests(results);
-                
+
                 // Step 3: Rank and analyze results
                 Console.WriteLine("🏆 Step 3: Ranking mutations by performance criteria...");
                 RankMutationsByPerformance(results);
-                
+
                 // Step 4: Generate detailed SQLite ledgers for top 4
                 Console.WriteLine("💾 Step 4: Generating SQLite ledgers for top 4 performers...");
                 await GenerateTop4SQLiteLedgers(results);
-                
+
                 // Step 5: Create comprehensive analysis report
                 Console.WriteLine("📋 Step 5: Creating tournament analysis report...");
                 await GenerateTournamentReport(results);
-                
+
                 results.IsSuccessful = true;
                 results.CompletionTime = DateTime.Now;
-                
+
                 Console.WriteLine();
                 Console.WriteLine("✅ Tournament completed successfully!");
                 DisplayTopPerformers(results);
-                
+
             }
             catch (Exception ex)
             {
@@ -94,7 +88,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private async Task GenerateDistinctMutations()
         {
             // Create 16 distinct mutations with different strategic approaches
-            
+
             // Mutation 1: Conservative High-Frequency
             _mutations.Add(new SPX30DTEMutation
             {
@@ -633,23 +627,23 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private async Task RunAllMutationBacktests(TournamentResults results)
         {
             var tasks = new List<Task<MutationResult>>();
-            
+
             // Run all backtests in parallel
             foreach (var mutation in _mutations)
             {
                 tasks.Add(RunSingleMutationBacktest(mutation));
             }
-            
+
             var mutationResults = await Task.WhenAll(tasks);
             results.MutationResults = mutationResults.ToList();
-            
+
             Console.WriteLine($"✅ Completed {mutationResults.Length} mutation backtests");
         }
 
         private async Task<MutationResult> RunSingleMutationBacktest(SPX30DTEMutation mutation)
         {
             Console.WriteLine($"🔄 Running backtest: {mutation.Name}");
-            
+
             var result = new MutationResult
             {
                 Mutation = mutation,
@@ -661,12 +655,12 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             {
                 // Create backtest harness with realistic costs
                 var backtester = new SPX30DTERealisticBacktester(_dataManager, mutation.Config);
-                
+
                 // Run comprehensive 20-year backtest
                 var backtestResult = await backtester.RunRealisticBacktest(
-                    result.BacktestStart, 
+                    result.BacktestStart,
                     result.BacktestEnd);
-                
+
                 // Extract key performance metrics
                 result.CAGR = backtestResult.AnnualizedReturn;
                 result.MaxDrawdown = backtestResult.MaxDrawdown;
@@ -676,28 +670,28 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 result.ProfitFactor = backtestResult.ProfitFactor;
                 result.CalmarRatio = backtestResult.CalmarRatio;
                 result.SortinoRatio = backtestResult.SortinoRatio;
-                
+
                 // Calculate capital efficiency metrics
                 result.MaxCapitalAtRisk = backtestResult.MaxCapitalUsed;
                 result.AvgCapitalUtilization = backtestResult.AvgCapitalDeployed / mutation.Config.StartingCapital;
                 result.ReturnOnCapitalAtRisk = result.CAGR / (result.MaxCapitalAtRisk / mutation.Config.StartingCapital);
-                
+
                 // Calculate preservation metrics
                 result.WorstMonthReturn = backtestResult.MonthlyReturns?.Min() ?? 0;
                 result.MaxConsecutiveLosses = CalculateMaxConsecutiveLosses(backtestResult.DailyReturns);
                 result.DownsideDeviation = CalculateDownsideDeviation(backtestResult.DailyReturns);
-                
+
                 // Crisis period analysis
                 result.CrisisPerformance = backtestResult.CrisisPerformance;
-                
+
                 // Store detailed results for top performers
                 result.DailyReturns = backtestResult.DailyReturns;
                 result.MonthlyReturns = backtestResult.MonthlyReturns;
                 result.TradeLog = backtestResult.TradeLog;
-                
+
                 result.IsSuccessful = true;
                 Console.WriteLine($"✅ {mutation.Name}: CAGR={result.CAGR:P2}, DD={result.MaxDrawdown:C}, Sharpe={result.SharpeRatio:F2}");
-                
+
             }
             catch (Exception ex)
             {
@@ -712,21 +706,21 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private void RankMutationsByPerformance(TournamentResults results)
         {
             var validResults = results.MutationResults.Where(r => r.IsSuccessful).ToList();
-            
+
             // Multi-criteria scoring system
             foreach (var result in validResults)
             {
                 result.CompositeScore = CalculateCompositeScore(result);
             }
-            
+
             // Rank by composite score
             results.RankedResults = validResults
                 .OrderByDescending(r => r.CompositeScore)
                 .ToList();
-            
+
             // Extract top 4 performers
             results.Top4Performers = results.RankedResults.Take(4).ToList();
-            
+
             Console.WriteLine("🏆 Tournament Rankings:");
             for (int i = 0; i < Math.Min(8, results.RankedResults.Count); i++)
             {
@@ -743,7 +737,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         {
             // Weighted scoring system focusing on CAGR, risk, and preservation
             var score = 0m;
-            
+
             // CAGR Score (40% weight) - Target 25-40%
             var cagrScore = 0m;
             if (result.CAGR >= 0.35m) cagrScore = 100m;
@@ -752,47 +746,47 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             else if (result.CAGR >= 0.20m) cagrScore = 60m;
             else if (result.CAGR >= 0.15m) cagrScore = 40m;
             else cagrScore = Math.Max(0, result.CAGR * 200);
-            
+
             score += cagrScore * 0.40m;
-            
+
             // Risk Score (30% weight) - Lower drawdown and capital at risk
             var riskScore = 0m;
-            
+
             // Drawdown component (15%)
             if (result.MaxDrawdown <= 3000m) riskScore += 100m * 0.5m;
             else if (result.MaxDrawdown <= 5000m) riskScore += 90m * 0.5m;
             else if (result.MaxDrawdown <= 7000m) riskScore += 70m * 0.5m;
             else if (result.MaxDrawdown <= 10000m) riskScore += 50m * 0.5m;
             else riskScore += Math.Max(0, (15000m - result.MaxDrawdown) / 15000m * 100m) * 0.5m;
-            
+
             // Capital efficiency component (15%)
             if (result.ReturnOnCapitalAtRisk >= 0.80m) riskScore += 100m * 0.5m;
             else if (result.ReturnOnCapitalAtRisk >= 0.60m) riskScore += 90m * 0.5m;
             else if (result.ReturnOnCapitalAtRisk >= 0.45m) riskScore += 80m * 0.5m;
             else if (result.ReturnOnCapitalAtRisk >= 0.30m) riskScore += 60m * 0.5m;
             else riskScore += Math.Max(0, result.ReturnOnCapitalAtRisk * 200m) * 0.5m;
-            
+
             score += riskScore * 0.30m;
-            
+
             // Capital Preservation Score (20% weight)
             var preservationScore = 0m;
-            
+
             // Worst month component (10%)
             if (result.WorstMonthReturn >= -0.05m) preservationScore += 100m * 0.5m;
             else if (result.WorstMonthReturn >= -0.08m) preservationScore += 80m * 0.5m;
             else if (result.WorstMonthReturn >= -0.12m) preservationScore += 60m * 0.5m;
             else if (result.WorstMonthReturn >= -0.20m) preservationScore += 40m * 0.5m;
             else preservationScore += Math.Max(0, (0.30m + result.WorstMonthReturn) / 0.30m * 100m) * 0.5m;
-            
+
             // Consistency component (10%)
             if (result.SharpeRatio >= 2.5m) preservationScore += 100m * 0.5m;
             else if (result.SharpeRatio >= 2.0m) preservationScore += 90m * 0.5m;
             else if (result.SharpeRatio >= 1.5m) preservationScore += 80m * 0.5m;
             else if (result.SharpeRatio >= 1.2m) preservationScore += 60m * 0.5m;
             else preservationScore += Math.Max(0, result.SharpeRatio * 50m) * 0.5m;
-            
+
             score += preservationScore * 0.20m;
-            
+
             // Quality Score (10% weight) - Win rate and trade efficiency
             var qualityScore = 0m;
             if (result.WinRate >= 0.75m) qualityScore = 100m;
@@ -800,9 +794,9 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             else if (result.WinRate >= 0.65m) qualityScore = 80m;
             else if (result.WinRate >= 0.60m) qualityScore = 70m;
             else qualityScore = Math.Max(0, result.WinRate * 100m);
-            
+
             score += qualityScore * 0.10m;
-            
+
             return score;
         }
 
@@ -812,14 +806,14 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             {
                 try
                 {
-                    var ledgerPath = Path.Combine(_resultsDirectory, 
+                    var ledgerPath = Path.Combine(_resultsDirectory,
                         $"{performer.Mutation.Name}_TradingLedger.db");
-                    
+
                     Console.WriteLine($"💾 Generating SQLite ledger: {performer.Mutation.Name}");
-                    
+
                     await CreateSQLiteLedger(performer, ledgerPath);
                     performer.LedgerPath = ledgerPath;
-                    
+
                 }
                 catch (Exception ex)
                 {
@@ -835,31 +829,31 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             {
                 File.Delete(dbPath);
             }
-            
+
             using var connection = new SQLiteConnection($"Data Source={dbPath}");
             await connection.OpenAsync();
-            
+
             // Create comprehensive schema
             await CreateLedgerSchema(connection);
-            
+
             // Insert strategy configuration
             await InsertStrategyConfig(connection, result);
-            
+
             // Insert all trades with realistic costs
             await InsertTradeData(connection, result);
-            
+
             // Insert daily performance data
             await InsertDailyPerformance(connection, result);
-            
+
             // Insert monthly summaries
             await InsertMonthlySummaries(connection, result);
-            
+
             // Insert risk metrics
             await InsertRiskMetrics(connection, result);
-            
+
             // Create indexes for performance
             await CreateIndexes(connection);
-            
+
             Console.WriteLine($"✅ SQLite ledger created: {Path.GetFileName(dbPath)}");
         }
 
@@ -877,7 +871,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     max_portfolio_risk DECIMAL(5,4) NOT NULL,
                     created_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )",
-                
+
                 @"CREATE TABLE trades (
                     trade_id TEXT PRIMARY KEY,
                     entry_date DATE NOT NULL,
@@ -905,7 +899,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     exit_reason TEXT,
                     market_conditions TEXT
                 )",
-                
+
                 @"CREATE TABLE daily_performance (
                     date DATE PRIMARY KEY,
                     portfolio_value DECIMAL(15,2) NOT NULL,
@@ -924,7 +918,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     portfolio_vega DECIMAL(10,2),
                     trades_closed INTEGER DEFAULT 0
                 )",
-                
+
                 @"CREATE TABLE monthly_summary (
                     year INTEGER NOT NULL,
                     month INTEGER NOT NULL,
@@ -939,7 +933,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     sortino_ratio DECIMAL(8,4),
                     PRIMARY KEY (year, month)
                 )",
-                
+
                 @"CREATE TABLE risk_metrics (
                     metric_date DATE NOT NULL,
                     period_type TEXT NOT NULL, -- 'DAILY', 'MONTHLY', 'YEARLY'
@@ -956,7 +950,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     tail_ratio DECIMAL(8,4),
                     PRIMARY KEY (metric_date, period_type)
                 )",
-                
+
                 @"CREATE TABLE crisis_performance (
                     crisis_name TEXT PRIMARY KEY,
                     start_date DATE NOT NULL,
@@ -969,7 +963,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     notes TEXT
                 )"
             };
-            
+
             foreach (var schema in schemas)
             {
                 using var command = new SQLiteCommand(schema, connection);
@@ -982,7 +976,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             var sql = @"INSERT INTO strategy_config 
                        (strategy_name, description, backtest_start, backtest_end, starting_capital, max_portfolio_risk)
                        VALUES (@name, @desc, @start, @end, @capital, @risk)";
-            
+
             using var command = new SQLiteCommand(sql, connection);
             command.Parameters.AddWithValue("@name", result.Mutation.Name);
             command.Parameters.AddWithValue("@desc", result.Mutation.Description);
@@ -990,14 +984,14 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             command.Parameters.AddWithValue("@end", result.BacktestEnd);
             command.Parameters.AddWithValue("@capital", result.Mutation.Config.StartingCapital);
             command.Parameters.AddWithValue("@risk", result.Mutation.Config.MaxPortfolioRisk);
-            
+
             await command.ExecuteNonQueryAsync();
         }
 
         private async Task InsertTradeData(SQLiteConnection connection, MutationResult result)
         {
             if (result.TradeLog == null || !result.TradeLog.Any()) return;
-            
+
             var sql = @"INSERT INTO trades 
                        (trade_id, entry_date, exit_date, symbol, strategy_type, trade_type, quantity,
                         entry_price, exit_price, gross_pnl, commission, slippage, net_pnl, max_risk,
@@ -1005,7 +999,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                        VALUES (@id, @entry, @exit, @symbol, @strategy, @type, @qty,
                               @entry_price, @exit_price, @gross_pnl, @commission, @slippage, @net_pnl, @risk,
                               @return_pct, @hold_days, @dte_entry, @exit_reason)";
-            
+
             foreach (var trade in result.TradeLog)
             {
                 using var command = new SQLiteCommand(sql, connection);
@@ -1027,7 +1021,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 command.Parameters.AddWithValue("@hold_days", CalculateHoldDays(trade));
                 command.Parameters.AddWithValue("@dte_entry", 30); // Default for SPX30DTE
                 command.Parameters.AddWithValue("@exit_reason", DetermineExitReason(trade));
-                
+
                 await command.ExecuteNonQueryAsync();
             }
         }
@@ -1035,30 +1029,30 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private async Task InsertDailyPerformance(SQLiteConnection connection, MutationResult result)
         {
             if (result.DailyReturns == null || !result.DailyReturns.Any()) return;
-            
+
             var sql = @"INSERT INTO daily_performance 
                        (date, portfolio_value, daily_pnl, daily_return, cumulative_return,
                         drawdown, drawdown_pct, active_positions, capital_at_risk, capital_utilization)
                        VALUES (@date, @value, @pnl, @daily_return, @cum_return,
                               @drawdown, @drawdown_pct, @positions, @capital_risk, @utilization)";
-            
+
             var portfolioValue = result.Mutation.Config.StartingCapital;
             var peakValue = portfolioValue;
             var cumulativeReturn = 0m;
-            
+
             var currentDate = result.BacktestStart;
             foreach (var dailyReturn in result.DailyReturns)
             {
                 var dailyPnL = portfolioValue * dailyReturn;
                 portfolioValue += dailyPnL;
                 cumulativeReturn = (portfolioValue - result.Mutation.Config.StartingCapital) / result.Mutation.Config.StartingCapital;
-                
+
                 if (portfolioValue > peakValue)
                     peakValue = portfolioValue;
-                
+
                 var drawdown = peakValue - portfolioValue;
                 var drawdownPct = peakValue > 0 ? drawdown / peakValue : 0;
-                
+
                 using var command = new SQLiteCommand(sql, connection);
                 command.Parameters.AddWithValue("@date", currentDate.ToString("yyyy-MM-dd"));
                 command.Parameters.AddWithValue("@value", portfolioValue);
@@ -1070,9 +1064,9 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 command.Parameters.AddWithValue("@positions", EstimateActivePositions());
                 command.Parameters.AddWithValue("@capital_risk", EstimateCapitalAtRisk(portfolioValue));
                 command.Parameters.AddWithValue("@utilization", result.AvgCapitalUtilization);
-                
+
                 await command.ExecuteNonQueryAsync();
-                
+
                 currentDate = currentDate.AddDays(1);
                 // Skip weekends
                 while (currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday)
@@ -1083,19 +1077,19 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private async Task InsertMonthlySummaries(SQLiteConnection connection, MutationResult result)
         {
             if (result.MonthlyReturns == null || !result.MonthlyReturns.Any()) return;
-            
+
             var sql = @"INSERT INTO monthly_summary 
                        (year, month, monthly_return, monthly_pnl, trades_count, win_rate, profit_factor, max_drawdown)
                        VALUES (@year, @month, @return, @pnl, @trades, @win_rate, @pf, @dd)";
-            
+
             var currentDate = new DateTime(result.BacktestStart.Year, result.BacktestStart.Month, 1);
             var portfolioValue = result.Mutation.Config.StartingCapital;
-            
+
             foreach (var monthlyReturn in result.MonthlyReturns)
             {
                 var monthlyPnL = portfolioValue * monthlyReturn;
                 portfolioValue += monthlyPnL;
-                
+
                 using var command = new SQLiteCommand(sql, connection);
                 command.Parameters.AddWithValue("@year", currentDate.Year);
                 command.Parameters.AddWithValue("@month", currentDate.Month);
@@ -1105,9 +1099,9 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 command.Parameters.AddWithValue("@win_rate", result.WinRate);
                 command.Parameters.AddWithValue("@pf", result.ProfitFactor);
                 command.Parameters.AddWithValue("@dd", result.MaxDrawdown / 12m); // Estimate monthly component
-                
+
                 await command.ExecuteNonQueryAsync();
-                
+
                 currentDate = currentDate.AddMonths(1);
             }
         }
@@ -1118,7 +1112,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             var sql = @"INSERT INTO risk_metrics 
                        (metric_date, period_type, var_95, var_99, max_consecutive_losses, volatility, downside_deviation)
                        VALUES (@date, @period, @var95, @var99, @max_losses, @vol, @downside)";
-            
+
             using var command = new SQLiteCommand(sql, connection);
             command.Parameters.AddWithValue("@date", result.BacktestEnd.ToString("yyyy-MM-dd"));
             command.Parameters.AddWithValue("@period", "OVERALL");
@@ -1127,7 +1121,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             command.Parameters.AddWithValue("@max_losses", result.MaxConsecutiveLosses);
             command.Parameters.AddWithValue("@vol", CalculateVolatility(result.DailyReturns));
             command.Parameters.AddWithValue("@downside", result.DownsideDeviation);
-            
+
             await command.ExecuteNonQueryAsync();
         }
 
@@ -1140,7 +1134,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 "CREATE INDEX idx_daily_performance_date ON daily_performance(date)",
                 "CREATE INDEX idx_monthly_summary_year_month ON monthly_summary(year, month)"
             };
-            
+
             foreach (var index in indexes)
             {
                 using var command = new SQLiteCommand(index, connection);
@@ -1162,7 +1156,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             // Realistic commission structure: $1.50 per contract + $0.50 per leg
             var baseCommission = 1.50m;
             var legCommission = 0.50m;
-            
+
             var quantity = Math.Abs((decimal)(trade.Quantity ?? 1));
             var legs = DetermineTradeType(trade.Symbol ?? "") switch
             {
@@ -1171,7 +1165,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 "VIX_HEDGE" => 2, // 2-leg spread
                 _ => 1
             };
-            
+
             return quantity * (baseCommission + (legs * legCommission));
         }
 
@@ -1181,7 +1175,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             var symbol = trade.Symbol?.ToString() ?? "";
             var quantity = Math.Abs((decimal)(trade.Quantity ?? 1));
             var entryPrice = (decimal)(trade.EntryPrice ?? 0);
-            
+
             var slippageRate = symbol switch
             {
                 var s when s.Contains("SPX") => 0.25m, // $0.25 per $100 of premium
@@ -1189,7 +1183,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 var s when s.Contains("VIX") => 0.50m, // $0.50 per $100 of premium
                 _ => 0.20m
             };
-            
+
             return quantity * entryPrice * slippageRate / 100m;
         }
 
@@ -1198,7 +1192,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             // Estimate max risk based on trade type
             var tradeType = DetermineTradeType(trade.Symbol?.ToString() ?? "");
             var quantity = Math.Abs((decimal)(trade.Quantity ?? 1));
-            
+
             return tradeType switch
             {
                 "SPX_BWB" => quantity * 4000m, // $4000 typical BWB risk
@@ -1226,7 +1220,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         {
             var pnl = (decimal)(trade.RealizedPnL ?? 0);
             var holdDays = CalculateHoldDays(trade);
-            
+
             if (pnl > 0 && holdDays < 10) return "QUICK_PROFIT";
             if (pnl > 0) return "PROFIT_TARGET";
             if (holdDays < 5) return "STOP_LOSS";
@@ -1234,18 +1228,18 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         }
 
         private int EstimateActivePositions() => 8; // Typical for strategy
-        
+
         private decimal EstimateCapitalAtRisk(decimal portfolioValue) => portfolioValue * 0.25m;
-        
+
         private int EstimateMonthlyTrades() => 15; // Typical monthly trade count
 
         private int CalculateMaxConsecutiveLosses(List<decimal> dailyReturns)
         {
             if (dailyReturns == null || !dailyReturns.Any()) return 0;
-            
+
             int maxConsecutive = 0;
             int currentConsecutive = 0;
-            
+
             foreach (var ret in dailyReturns)
             {
                 if (ret < 0)
@@ -1258,17 +1252,17 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     currentConsecutive = 0;
                 }
             }
-            
+
             return maxConsecutive;
         }
 
         private decimal CalculateDownsideDeviation(List<decimal> dailyReturns)
         {
             if (dailyReturns == null || !dailyReturns.Any()) return 0m;
-            
+
             var negativeReturns = dailyReturns.Where(r => r < 0).ToList();
             if (!negativeReturns.Any()) return 0m;
-            
+
             var meanNegative = negativeReturns.Average();
             var variance = negativeReturns.Select(r => Math.Pow((double)(r - meanNegative), 2)).Average();
             return (decimal)Math.Sqrt(variance);
@@ -1277,18 +1271,18 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private decimal CalculateVaR(List<decimal> returns, decimal confidenceLevel)
         {
             if (returns == null || !returns.Any()) return 0m;
-            
+
             var sortedReturns = returns.OrderBy(r => r).ToList();
             var index = (int)Math.Floor((1 - confidenceLevel) * sortedReturns.Count);
             index = Math.Max(0, Math.Min(index, sortedReturns.Count - 1));
-            
+
             return sortedReturns[index];
         }
 
         private decimal CalculateVolatility(List<decimal> dailyReturns)
         {
             if (dailyReturns == null || dailyReturns.Count < 2) return 0m;
-            
+
             var mean = dailyReturns.Average();
             var variance = dailyReturns.Select(r => Math.Pow((double)(r - mean), 2)).Average();
             return (decimal)Math.Sqrt(variance) * (decimal)Math.Sqrt(252); // Annualized
@@ -1297,10 +1291,10 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
         private async Task GenerateTournamentReport(TournamentResults results)
         {
             var reportPath = Path.Combine(_resultsDirectory, "SPX30DTE_Tournament_Report.md");
-            
+
             var report = GenerateMarkdownReport(results);
             await File.WriteAllTextAsync(reportPath, report);
-            
+
             Console.WriteLine($"📋 Tournament report generated: {reportPath}");
         }
 
@@ -1399,7 +1393,7 @@ Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
             Console.WriteLine();
             Console.WriteLine("🏆 TOP 4 PERFORMERS:");
             Console.WriteLine("===================");
-            
+
             foreach (var (performer, index) in results.Top4Performers.Select((p, i) => (p, i)))
             {
                 Console.WriteLine($"{index + 1}. {performer.Mutation.Name}");
@@ -1451,7 +1445,7 @@ Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
         public DateTime BacktestEnd { get; set; }
         public bool IsSuccessful { get; set; }
         public string ErrorMessage { get; set; }
-        
+
         // Performance metrics
         public decimal CAGR { get; set; }
         public decimal MaxDrawdown { get; set; }
@@ -1461,26 +1455,26 @@ Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
         public decimal CalmarRatio { get; set; }
         public decimal SortinoRatio { get; set; }
         public int TotalTrades { get; set; }
-        
+
         // Capital efficiency metrics
         public decimal MaxCapitalAtRisk { get; set; }
         public decimal AvgCapitalUtilization { get; set; }
         public decimal ReturnOnCapitalAtRisk { get; set; }
-        
+
         // Preservation metrics
         public decimal WorstMonthReturn { get; set; }
         public int MaxConsecutiveLosses { get; set; }
         public decimal DownsideDeviation { get; set; }
-        
+
         // Composite scoring
         public decimal CompositeScore { get; set; }
-        
+
         // Data for detailed analysis
         public List<decimal> DailyReturns { get; set; }
         public List<decimal> MonthlyReturns { get; set; }
         public List<dynamic> TradeLog { get; set; }
         public Dictionary<string, decimal> CrisisPerformance { get; set; }
-        
+
         // SQLite ledger
         public string LedgerPath { get; set; }
     }

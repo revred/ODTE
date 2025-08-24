@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class AssignmentRiskChecks
@@ -39,9 +36,9 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static ActionPlan PreCloseGate(
-            PortfolioState state, 
-            ChainSnapshot marketSnapshot, 
-            ProductCalendar calendar, 
+            PortfolioState state,
+            ChainSnapshot marketSnapshot,
+            ProductCalendar calendar,
             OilRiskGuardrails config)
         {
             var positions = state.GetAllPositions();
@@ -70,9 +67,9 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         private static ActionPlan CheckCLFuturesAssignment(
-            Position position, 
-            double spot, 
-            int dte, 
+            Position position,
+            double spot,
+            int dte,
             OilRiskGuardrails config)
         {
             if (!IsCLPosition(position))
@@ -99,9 +96,9 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         private static ActionPlan CheckUSOEquityAssignment(
-            Position position, 
-            double spot, 
-            int dte, 
+            Position position,
+            double spot,
+            int dte,
             OilRiskGuardrails config,
             DateTime currentTime)
         {
@@ -135,10 +132,10 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             var callLegs = position.Legs.Where(leg => leg.Right == OptionRight.Call).ToArray();
             var putLegs = position.Legs.Where(leg => leg.Right == OptionRight.Put).ToArray();
 
-            var hasNakedCall = callLegs.Any(leg => leg.Quantity < 0) && 
+            var hasNakedCall = callLegs.Any(leg => leg.Quantity < 0) &&
                                !callLegs.Any(leg => leg.Quantity > 0);
-            
-            var hasNakedPut = putLegs.Any(leg => leg.Quantity < 0) && 
+
+            var hasNakedPut = putLegs.Any(leg => leg.Quantity < 0) &&
                               !putLegs.Any(leg => leg.Quantity > 0);
 
             if (hasNakedCall || hasNakedPut)
@@ -153,10 +150,10 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             return new ActionPlan(GuardAction.None, "Defined risk integrity maintained", null);
         }
 
-        private static bool IsCLPosition(Position position) => 
+        private static bool IsCLPosition(Position position) =>
             position.Name.Contains("CL", StringComparison.OrdinalIgnoreCase);
 
-        private static bool IsUSOPosition(Position position) => 
+        private static bool IsUSOPosition(Position position) =>
             position.Name.Contains("USO", StringComparison.OrdinalIgnoreCase);
 
         private static bool IsInTheMoney(OptionLeg leg, double spot) =>
@@ -164,21 +161,21 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
 
         private static double CalculateDelta(OptionLeg leg, double spot)
         {
-            var moneyness = leg.Right == OptionRight.Call 
-                ? spot / leg.Strike 
+            var moneyness = leg.Right == OptionRight.Call
+                ? spot / leg.Strike
                 : leg.Strike / spot;
-            
-            return leg.Right == OptionRight.Call 
-                ? Math.Max(0, Math.Min(1, moneyness - 0.5)) 
+
+            return leg.Right == OptionRight.Call
+                ? Math.Max(0, Math.Min(1, moneyness - 0.5))
                 : Math.Max(0, Math.Min(1, 1.5 - moneyness));
         }
 
         private static double CalculateExtrinsicValue(OptionLeg leg, double spot)
         {
-            var intrinsic = leg.Right == OptionRight.Call 
+            var intrinsic = leg.Right == OptionRight.Call
                 ? Math.Max(0, spot - leg.Strike)
                 : Math.Max(0, leg.Strike - spot);
-            
+
             var theoreticalValue = intrinsic + 0.05;
             return Math.Max(0, theoreticalValue - intrinsic);
         }
@@ -187,11 +184,11 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         {
             var quarterEndMonths = new[] { 3, 6, 9, 12 };
             var currentMonth = currentTime.Month;
-            
+
             var nextQuarterMonth = quarterEndMonths.FirstOrDefault(m => m > currentMonth);
             if (nextQuarterMonth == 0)
                 nextQuarterMonth = quarterEndMonths[0];
-            
+
             var exDivYear = nextQuarterMonth > currentMonth ? currentTime.Year : currentTime.Year + 1;
             return new DateTime(exDivYear, nextQuarterMonth, 15);
         }

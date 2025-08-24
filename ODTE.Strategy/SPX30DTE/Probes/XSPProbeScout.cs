@@ -1,13 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ODTE.Backtest.Core;
-using ODTE.Backtest.Data;
+using ODTE.Contracts.Data;
 using ODTE.Execution.Engine;
-using ODTE.Execution.Models;
 using ODTE.Historical.DistributedStorage;
-using ODTE.Historical.Models;
 
 namespace ODTE.Strategy.SPX30DTE.Probes
 {
@@ -27,9 +20,9 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         private readonly ProbeConfiguration _config;
         private readonly Queue<ProbeResult> _recentProbes;
         private readonly Dictionary<string, ProbePosition> _activeProbes;
-        
+
         private const int SENTIMENT_LOOKBACK = 10; // Days
-        
+
         public XSPProbeScout(
             DistributedDatabaseManager dataManager,
             RealisticFillEngine fillEngine,
@@ -53,16 +46,16 @@ namespace ODTE.Strategy.SPX30DTE.Probes
 
             // Get underlying price
             var xspPrice = await _dataManager.GetUnderlyingPrice("XSP", date);
-            
+
             // Calculate market metrics
             var ivRank = CalculateIVRank(xspChain);
             var putCallRatio = CalculatePutCallRatio(xspChain);
             var skew = CalculateSkew(xspChain);
-            
+
             // Analyze recent probe performance
             var recentWinRate = CalculateRecentWinRate();
             var avgProbeReturn = CalculateAverageReturn();
-            
+
             // Generate signal based on multiple factors
             var signal = new ProbeSignal
             {
@@ -83,7 +76,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
             {
                 signal.Warnings.Add("High IV Rank - Consider reducing probe size");
             }
-            
+
             if (recentWinRate < 0.40m)
             {
                 signal.Warnings.Add("Low probe win rate - Market conditions unfavorable");
@@ -99,16 +92,16 @@ namespace ODTE.Strategy.SPX30DTE.Probes
 
             var recentWinRate = CalculateRecentWinRate();
             var volatility = CalculateRecentVolatility();
-            
+
             if (volatility > 30)
                 return ProbeSentiment.Volatile;
-                
+
             if (recentWinRate >= _config.WinRateThreshold)
                 return ProbeSentiment.Bullish;
-                
+
             if (recentWinRate < 0.40m)
                 return ProbeSentiment.Bearish;
-                
+
             return ProbeSentiment.Neutral;
         }
 
@@ -117,7 +110,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
             var entries = new List<ProbeEntry>();
             var xspChain = await _dataManager.GetOptionsChain("XSP", date);
             var xspPrice = await _dataManager.GetUnderlyingPrice("XSP", date);
-            
+
             // Find optimal expiration dates (10-20 DTE)
             var targetExpirations = xspChain
                 .Where(o => o.DTE >= _config.MinDTE && o.DTE <= _config.MaxDTE)
@@ -131,22 +124,22 @@ namespace ODTE.Strategy.SPX30DTE.Probes
             {
                 var dte = (expiration - date).Days;
                 var chainForExpiry = xspChain.Where(o => o.Expiration == expiration).ToList();
-                
+
                 // Find put spread at target delta
                 var shortStrike = FindStrikeAtDelta(chainForExpiry, _config.DeltaTarget, true);
                 var longStrike = shortStrike - _config.SpreadWidth;
-                
+
                 // Get quotes for the spread
-                var shortPut = chainForExpiry.FirstOrDefault(o => 
+                var shortPut = chainForExpiry.FirstOrDefault(o =>
                     o.Strike == shortStrike && o.OptionType == "PUT");
-                var longPut = chainForExpiry.FirstOrDefault(o => 
+                var longPut = chainForExpiry.FirstOrDefault(o =>
                     o.Strike == longStrike && o.OptionType == "PUT");
-                
+
                 if (shortPut != null && longPut != null)
                 {
                     var credit = shortPut.Bid - longPut.Ask;
                     var risk = _config.SpreadWidth * 100 - credit;
-                    
+
                     // Validate credit meets minimum requirements
                     if (credit >= _config.MinCredit)
                     {
@@ -175,19 +168,19 @@ namespace ODTE.Strategy.SPX30DTE.Probes
                 Date = DateTime.Now,
                 PnL = pnl,
                 IsWin = isWin,
-                ReturnPercent = _activeProbes.ContainsKey(probeId) 
-                    ? pnl / _activeProbes[probeId].Risk 
+                ReturnPercent = _activeProbes.ContainsKey(probeId)
+                    ? pnl / _activeProbes[probeId].Risk
                     : 0
             };
-            
+
             _recentProbes.Enqueue(result);
-            
+
             // Keep only recent results
             while (_recentProbes.Count > 50)
             {
                 _recentProbes.Dequeue();
             }
-            
+
             // Remove from active probes
             if (_activeProbes.ContainsKey(probeId))
             {
@@ -204,7 +197,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
 
             var wins = _recentProbes.Count(p => p.IsWin);
             var total = _recentProbes.Count;
-            
+
             return new ProbePerformanceMetrics
             {
                 TotalProbes = total,
@@ -225,7 +218,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         private decimal CalculateIVRank(List<OptionsQuote> chain)
         {
             if (!chain.Any()) return 50;
-            
+
             var avgIV = chain.Average(o => o.ImpliedVolatility);
             // Simplified IV rank calculation (would need historical IV data for real calculation)
             return Math.Min(100, Math.Max(0, avgIV * 100));
@@ -235,7 +228,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         {
             var puts = chain.Where(o => o.OptionType == "PUT").Sum(o => o.Volume);
             var calls = chain.Where(o => o.OptionType == "CALL").Sum(o => o.Volume);
-            
+
             if (calls == 0) return 1;
             return puts / (decimal)calls;
         }
@@ -244,43 +237,43 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         {
             var atmOptions = chain.Where(o => Math.Abs(o.Delta) > 0.45m && Math.Abs(o.Delta) < 0.55m).ToList();
             var otmPuts = chain.Where(o => o.OptionType == "PUT" && o.Delta > -0.25m && o.Delta < -0.15m).ToList();
-            
+
             if (!atmOptions.Any() || !otmPuts.Any()) return 0;
-            
+
             var atmIV = atmOptions.Average(o => o.ImpliedVolatility);
             var otmIV = otmPuts.Average(o => o.ImpliedVolatility);
-            
+
             return otmIV - atmIV;
         }
 
         private decimal CalculateRecentWinRate()
         {
             if (!_recentProbes.Any()) return 0.5m;
-            
+
             var recent = _recentProbes.TakeLast(SENTIMENT_LOOKBACK).ToList();
             if (!recent.Any()) return 0.5m;
-            
+
             return (decimal)recent.Count(p => p.IsWin) / recent.Count;
         }
 
         private decimal CalculateAverageReturn()
         {
             if (!_recentProbes.Any()) return 0;
-            
+
             var recent = _recentProbes.TakeLast(SENTIMENT_LOOKBACK).ToList();
             if (!recent.Any()) return 0;
-            
+
             return recent.Average(p => p.ReturnPercent);
         }
 
         private decimal CalculateRecentVolatility()
         {
             if (_recentProbes.Count < 5) return 20;
-            
+
             var returns = _recentProbes.Select(p => p.ReturnPercent).ToList();
             var mean = returns.Average();
             var variance = returns.Select(r => Math.Pow((double)(r - mean), 2)).Average();
-            
+
             return (decimal)Math.Sqrt(variance) * 100;
         }
 
@@ -288,50 +281,50 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         {
             if (ivRank > 80 || putCallRatio > 2)
                 return ProbeSentiment.Volatile;
-                
+
             if (winRate >= _config.WinRateThreshold && ivRank < 50 && putCallRatio < 1.2m)
                 return ProbeSentiment.Bullish;
-                
+
             if (winRate < 0.40m || skew > 10)
                 return ProbeSentiment.Bearish;
-                
+
             if (winRate >= 0.45m && winRate < _config.WinRateThreshold)
                 return ProbeSentiment.Neutral;
-                
+
             return ProbeSentiment.Insufficient;
         }
 
         private decimal CalculateSignalStrength(decimal ivRank, decimal winRate, decimal skew)
         {
             var strength = 50m; // Base strength
-            
+
             // Adjust for IV rank (lower is better for selling premium)
             if (ivRank < 30) strength += 20;
             else if (ivRank > 70) strength -= 20;
-            
+
             // Adjust for win rate
             strength += (winRate - 0.5m) * 100;
-            
+
             // Adjust for skew
             if (Math.Abs(skew) < 5) strength += 10;
             else if (Math.Abs(skew) > 15) strength -= 20;
-            
+
             return Math.Min(100, Math.Max(0, strength));
         }
 
         private int CalculateRecommendedProbeCount(decimal ivRank, decimal winRate)
         {
             var baseCount = 2;
-            
+
             if (winRate > 0.65m && ivRank < 40)
                 return baseCount + 2; // 4 probes in favorable conditions
-            
+
             if (winRate > 0.55m && ivRank < 60)
                 return baseCount + 1; // 3 probes in normal conditions
-                
+
             if (winRate < 0.45m || ivRank > 70)
                 return Math.Max(1, baseCount - 1); // 1 probe in poor conditions
-                
+
             return baseCount;
         }
 
@@ -341,55 +334,55 @@ namespace ODTE.Strategy.SPX30DTE.Probes
                 .Where(o => o.OptionType == (isPut ? "PUT" : "CALL"))
                 .OrderBy(o => Math.Abs(Math.Abs(o.Delta) - targetDelta))
                 .ToList();
-                
+
             return options.FirstOrDefault()?.Strike ?? 0;
         }
 
         private int CalculateConsecutiveWins()
         {
             if (!_recentProbes.Any()) return 0;
-            
+
             var consecutive = 0;
             foreach (var probe in _recentProbes.Reverse())
             {
                 if (probe.IsWin) consecutive++;
                 else break;
             }
-            
+
             return consecutive;
         }
 
         private int CalculateConsecutiveLosses()
         {
             if (!_recentProbes.Any()) return 0;
-            
+
             var consecutive = 0;
             foreach (var probe in _recentProbes.Reverse())
             {
                 if (!probe.IsWin) consecutive++;
                 else break;
             }
-            
+
             return consecutive;
         }
 
         private decimal CalculateSentimentScore()
         {
             var metrics = GetPerformanceMetrics();
-            
+
             // Score from -100 to +100
             var score = 0m;
-            
+
             // Win rate component (40% weight)
             score += (metrics.WinRate - 0.5m) * 80;
-            
+
             // Return component (40% weight)
             score += Math.Min(40, Math.Max(-40, metrics.AverageReturn * 200));
-            
+
             // Streak component (20% weight)
             if (metrics.ConsecutiveWins > 3) score += 20;
             else if (metrics.ConsecutiveLosses > 3) score -= 20;
-            
+
             return Math.Min(100, Math.Max(-100, score));
         }
     }
@@ -407,7 +400,7 @@ namespace ODTE.Strategy.SPX30DTE.Probes
         public decimal Strength { get; set; }
         public int RecommendedProbes { get; set; }
         public List<string> Warnings { get; set; } = new();
-        
+
         public static ProbeSignal CreateInsufficient(string reason)
         {
             return new ProbeSignal

@@ -29,24 +29,24 @@ public class NbboFillEngine : IFillEngine
     /// Per CDTE spec: Order fills only if historical NBBO crosses limit within window
     /// </summary>
     public async Task<FillResult?> SimulateFillAsync(
-        Order order, 
-        Quote quote, 
-        ExecutionProfile profile, 
+        Order order,
+        Quote quote,
+        ExecutionProfile profile,
         MarketState marketState)
     {
         try
         {
-            _logger.LogDebug("NBBO fill simulation for order {OrderId} symbol {Symbol}", 
+            _logger.LogDebug("NBBO fill simulation for order {OrderId} symbol {Symbol}",
                 order.OrderId, order.Symbol);
 
             var fillPolicy = GetFillPolicy(profile);
-            
+
             // Step 1: Verify order is marketable against current NBBO
             if (!IsMarketableOrder(order, quote))
             {
-                _logger.LogDebug("Order {OrderId} not marketable - Bid: {Bid}, Ask: {Ask}, Limit: {Limit}, Side: {Side}", 
+                _logger.LogDebug("Order {OrderId} not marketable - Bid: {Bid}, Ask: {Ask}, Limit: {Limit}, Side: {Side}",
                     order.OrderId, quote.Bid, quote.Ask, order.LimitPrice, order.Side);
-                
+
                 return new FillResult
                 {
                     OrderId = order.OrderId,
@@ -70,9 +70,9 @@ public class NbboFillEngine : IFillEngine
             // Step 2: Simulate NBBO crossing within fill window
             var fillWindow = TimeSpan.FromSeconds(fillPolicy.WindowSeconds);
             var nbboBook = CreateNbboBook(quote, fillWindow, marketState);
-            
+
             var fillAttempt = TryHistoricalFill(order, nbboBook, fillPolicy);
-            
+
             if (fillAttempt.Success)
             {
                 var childFill = new ChildFill
@@ -111,16 +111,16 @@ public class NbboFillEngine : IFillEngine
                 };
 
                 UpdateDailyMetrics(result);
-                
-                _logger.LogDebug("Order {OrderId} filled at {Price} (NBBO: {Bid}-{Ask})", 
+
+                _logger.LogDebug("Order {OrderId} filled at {Price} (NBBO: {Bid}-{Ask})",
                     order.OrderId, fillAttempt.FillPrice, quote.Bid, quote.Ask);
-                
+
                 return result;
             }
             else
             {
                 _logger.LogDebug("Order {OrderId} not filled - {Reason}", order.OrderId, fillAttempt.FailureReason);
-                
+
                 return new FillResult
                 {
                     OrderId = order.OrderId,
@@ -156,15 +156,15 @@ public class NbboFillEngine : IFillEngine
     {
         var basePrice = order.Side == OrderSide.Buy ? quote.Ask : quote.Bid;
         var spread = quote.Spread;
-        
+
         // Apply conservative slippage estimate
         var maxSlippage = spread * 0.5m; // Up to half spread adverse movement
         var eventRisk = 0.01m * basePrice; // 1% event risk buffer
-        
+
         var worstCase = order.Side == OrderSide.Buy
             ? basePrice + maxSlippage + eventRisk
             : basePrice - maxSlippage - eventRisk;
-            
+
         return Math.Max(0.01m, worstCase);
     }
 
@@ -184,9 +184,9 @@ public class NbboFillEngine : IFillEngine
     {
         if (!order.LimitPrice.HasValue)
             return true; // Market orders are always marketable
-            
+
         var limit = order.LimitPrice.Value;
-        
+
         return order.Side switch
         {
             OrderSide.Buy => limit >= quote.Ask,   // Buy limit must be >= ask
@@ -203,19 +203,19 @@ public class NbboFillEngine : IFillEngine
     {
         var startTime = DateTime.UtcNow;
         var windowEnd = startTime.Add(TimeSpan.FromSeconds(policy.WindowSeconds));
-        
+
         // Simulate time progression within fill window
         var currentTime = startTime;
         while (currentTime <= windowEnd)
         {
             var quote = nbboBook.GetQuoteAt(currentTime);
-            
+
             // Check if NBBO crosses our limit
             if (DoesNbboCrossLimit(order, quote, policy))
             {
                 var latencyMs = (decimal)(currentTime - startTime).TotalMilliseconds;
                 var fillPrice = CalculateFillPrice(order, quote, policy);
-                
+
                 return new HistoricalFillAttempt
                 {
                     Success = true,
@@ -224,11 +224,11 @@ public class NbboFillEngine : IFillEngine
                     FailureReason = null
                 };
             }
-            
+
             // Advance time in small increments (simulate quote updates)
             currentTime = currentTime.AddMilliseconds(100);
         }
-        
+
         // No fill within window
         return new HistoricalFillAttempt
         {
@@ -246,10 +246,10 @@ public class NbboFillEngine : IFillEngine
     {
         if (!order.LimitPrice.HasValue)
             return true;
-            
+
         var limit = order.LimitPrice.Value;
         var maxAdverseTicks = policy.MaxAdverseTicks * 0.01m; // Convert ticks to decimal
-        
+
         return order.Side switch
         {
             OrderSide.Buy => quote.Ask <= limit && (quote.Bid >= quote.Ask - maxAdverseTicks),
@@ -268,11 +268,11 @@ public class NbboFillEngine : IFillEngine
             // Market order fills at touch
             return order.Side == OrderSide.Buy ? quote.Ask : quote.Bid;
         }
-        
+
         // Limit order fills at limit price (never better than limit)
         var limit = order.LimitPrice.Value;
         var touchPrice = order.Side == OrderSide.Buy ? quote.Ask : quote.Bid;
-        
+
         return order.Side switch
         {
             OrderSide.Buy => Math.Max(limit, touchPrice),   // Buy: pay limit or higher
@@ -290,30 +290,30 @@ public class NbboFillEngine : IFillEngine
         var book = new NbboBook();
         var currentQuote = startQuote;
         var timeStep = TimeSpan.FromMilliseconds(100);
-        
+
         for (var t = TimeSpan.Zero; t <= window; t = t.Add(timeStep))
         {
             // Simulate minor quote movements based on market stress
             var volatilityFactor = marketState.StressLevel * 0.001m;
             var bidMove = ((decimal)_random.NextDouble() - 0.5m) * volatilityFactor * currentQuote.Bid;
             var askMove = ((decimal)_random.NextDouble() - 0.5m) * volatilityFactor * currentQuote.Ask;
-            
+
             currentQuote = currentQuote with
             {
                 Bid = Math.Max(0.01m, currentQuote.Bid + bidMove),
                 Ask = Math.Max(0.02m, currentQuote.Ask + askMove),
                 Timestamp = startQuote.Timestamp.Add(t)
             };
-            
+
             // Ensure ask >= bid
             if (currentQuote.Ask < currentQuote.Bid)
             {
                 currentQuote = currentQuote with { Ask = currentQuote.Bid + 0.01m };
             }
-            
+
             book.AddQuote(t, currentQuote);
         }
-        
+
         return book;
     }
 
@@ -384,12 +384,12 @@ public record FillPolicy
 public class NbboBook
 {
     private readonly Dictionary<TimeSpan, Quote> _quotes = new();
-    
+
     public void AddQuote(TimeSpan timeOffset, Quote quote)
     {
         _quotes[timeOffset] = quote;
     }
-    
+
     public Quote GetQuoteAt(DateTime absoluteTime)
     {
         // For simulation, return the most recent quote

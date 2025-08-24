@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using ODTE.Strategy.CDTE.Oil.Convergence;
 
@@ -54,12 +52,12 @@ namespace ODTE.Oil.Convergence
 
             // Run convergence
             var convergenceEngine = new OilGeneticConvergence();
-            
+
             logger.LogInformation("Starting genetic convergence...");
             var startTime = DateTime.Now;
-            
+
             var optimalModel = await convergenceEngine.ConvergeAsync(config);
-            
+
             var endTime = DateTime.Now;
             var duration = endTime - startTime;
 
@@ -71,7 +69,7 @@ namespace ODTE.Oil.Convergence
             Console.WriteLine();
 
             DisplayOptimalModel(optimalModel);
-            
+
             // Validate against targets
             var validationResult = ValidateModel(optimalModel, config);
             DisplayValidation(validationResult);
@@ -87,7 +85,7 @@ namespace ODTE.Oil.Convergence
         {
             Console.WriteLine("🏆 OPTIMAL MODEL: OIL-OMEGA");
             Console.WriteLine("============================");
-            
+
             Console.WriteLine("\n📊 PERFORMANCE METRICS:");
             Console.WriteLine($"  CAGR: {model.CAGR:F1}%");
             Console.WriteLine($"  Win Rate: {model.WinRate:P1}");
@@ -101,7 +99,7 @@ namespace ODTE.Oil.Convergence
             Console.WriteLine($"  Entry Time: {model.EntryTime}");
             Console.WriteLine($"  Exit Day: {model.PrimaryExitDay}");
             Console.WriteLine($"  Exit Time: {model.ExitTime}");
-            
+
             Console.WriteLine("\n🎯 STRIKE SELECTION:");
             Console.WriteLine($"  Method: {model.StrikeMethod}");
             Console.WriteLine($"  Base Short Delta: {model.BaseShortDelta:F3}");
@@ -112,7 +110,7 @@ namespace ODTE.Oil.Convergence
                 Console.WriteLine($"  Low IV Delta: {model.LowIVDelta:F3}");
                 Console.WriteLine($"  IV High Threshold: {model.IVHighThreshold:F0}");
             }
-            
+
             Console.WriteLine("\n🛡️ RISK MANAGEMENT:");
             Console.WriteLine($"  Stop Loss: {model.StopLossPercent:F0}%");
             Console.WriteLine($"  Profit Target 1: {model.ProfitTarget1:F0}% ({model.ProfitTarget1Size:F0}% size)");
@@ -126,7 +124,7 @@ namespace ODTE.Oil.Convergence
                 Console.WriteLine($"  Delta Roll Trigger: {model.DeltaRollTrigger:F3}");
                 Console.WriteLine($"  Max Rolls/Week: {model.MaxRollsPerWeek}");
             }
-            
+
             Console.WriteLine("\n💰 POSITION SIZING:");
             Console.WriteLine($"  Base Risk: {model.BaseRiskPercent:F1}%");
             if (model.HighIVSizeReduction > 0)
@@ -137,7 +135,7 @@ namespace ODTE.Oil.Convergence
             {
                 Console.WriteLine($"  Loss Streak Reduction: {model.ConsecutiveLossReduction:F0}%");
             }
-            
+
             Console.WriteLine("\n🔧 ADVANCED FEATURES:");
             if (model.UseEIASignal)
                 Console.WriteLine("  ✓ EIA Signal Awareness");
@@ -154,33 +152,33 @@ namespace ODTE.Oil.Convergence
         }
 
         private static ValidationResult ValidateModel(
-            OilGeneticConvergence.StrategyGenome model, 
+            OilGeneticConvergence.StrategyGenome model,
             OilGeneticConvergence.ConvergenceConfig config)
         {
             var result = new ValidationResult();
-            
+
             // Check win rate constraint
             result.WinRateValid = model.WinRate >= config.TargetWinRate;
             result.WinRateScore = model.WinRate ?? 0;
-            
+
             // Check drawdown constraint
             result.DrawdownValid = model.MaxDrawdown >= -config.MaxAcceptableDrawdown;
             result.DrawdownScore = model.MaxDrawdown ?? 0;
-            
+
             // Check CAGR improvement
             result.CAGRValid = model.CAGR >= 35; // Minimum threshold
             result.CAGRScore = model.CAGR ?? 0;
-            
+
             // Check other metrics
             result.SharpeValid = model.SharpeRatio >= 1.5;
             result.SharpeScore = model.SharpeRatio ?? 0;
-            
+
             result.ProfitFactorValid = model.ProfitFactor >= 2.0;
             result.ProfitFactorScore = model.ProfitFactor ?? 0;
-            
+
             // Overall validation
             result.OverallValid = result.WinRateValid && result.DrawdownValid && result.CAGRValid;
-            
+
             return result;
         }
 
@@ -188,15 +186,15 @@ namespace ODTE.Oil.Convergence
         {
             Console.WriteLine("\n🔍 VALIDATION RESULTS:");
             Console.WriteLine("=====================");
-            
+
             Console.WriteLine($"Win Rate: {(validation.WinRateValid ? "✅" : "❌")} {validation.WinRateScore:P1} (Target: ≥80%)");
             Console.WriteLine($"Max Drawdown: {(validation.DrawdownValid ? "✅" : "❌")} {validation.DrawdownScore:F1}% (Target: ≥-15%)");
             Console.WriteLine($"CAGR: {(validation.CAGRValid ? "✅" : "❌")} {validation.CAGRScore:F1}% (Target: ≥35%)");
             Console.WriteLine($"Sharpe Ratio: {(validation.SharpeValid ? "✅" : "❌")} {validation.SharpeScore:F2} (Target: ≥1.5)");
             Console.WriteLine($"Profit Factor: {(validation.ProfitFactorValid ? "✅" : "❌")} {validation.ProfitFactorScore:F2} (Target: ≥2.0)");
-            
+
             Console.WriteLine($"\nOVERALL: {(validation.OverallValid ? "✅ PASSED" : "❌ FAILED")}");
-            
+
             if (!validation.OverallValid)
             {
                 Console.WriteLine("\n⚠️ Model did not meet all constraints. Consider:");
@@ -213,12 +211,12 @@ namespace ODTE.Oil.Convergence
         {
             Console.WriteLine("\n📋 IMPLEMENTATION BLUEPRINT:");
             Console.WriteLine("============================");
-            
+
             Console.WriteLine("\n1. TRADING SCHEDULE:");
             Console.WriteLine($"   Entry Window: {model.PrimaryEntryDay} {model.EntryTime} (5 minutes)");
             Console.WriteLine($"   Exit Window: {model.PrimaryExitDay} {model.ExitTime} (5 minutes)");
             Console.WriteLine("   Total Time Commitment: 10 minutes/week");
-            
+
             Console.WriteLine("\n2. ENTRY CRITERIA:");
             Console.WriteLine($"   - Strike Method: {model.StrikeMethod}");
             Console.WriteLine($"   - Target Delta: {model.BaseShortDelta:F3}");
@@ -228,25 +226,25 @@ namespace ODTE.Oil.Convergence
                 Console.WriteLine("   - EIA Signal: Check for Wednesday inventory report");
             if (model.UseAPISignal)
                 Console.WriteLine("   - API Signal: Monitor Tuesday evening data");
-            
+
             Console.WriteLine("\n3. POSITION MANAGEMENT:");
             Console.WriteLine($"   - Initial Size: {model.BaseRiskPercent:F1}% portfolio risk");
             Console.WriteLine($"   - Stop Loss: {model.StopLossPercent:F0}% of credit");
             Console.WriteLine($"   - Profit Target 1: {model.ProfitTarget1:F0}% (close {model.ProfitTarget1Size:F0}%)");
             Console.WriteLine($"   - Profit Target 2: {model.ProfitTarget2:F0}% (close remainder)");
-            
+
             Console.WriteLine("\n4. EXIT RULES:");
             Console.WriteLine($"   - Primary Exit: {model.PrimaryExitDay} {model.ExitTime}");
             Console.WriteLine("   - Emergency Exit: Friday 10:00 AM if still open");
             if (model.UsePinRiskExit)
                 Console.WriteLine($"   - Pin Risk: Exit if within ${model.PinRiskBuffer:F1} of short strike Friday");
-            
+
             Console.WriteLine("\n5. AUTOMATION REQUIREMENTS:");
             Console.WriteLine("   - Real-time options data feed");
             Console.WriteLine("   - Automated order entry/exit");
             Console.WriteLine("   - P&L tracking and alerts");
             Console.WriteLine("   - Risk monitoring dashboard");
-            
+
             Console.WriteLine("\n6. PAPER TRADING CHECKLIST:");
             Console.WriteLine("   ☐ Setup data feed (OPRA or equivalent)");
             Console.WriteLine("   ☐ Configure trading bot with OIL-OMEGA parameters");
@@ -254,7 +252,7 @@ namespace ODTE.Oil.Convergence
             Console.WriteLine("   ☐ Validate P&L calculations");
             Console.WriteLine("   ☐ Monitor for 4 weeks minimum");
             Console.WriteLine("   ☐ Compare actual vs. expected performance");
-            
+
             Console.WriteLine("\n7. GO-LIVE CRITERIA:");
             Console.WriteLine("   ☐ 30+ paper trades completed");
             Console.WriteLine("   ☐ Win rate ≥75% in paper trading");
@@ -267,19 +265,19 @@ namespace ODTE.Oil.Convergence
         {
             public bool WinRateValid { get; set; }
             public double WinRateScore { get; set; }
-            
+
             public bool DrawdownValid { get; set; }
             public double DrawdownScore { get; set; }
-            
+
             public bool CAGRValid { get; set; }
             public double CAGRScore { get; set; }
-            
+
             public bool SharpeValid { get; set; }
             public double SharpeScore { get; set; }
-            
+
             public bool ProfitFactorValid { get; set; }
             public double ProfitFactorScore { get; set; }
-            
+
             public bool OverallValid { get; set; }
         }
     }

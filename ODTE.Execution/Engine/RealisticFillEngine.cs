@@ -235,7 +235,7 @@ public class RealisticFillEngine : IFillEngine
 
         // Ensure minimum tick size
         fillPrice = Math.Max(0.01m, fillPrice);
-        
+
         // Clamp to NBBO range (with $0.01 tolerance)
         fillPrice = Math.Max(newQuote.Bid - 0.01m, Math.Min(newQuote.Ask + 0.01m, fillPrice));
 

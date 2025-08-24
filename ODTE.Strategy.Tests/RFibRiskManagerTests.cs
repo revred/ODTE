@@ -1,8 +1,3 @@
-using System;
-using System.Linq;
-using Xunit;
-using FluentAssertions;
-using ODTE.Strategy;
 using ODTE.Strategy.Interfaces;
 using ODTE.Strategy.Models;
 
@@ -106,7 +101,7 @@ namespace ODTE.Strategy.Tests
             // Assert
             result.IsAllowed.Should().Be(shouldAllow);
             result.DailyLimit.Should().Be(expectedLimit);
-            
+
             if (!shouldAllow)
             {
                 result.Reason.Should().Contain("exceed daily limit");
@@ -156,7 +151,7 @@ namespace ODTE.Strategy.Tests
         {
             // Arrange
             var manager = new RFibRiskManager();
-            
+
             // Test various MPL per contract scenarios
             var testCases = new[]
             {
@@ -185,7 +180,7 @@ namespace ODTE.Strategy.Tests
         {
             // Arrange
             var manager = new RFibRiskManager();
-            
+
             // Simulate 2 consecutive loss days
             SimulateConsecutiveLossDays(manager, 2);
             manager.CurrentDailyLimit.Should().Be(200m); // Day 2 limit
@@ -205,7 +200,7 @@ namespace ODTE.Strategy.Tests
         {
             // Arrange
             var manager = new RFibRiskManager();
-            
+
             // Verify initial state
             manager.GetStatus().ConsecutiveLossDays.Should().Be(0);
             manager.CurrentDailyLimit.Should().Be(500m);
@@ -232,7 +227,7 @@ namespace ODTE.Strategy.Tests
         {
             // Arrange
             var manager = new RFibRiskManager();
-            
+
             // Simulate many consecutive loss days
             SimulateConsecutiveLossDays(manager, 10);
 
@@ -276,7 +271,7 @@ namespace ODTE.Strategy.Tests
             var status = manager.GetStatus();
             status.RiskUsed.Should().Be(200m);
             status.DayPnL.Should().Be(-50m);
-            
+
             // Verify RfibUtilization was set on result
             result.RfibUtilization.Should().Be(0.4m); // 200/500 = 40%
         }
@@ -331,11 +326,11 @@ namespace ODTE.Strategy.Tests
             // Day 1: Profitable
             manager.StartNewTradingDay(day1);
             manager.RecordExecution(CreateMockStrategyResult(mpl: 200m, pnl: 75m));
-            
+
             // Day 2: Loss
             manager.StartNewTradingDay(day2);
             manager.RecordExecution(CreateMockStrategyResult(mpl: 150m, pnl: -25m));
-            
+
             // Day 3: Start (this should trigger recording of day2)  
             manager.StartNewTradingDay(day3);
 
@@ -351,27 +346,27 @@ namespace ODTE.Strategy.Tests
 
             // Assert - More flexible test since day tracking logic is complex
             history.Should().HaveCount(2, "Should have 2 completed days");
-            
+
             // Verify we have both P&L values recorded
             var pnlValues = history.Select(h => h.PnL).OrderByDescending(p => p).ToList();
             pnlValues.Should().Contain(75m, "Should have recorded profitable day");
             pnlValues.Should().Contain(-25m, "Should have recorded loss day");
-            
+
             // Verify risk amounts
             var riskValues = history.Select(h => h.RiskUsed).OrderByDescending(r => r).ToList();
             riskValues.Should().Contain(200m, "Should have recorded 200m risk");
             riskValues.Should().Contain(150m, "Should have recorded 150m risk");
-            
+
             return; // Skip the date-specific assertions for now
-            
+
             history.Should().HaveCount(2, "Should have 2 completed days");
-            
+
             var day1Record = history.FirstOrDefault(h => h.Date.Date == day1.Date);
             day1Record.Should().NotBeNull($"Should have record for day1 {day1.Date:yyyy-MM-dd}");
             day1Record!.PnL.Should().Be(75m);
             day1Record.RiskUsed.Should().Be(200m);
             day1Record.ConsecutiveLossDays.Should().Be(0);
-            
+
             var day2Record = history.FirstOrDefault(h => h.Date.Date == day2.Date);
             day2Record.Should().NotBeNull($"Should have record for day2 {day2.Date:yyyy-MM-dd}");
             day2Record!.PnL.Should().Be(-25m);
@@ -384,7 +379,7 @@ namespace ODTE.Strategy.Tests
             // Arrange
             var manager = new RFibRiskManager();
             var today = DateTime.Today;
-            
+
             // Set up some activity
             SimulateConsecutiveLossDays(manager, 1);
             manager.StartNewTradingDay(today);
@@ -438,7 +433,7 @@ namespace ODTE.Strategy.Tests
         private void SimulateConsecutiveLossDays(RFibRiskManager manager, int days)
         {
             var currentDay = DateTime.Today;
-            
+
             for (int i = 0; i < days; i++)
             {
                 manager.StartNewTradingDay(currentDay.AddDays(i));

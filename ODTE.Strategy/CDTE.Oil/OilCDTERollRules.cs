@@ -1,4 +1,3 @@
-using System;
 using ODTE.Strategy.CDTE.Oil.Risk;
 
 namespace ODTE.Strategy.CDTE.Oil
@@ -6,14 +5,14 @@ namespace ODTE.Strategy.CDTE.Oil
     public static class OilCDTERollRules
     {
         public static RollDecision EvaluateRollOpportunity(
-            Position currentPosition, 
-            ChainSnapshot wednesdaySnapshot, 
+            Position currentPosition,
+            ChainSnapshot wednesdaySnapshot,
             OilCDTEConfig config)
         {
             var profitPercent = currentPosition.GetProfitPercentage();
             var spot = wednesdaySnapshot.UnderlyingPrice;
             var atmIv = wednesdaySnapshot.GetAtmImpliedVolatility();
-            
+
             // Take profit if >= 70%
             if (profitPercent >= config.TakeProfitCorePct)
             {
@@ -24,7 +23,7 @@ namespace ODTE.Strategy.CDTE.Oil
                     NewPosition = null
                 };
             }
-            
+
             // Stop loss if >= 50%
             if (profitPercent <= -config.MaxDrawdownPct)
             {
@@ -35,17 +34,17 @@ namespace ODTE.Strategy.CDTE.Oil
                     NewPosition = null
                 };
             }
-            
+
             // Neutral zone: consider rolling
             if (Math.Abs(profitPercent) < config.NeutralBandPct)
             {
                 var newExpectedMove = OilSignals.CalculateExpectedMove(atmIv, wednesdaySnapshot.Timestamp);
                 var fridayExpiry = GetFridayExpiry(wednesdaySnapshot.Timestamp);
                 var newDte = (fridayExpiry - wednesdaySnapshot.Timestamp.Date).Days;
-                
+
                 var newIC = OilStrikes.BuildIC(spot, newDte, newExpectedMove, wednesdaySnapshot.GetNearestStrike);
                 var rollDebit = EstimateRollDebit(currentPosition, newIC, wednesdaySnapshot);
-                
+
                 if (RollBudgetEnforcer.AllowRoll(rollDebit, currentPosition.TicketRisk, config.Risk))
                 {
                     return new RollDecision
@@ -65,7 +64,7 @@ namespace ODTE.Strategy.CDTE.Oil
                     };
                 }
             }
-            
+
             return new RollDecision
             {
                 Action = RollAction.Hold,
@@ -79,7 +78,7 @@ namespace ODTE.Strategy.CDTE.Oil
             // Simplified roll cost estimation
             var currentValue = EstimatePositionValue(existing, snapshot);
             var newValue = EstimatePositionValue(newIC, snapshot);
-            
+
             return Math.Max(0, newValue - currentValue);
         }
 

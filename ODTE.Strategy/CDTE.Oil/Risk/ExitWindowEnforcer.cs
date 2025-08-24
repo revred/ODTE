@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Risk
 {
     public static class ExitWindowEnforcer
@@ -37,8 +33,8 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static ExitWindowAnalysis AnalyzeExitTiming(
-            ProductCalendar calendar, 
-            DateTimeOffset currentTime, 
+            ProductCalendar calendar,
+            DateTimeOffset currentTime,
             List<Position> positions,
             OilRiskGuardrails config)
         {
@@ -47,7 +43,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             var forceExitTime = sessionClose.AddMinutes(-exitBufferMinutes);
             var minutesToForceExit = (forceExitTime - currentTime).TotalMinutes;
 
-            var positionAnalysis = positions.Select(position => 
+            var positionAnalysis = positions.Select(position =>
                 AnalyzePositionExitUrgency(position, currentTime, forceExitTime, sessionClose))
                 .ToList();
 
@@ -66,8 +62,8 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         private static PositionExitAnalysis AnalyzePositionExitUrgency(
-            Position position, 
-            DateTimeOffset currentTime, 
+            Position position,
+            DateTimeOffset currentTime,
             DateTimeOffset forceExitTime,
             DateTimeOffset sessionClose)
         {
@@ -165,8 +161,8 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static ActionPlan CheckSpecialExitConditions(
-            ProductCalendar calendar, 
-            DateTimeOffset currentTime, 
+            ProductCalendar calendar,
+            DateTimeOffset currentTime,
             OilRiskGuardrails config)
         {
             if (calendar.IsEarlyClose(currentTime.Date))
@@ -220,7 +216,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
         }
 
         public static ExitExecutionPlan CreateExecutionPlan(
-            List<Position> positions, 
+            List<Position> positions,
             ExitWindowAnalysis analysis,
             OilRiskGuardrails config)
         {
@@ -238,7 +234,7 @@ namespace ODTE.Strategy.CDTE.Oil.Risk
             {
                 var positionAnalysis = analysis.PositionAnalysis.First(pa => pa.Position == position);
                 var orderType = DetermineOrderType(positionAnalysis.UrgencyLevel);
-                
+
                 executionSteps.Add(new ExitExecutionStep(
                     Position: position,
                     ExecutionTime: currentTime,

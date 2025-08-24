@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ODTE.Contracts.Data;
 using ODTE.Contracts.Orders;
 
@@ -116,7 +113,7 @@ namespace ODTE.Contracts.Strategy
         public Dictionary<string, object> Parameters { get; set; } = new();
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        
+
         // Legacy properties for backward compatibility
         public IStrategy OptimalStrategy { get; set; } = null!;
         public decimal FinalReturn { get; set; }
@@ -151,7 +148,7 @@ namespace ODTE.Contracts.Strategy
         public double WinRate { get; set; }
         public int TotalTrades { get; set; }
         public double SharpeRatio { get; set; }
-        
+
         public override string ToString() => $"Year {Year}: PnL={TotalPnL.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))}, Trades={TotalTrades}, WinRate={WinRate:P1}";
     }
 

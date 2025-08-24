@@ -1,5 +1,3 @@
-using System;
-
 namespace ODTE.Strategy.Tests;
 
 /// <summary>

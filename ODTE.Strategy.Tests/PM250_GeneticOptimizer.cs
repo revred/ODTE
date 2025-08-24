@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -22,7 +17,7 @@ namespace ODTE.Strategy.Tests
 
             var geneticOptimizer = new RevFibNotchGeneticOptimizer();
             var optimizedParams = geneticOptimizer.RunOptimization();
-            
+
             Console.WriteLine("\n✅ GENETIC OPTIMIZATION COMPLETE");
             Console.WriteLine($"Best Parameters Found: {optimizedParams}");
         }
@@ -41,7 +36,7 @@ namespace ODTE.Strategy.Tests
         public OptimizedParameters RunOptimization()
         {
             LoadRealTradingData();
-            
+
             Console.WriteLine("🔬 Initializing genetic algorithm...");
             Console.WriteLine($"Population Size: {POPULATION_SIZE}");
             Console.WriteLine($"Generations: {GENERATIONS}");
@@ -49,7 +44,7 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine($"Crossover Rate: {CROSSOVER_RATE:P1}\n");
 
             var population = InitializePopulation();
-            
+
             for (int generation = 0; generation < GENERATIONS; generation++)
             {
                 // Evaluate fitness for all chromosomes
@@ -69,7 +64,7 @@ namespace ODTE.Strategy.Tests
 
                 // Create next generation
                 var newPopulation = new List<RevFibNotchChromosome>();
-                
+
                 // Keep best 10% (elitism)
                 var eliteCount = (int)(POPULATION_SIZE * 0.1);
                 newPopulation.AddRange(population.Take(eliteCount));
@@ -79,10 +74,10 @@ namespace ODTE.Strategy.Tests
                 {
                     var parent1 = TournamentSelection(population);
                     var parent2 = TournamentSelection(population);
-                    
+
                     var children = Crossover(parent1, parent2);
                     children.ForEach(child => Mutate(child));
-                    
+
                     newPopulation.AddRange(children.Take(POPULATION_SIZE - newPopulation.Count));
                 }
 
@@ -96,12 +91,12 @@ namespace ODTE.Strategy.Tests
             }
 
             var bestChromosome = population.OrderByDescending(c => c.Fitness).First();
-            
+
             Console.WriteLine("\n🏆 OPTIMIZATION RESULTS:");
             Console.WriteLine("========================");
             Console.WriteLine($"Best Fitness Score: {bestChromosome.Fitness:F4}");
             Console.WriteLine($"Improvement vs Current: {((bestChromosome.Fitness - GetCurrentSystemFitness()) / GetCurrentSystemFitness() * 100):F1}%");
-            
+
             return ConvertToOptimizedParameters(bestChromosome);
         }
 
@@ -137,7 +132,7 @@ namespace ODTE.Strategy.Tests
         private List<RevFibNotchChromosome> InitializePopulation()
         {
             var population = new List<RevFibNotchChromosome>();
-            
+
             for (int i = 0; i < POPULATION_SIZE; i++)
             {
                 population.Add(new RevFibNotchChromosome
@@ -152,27 +147,27 @@ namespace ODTE.Strategy.Tests
                         _random.Next(100, 250),     // Level 4: 100-250 (vs current 200)
                         _random.Next(50, 150)       // Level 5: 50-150 (vs current 100)
                     },
-                    
+
                     // Gene 7: Scaling Sensitivity (how much P&L triggers movement)
                     ScalingSensitivity = (decimal)(_random.NextDouble() * 1.5 + 0.5), // 0.5 - 2.0
-                    
+
                     // Gene 8: Win Rate Threshold (scale down if below this)
                     WinRateThreshold = (decimal)(_random.NextDouble() * 0.25 + 0.55), // 0.55 - 0.80
-                    
+
                     // Gene 9: Confirmation Days (0 = immediate, 1-3 = delayed)
                     ConfirmationDays = _random.Next(0, 4), // 0-3 days
-                    
+
                     // Gene 10: Market Stress Multiplier
                     MarketStressMultiplier = (decimal)(_random.NextDouble() * 2.0 + 1.0), // 1.0 - 3.0
-                    
+
                     // Gene 11: Maximum Daily Risk Percentage
                     MaxDailyRisk = (decimal)(_random.NextDouble() * 0.025 + 0.005), // 0.5% - 3.0%
-                    
+
                     // Gene 12: Protective Trigger Loss (immediate scale down)
                     ProtectiveTriggerLoss = -(_random.Next(25, 200)) // -$25 to -$200
                 });
             }
-            
+
             return population;
         }
 
@@ -189,39 +184,39 @@ namespace ODTE.Strategy.Tests
             {
                 // Simulate RevFibNotch position sizing
                 var positionSize = chromosome.RevFibLimits[currentNotchIndex];
-                
+
                 // Apply market stress adjustment
                 if (tradingPeriod.VIX > 25)
                 {
                     positionSize /= chromosome.MarketStressMultiplier;
                 }
-                
+
                 // Apply win rate adjustment
                 if (tradingPeriod.WinRate < chromosome.WinRateThreshold)
                 {
                     positionSize *= 0.7m; // Reduce size for poor win rate
                 }
-                
+
                 // Limit maximum daily risk
                 var maxRisk = runningCapital * chromosome.MaxDailyRisk;
                 positionSize = Math.Min(positionSize, maxRisk);
-                
+
                 // Scale P&L by position size
                 var scaledPnL = tradingPeriod.PnL * (positionSize / 500m); // 500 is baseline
                 totalPnL += scaledPnL;
                 runningCapital += scaledPnL;
-                
+
                 // Track drawdown
                 var currentDrawdown = Math.Abs(Math.Min(0, scaledPnL)) / runningCapital;
                 maxDrawdown = Math.Max(maxDrawdown, currentDrawdown);
-                
+
                 // Check for protective trigger
                 if (scaledPnL <= chromosome.ProtectiveTriggerLoss)
                 {
                     currentNotchIndex = Math.Min(currentNotchIndex + 2, chromosome.RevFibLimits.Length - 1);
                     preventedLargeDrawdowns++;
                 }
-                
+
                 // Normal RevFibNotch movement logic
                 if (scaledPnL < 0)
                 {
@@ -247,9 +242,9 @@ namespace ODTE.Strategy.Tests
             var sharpeRatio = totalPnL / Math.Max(1m, maxDrawdown * runningCapital);
             var lossPreventionBonus = preventedLargeDrawdowns * 100; // Bonus for preventing large drawdowns
             var stabilityBonus = runningCapital > 30000m ? 100 : 0; // Bonus for capital preservation
-            
+
             var fitness = (double)(totalPnL + lossPreventionBonus + stabilityBonus + sharpeRatio * 50);
-            
+
             return fitness;
         }
 
@@ -274,12 +269,12 @@ namespace ODTE.Strategy.Tests
         {
             var tournamentSize = 5;
             var tournament = new List<RevFibNotchChromosome>();
-            
+
             for (int i = 0; i < tournamentSize; i++)
             {
                 tournament.Add(population[_random.Next(population.Count)]);
             }
-            
+
             return tournament.OrderByDescending(c => c.Fitness).First();
         }
 
@@ -292,11 +287,11 @@ namespace ODTE.Strategy.Tests
 
             var child1 = new RevFibNotchChromosome();
             var child2 = new RevFibNotchChromosome();
-            
+
             // Crossover RevFib limits
             child1.RevFibLimits = new decimal[6];
             child2.RevFibLimits = new decimal[6];
-            
+
             for (int i = 0; i < 6; i++)
             {
                 if (_random.NextDouble() < 0.5)
@@ -310,7 +305,7 @@ namespace ODTE.Strategy.Tests
                     child2.RevFibLimits[i] = parent1.RevFibLimits[i];
                 }
             }
-            
+
             // Crossover other parameters
             child1.ScalingSensitivity = _random.NextDouble() < 0.5 ? parent1.ScalingSensitivity : parent2.ScalingSensitivity;
             child1.WinRateThreshold = _random.NextDouble() < 0.5 ? parent1.WinRateThreshold : parent2.WinRateThreshold;
@@ -318,14 +313,14 @@ namespace ODTE.Strategy.Tests
             child1.MarketStressMultiplier = _random.NextDouble() < 0.5 ? parent1.MarketStressMultiplier : parent2.MarketStressMultiplier;
             child1.MaxDailyRisk = _random.NextDouble() < 0.5 ? parent1.MaxDailyRisk : parent2.MaxDailyRisk;
             child1.ProtectiveTriggerLoss = _random.NextDouble() < 0.5 ? parent1.ProtectiveTriggerLoss : parent2.ProtectiveTriggerLoss;
-            
+
             child2.ScalingSensitivity = child1.ScalingSensitivity == parent1.ScalingSensitivity ? parent2.ScalingSensitivity : parent1.ScalingSensitivity;
             child2.WinRateThreshold = child1.WinRateThreshold == parent1.WinRateThreshold ? parent2.WinRateThreshold : parent1.WinRateThreshold;
             child2.ConfirmationDays = child1.ConfirmationDays == parent1.ConfirmationDays ? parent2.ConfirmationDays : parent1.ConfirmationDays;
             child2.MarketStressMultiplier = child1.MarketStressMultiplier == parent1.MarketStressMultiplier ? parent2.MarketStressMultiplier : parent1.MarketStressMultiplier;
             child2.MaxDailyRisk = child1.MaxDailyRisk == parent1.MaxDailyRisk ? parent2.MaxDailyRisk : parent1.MaxDailyRisk;
             child2.ProtectiveTriggerLoss = child1.ProtectiveTriggerLoss == parent1.ProtectiveTriggerLoss ? parent2.ProtectiveTriggerLoss : parent1.ProtectiveTriggerLoss;
-            
+
             return new List<RevFibNotchChromosome> { child1, child2 };
         }
 
@@ -339,23 +334,23 @@ namespace ODTE.Strategy.Tests
                     chromosome.RevFibLimits[i] *= (decimal)(_random.NextDouble() * 0.4 + 0.8); // +/- 20%
                 }
             }
-            
+
             // Mutate other parameters
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.ScalingSensitivity *= (decimal)(_random.NextDouble() * 0.4 + 0.8);
-            
+
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.WinRateThreshold = Math.Max(0.5m, Math.Min(0.9m, chromosome.WinRateThreshold + (decimal)(_random.NextDouble() * 0.1 - 0.05)));
-            
+
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.ConfirmationDays = Math.Max(0, Math.Min(5, chromosome.ConfirmationDays + _random.Next(-1, 2)));
-            
+
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.MarketStressMultiplier *= (decimal)(_random.NextDouble() * 0.4 + 0.8);
-            
+
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.MaxDailyRisk = Math.Max(0.001m, Math.Min(0.05m, chromosome.MaxDailyRisk * (decimal)(_random.NextDouble() * 0.4 + 0.8)));
-            
+
             if (_random.NextDouble() < MUTATION_RATE)
                 chromosome.ProtectiveTriggerLoss *= (decimal)(_random.NextDouble() * 0.4 + 0.8);
         }

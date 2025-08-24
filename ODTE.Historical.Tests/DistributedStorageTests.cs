@@ -1,6 +1,5 @@
-using ODTE.Historical.DistributedStorage;
-using ODTE.Historical;
 using FluentAssertions;
+using ODTE.Historical.DistributedStorage;
 using Xunit;
 
 namespace ODTE.Historical.Tests;
@@ -35,7 +34,7 @@ public class DistributedStorageTests : IDisposable
         // Assert
         commodityPath.Should().EndWith(@"commodities\oil\2024\01\USO_202401.db");
         optionsPath.Should().EndWith(@"options\oil\USO\2024\01\USO_OPT_20240119.db");
-        
+
         Console.WriteLine($"✅ Commodity Path: {commodityPath}");
         Console.WriteLine($"✅ Options Path: {optionsPath}");
     }
@@ -50,14 +49,14 @@ public class DistributedStorageTests : IDisposable
         await _dbManager.StoreCommodityDataAsync("USO", testData);
 
         // Retrieve data
-        var retrievedData = await _dbManager.GetCommodityDataAsync("USO", 
+        var retrievedData = await _dbManager.GetCommodityDataAsync("USO",
             new DateTime(2024, 1, 1), new DateTime(2024, 1, 31));
 
         // Assert
         retrievedData.Should().HaveCount(20);
         // Data integrity validated by count and order
         retrievedData.Should().BeInAscendingOrder(d => d.Timestamp);
-        
+
         Console.WriteLine($"✅ Stored and retrieved {retrievedData.Count} USO data points");
         Console.WriteLine($"   Price range: ${retrievedData.Min(d => d.Low):F2} - ${retrievedData.Max(d => d.High):F2}");
     }
@@ -69,7 +68,7 @@ public class DistributedStorageTests : IDisposable
         var jan2024Data = GenerateTestCommodityData("USO", new DateTime(2024, 1, 1), 20);
         var feb2024Data = GenerateTestCommodityData("USO", new DateTime(2024, 2, 1), 19);
         var mar2024Data = GenerateTestCommodityData("USO", new DateTime(2024, 3, 1), 21);
-        
+
         var allData = jan2024Data.Concat(feb2024Data).Concat(mar2024Data).ToList();
 
         // Act
@@ -81,12 +80,12 @@ public class DistributedStorageTests : IDisposable
 
         // Assert
         retrievedData.Should().HaveCount(60);
-        
+
         // Should have data from 3 separate monthly files
         var months = retrievedData.Select(d => d.Timestamp.Month).Distinct().ToList();
         months.Should().HaveCount(3);
         months.Should().Contain(new[] { 1, 2, 3 });
-        
+
         Console.WriteLine($"✅ Successfully queried {retrievedData.Count} records across {months.Count} monthly files");
     }
 
@@ -106,13 +105,13 @@ public class DistributedStorageTests : IDisposable
         retrievedChain.Symbol.Should().Be("USO");
         retrievedChain.ExpirationDate.Should().Be(expirationDate);
         retrievedChain.Options.Should().HaveCountGreaterThan(0);
-        
+
         var calls = retrievedChain.Calls;
         var puts = retrievedChain.Puts;
-        
+
         calls.Should().HaveCountGreaterThan(0);
         puts.Should().HaveCountGreaterThan(0);
-        
+
         Console.WriteLine($"✅ Options Chain: {calls.Count} calls, {puts.Count} puts");
         Console.WriteLine($"   Strike range: ${retrievedChain.Options.Min(o => o.Strike)} - ${retrievedChain.Options.Max(o => o.Strike)}");
     }
@@ -143,12 +142,12 @@ public class DistributedStorageTests : IDisposable
         // Assert
         availableExpirations.Should().HaveCount(3);
         availableExpirations.Should().BeInAscendingOrder();
-        
+
         foreach (var expiration in expirations)
         {
             availableExpirations.Should().Contain(expiration);
         }
-        
+
         Console.WriteLine($"✅ Found {availableExpirations.Count} available expirations for {symbol}");
         foreach (var exp in availableExpirations)
         {
@@ -176,7 +175,7 @@ public class DistributedStorageTests : IDisposable
         stats.CommodityFiles.Should().BeGreaterThan(0);
         stats.OptionsFiles.Should().BeGreaterThan(0);
         stats.TotalStorageBytes.Should().BeGreaterThan(0);
-        
+
         Console.WriteLine($"✅ Storage Stats for {symbol}:");
         Console.WriteLine($"   📁 Commodity Files: {stats.CommodityFiles}");
         Console.WriteLine($"   📁 Options Files: {stats.OptionsFiles}");
@@ -200,7 +199,7 @@ public class DistributedStorageTests : IDisposable
 
         // Act - Parallel retrieval
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         var tasks = symbols.Select(async symbol =>
         {
             return await _dbManager.GetCommodityDataAsync(symbol, testDate, testDate.AddDays(30));
@@ -215,7 +214,7 @@ public class DistributedStorageTests : IDisposable
         {
             result.Should().HaveCount(20);
         }
-        
+
         Console.WriteLine($"✅ Parallel access to {symbols.Length} symbols completed in {stopwatch.ElapsedMilliseconds}ms");
         Console.WriteLine($"   Average: {stopwatch.ElapsedMilliseconds / (double)symbols.Length:F1}ms per symbol");
     }
@@ -229,7 +228,7 @@ public class DistributedStorageTests : IDisposable
         for (int i = 0; i < days; i++)
         {
             var date = startDate.AddDays(i);
-            
+
             // Skip weekends
             if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                 continue;
@@ -278,7 +277,7 @@ public class DistributedStorageTests : IDisposable
         foreach (var strike in strikes)
         {
             var dte = (expirationDate - DateTime.Today).Days;
-            
+
             // Generate call option
             var call = new OptionContract
             {
@@ -339,7 +338,7 @@ public class DistributedStorageTests : IDisposable
     public void Dispose()
     {
         _dbManager?.Dispose();
-        
+
         if (Directory.Exists(_testDataPath))
         {
             Directory.Delete(_testDataPath, true);

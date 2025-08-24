@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy.Tests
 {
     public class SPX30DTE_TournamentRunner
@@ -29,7 +24,7 @@ namespace ODTE.Strategy.Tests
                 Console.WriteLine();
                 Console.WriteLine("🔧 This feature requires:");
                 Console.WriteLine("  ✅ DistributedDatabaseManager (20+ years options data)");
-                Console.WriteLine("  ✅ RealisticFillEngine (centralized execution)"); 
+                Console.WriteLine("  ✅ RealisticFillEngine (centralized execution)");
                 Console.WriteLine("  ✅ SPX30DTE strategy components");
                 Console.WriteLine("  ✅ SQLite ledger system");
                 Console.WriteLine();
@@ -44,7 +39,7 @@ namespace ODTE.Strategy.Tests
         {
             Console.WriteLine("🧬 INITIALIZING 16 SPX30DTE MUTATIONS");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             var mutations = GenerateMutationConfigurations();
             DisplayMutations(mutations);
 
@@ -60,14 +55,14 @@ namespace ODTE.Strategy.Tests
             Console.WriteLine();
             Console.WriteLine("🏆 SIMULATED TOURNAMENT RANKINGS");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             var results = SimulateRealisticResults(mutations);
             DisplayTournamentResults(results);
 
             Console.WriteLine();
             Console.WriteLine("📋 TOP 4 SQLITE LEDGER GENERATION");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             DisplayLedgerGeneration(results.Take(4).ToList());
 
             Console.WriteLine();
@@ -83,37 +78,37 @@ namespace ODTE.Strategy.Tests
         {
             return new List<MutationDefinition>
             {
-                new("Aggressive Growth Alpha", "BWB_AGGRESSIVE", 
+                new("Aggressive Growth Alpha", "BWB_AGGRESSIVE",
                     "High CAGR focus, accepts higher volatility for maximum returns"),
-                new("Capital Shield Conservative", "IRON_CONDOR_SAFE", 
+                new("Capital Shield Conservative", "IRON_CONDOR_SAFE",
                     "Capital preservation priority, steady income generation"),
-                new("Balanced Profit Hunter", "BALANCED_BWB", 
+                new("Balanced Profit Hunter", "BALANCED_BWB",
                     "Optimal balance of growth and risk management"),
-                new("VIX Crisis Protector", "VIX_HEDGE_SPECIALIST", 
+                new("VIX Crisis Protector", "VIX_HEDGE_SPECIALIST",
                     "Enhanced VIX hedging for market crash protection"),
-                new("High-Frequency Scalper", "QUICK_PROFIT_HARVESTER", 
+                new("High-Frequency Scalper", "QUICK_PROFIT_HARVESTER",
                     "Rapid trade cycles, profit from short-term moves"),
-                new("Volatility Storm Rider", "CRISIS_OPPORTUNITY", 
+                new("Volatility Storm Rider", "CRISIS_OPPORTUNITY",
                     "Profits from market volatility spikes and crashes"),
-                new("Income Stream Generator", "STEADY_THETA_DECAY", 
+                new("Income Stream Generator", "STEADY_THETA_DECAY",
                     "Consistent income through theta decay optimization"),
-                new("Momentum Wave Surfer", "TREND_FOLLOWING", 
+                new("Momentum Wave Surfer", "TREND_FOLLOWING",
                     "Captures market momentum and directional moves"),
-                new("Mean Reversion Master", "CONTRARIAN_STRATEGY", 
+                new("Mean Reversion Master", "CONTRARIAN_STRATEGY",
                     "Profits from market overreactions and reversals"),
-                new("Multi-Asset Correlator", "DIVERSIFIED_SIGNALS", 
+                new("Multi-Asset Correlator", "DIVERSIFIED_SIGNALS",
                     "Uses futures, gold, bonds correlation for edge"),
-                new("Gamma Neutral Specialist", "GREEK_BALANCED", 
+                new("Gamma Neutral Specialist", "GREEK_BALANCED",
                     "Maintains delta/gamma neutrality through cycles"),
-                new("IV Surface Navigator", "IMPLIED_VOL_ARBIT", 
+                new("IV Surface Navigator", "IMPLIED_VOL_ARBIT",
                     "Exploits implied volatility surface inefficiencies"),
-                new("Credit Spread Expert", "PREMIUM_COLLECTION", 
+                new("Credit Spread Expert", "PREMIUM_COLLECTION",
                     "Maximizes credit collection with tight risk controls"),
-                new("Asymmetric Risk Manager", "SKEWED_BWB_MASTER", 
+                new("Asymmetric Risk Manager", "SKEWED_BWB_MASTER",
                     "Uses broken wing butterflies for asymmetric payoffs"),
-                new("Time Decay Harvester", "CALENDAR_OPTIMIZER", 
+                new("Time Decay Harvester", "CALENDAR_OPTIMIZER",
                     "Optimizes time decay across different expiration cycles"),
-                new("Pin Risk Eliminator", "IRON_BUTTERFLY_PRECISION", 
+                new("Pin Risk Eliminator", "IRON_BUTTERFLY_PRECISION",
                     "Precision iron butterflies with pin risk management")
             };
         }
@@ -215,7 +210,7 @@ namespace ODTE.Strategy.Tests
                 var trophy = i switch
                 {
                     0 => "🥇",
-                    1 => "🥈", 
+                    1 => "🥈",
                     2 => "🥉",
                     _ when i < 8 => "🏅",
                     _ => "  "
@@ -233,12 +228,12 @@ namespace ODTE.Strategy.Tests
             {
                 var rank = topResults.IndexOf(result) + 1;
                 var medal = rank switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => "🏅" };
-                
+
                 Console.WriteLine($"{medal} Rank #{rank}: {result.MutationName}");
                 Console.WriteLine($"   💰 Final Value: ${result.FinalValue:N0} (CAGR: {result.CAGR:P1})");
                 Console.WriteLine($"   📉 Max Drawdown: {result.MaxDrawdown:P1} | 🎯 Win Rate: {result.WinRate:P1}");
                 Console.WriteLine($"   📊 Score: {result.OverallScore:F1}/100 | 🎲 Trades: {result.TotalTrades:N0}");
-                
+
                 var ledgerSize = EstimateLedgerSize(result.TotalTrades);
                 Console.WriteLine($"   🗄️  Ledger: SPX30DTE_{result.MutationName.Replace(" ", "_")}_20050101_20250101.db (~{ledgerSize:N1} MB)");
                 Console.WriteLine();

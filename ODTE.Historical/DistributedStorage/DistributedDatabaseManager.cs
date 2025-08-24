@@ -16,7 +16,7 @@ public class DistributedDatabaseManager : IDisposable
     private readonly int _maxConnections;
     private readonly TimeSpan _connectionTimeout;
 
-    public DistributedDatabaseManager(string baseDataPath = @"C:\code\ODTE\data", 
+    public DistributedDatabaseManager(string baseDataPath = @"C:\code\ODTE\data",
         int maxConnections = 50, TimeSpan? connectionTimeout = null)
     {
         _fileManager = new FileManager(baseDataPath);
@@ -33,7 +33,7 @@ public class DistributedDatabaseManager : IDisposable
     /// Get commodity data for a symbol over a date range
     /// Automatically queries multiple monthly files and combines results
     /// </summary>
-    public async Task<List<MarketDataBar>> GetCommodityDataAsync(string symbol, DateTime startDate, DateTime endDate, 
+    public async Task<List<MarketDataBar>> GetCommodityDataAsync(string symbol, DateTime startDate, DateTime endDate,
         CommodityCategory category = CommodityCategory.Oil)
     {
         var files = _fileManager.GetCommodityFilesInRange(symbol, startDate, endDate, category);
@@ -53,7 +53,7 @@ public class DistributedDatabaseManager : IDisposable
         });
 
         var results = await Task.WhenAll(tasks);
-        
+
         // Combine and sort results
         var combinedData = results.SelectMany(r => r)
             .Where(bar => bar.Timestamp >= startDate && bar.Timestamp <= endDate)
@@ -71,7 +71,7 @@ public class DistributedDatabaseManager : IDisposable
         CommodityCategory category = CommodityCategory.Oil)
     {
         var filePath = _fileManager.GetOptionsPath(symbol, expirationDate, category);
-        
+
         if (!File.Exists(filePath))
         {
             Console.WriteLine($"⚠️ Options file not found: {filePath}");
@@ -97,7 +97,7 @@ public class DistributedDatabaseManager : IDisposable
             if (fileName.Contains("_OPT_") && fileName.Length >= 16)
             {
                 var dateStr = fileName.Substring(fileName.Length - 8);
-                if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null, 
+                if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null,
                     System.Globalization.DateTimeStyles.None, out var expiration))
                 {
                     expirations.Add(expiration);
@@ -111,7 +111,7 @@ public class DistributedDatabaseManager : IDisposable
     /// <summary>
     /// Store commodity data to appropriate monthly file
     /// </summary>
-    public async Task StoreCommodityDataAsync(string symbol, List<MarketDataBar> data, 
+    public async Task StoreCommodityDataAsync(string symbol, List<MarketDataBar> data,
         CommodityCategory category = CommodityCategory.Oil)
     {
         if (!data.Any()) return;
@@ -123,9 +123,9 @@ public class DistributedDatabaseManager : IDisposable
         {
             var monthDate = new DateTime(group.Key.Year, group.Key.Month, 1);
             var filePath = _fileManager.GetCommodityPath(symbol, monthDate, category);
-            
+
             _fileManager.EnsureDirectoryExists(filePath);
-            
+
             var connection = await GetConnectionAsync(filePath);
             await InitializeCommoditySchema(connection);
             await StoreCommodityDataToFile(connection, symbol, group.ToList());
@@ -141,9 +141,9 @@ public class DistributedDatabaseManager : IDisposable
         CommodityCategory category = CommodityCategory.Oil)
     {
         var filePath = _fileManager.GetOptionsPath(symbol, optionsChain.ExpirationDate, category);
-        
+
         _fileManager.EnsureDirectoryExists(filePath);
-        
+
         var connection = await GetConnectionAsync(filePath);
         await InitializeOptionsSchema(connection);
         await StoreOptionsChainToFile(connection, optionsChain);
@@ -199,7 +199,7 @@ public class DistributedDatabaseManager : IDisposable
         return connection;
     }
 
-    private async Task<List<MarketDataBar>> LoadCommodityDataFromFile(SqliteConnection connection, string symbol, 
+    private async Task<List<MarketDataBar>> LoadCommodityDataFromFile(SqliteConnection connection, string symbol,
         DateTime startDate, DateTime endDate)
     {
         var query = @"
@@ -347,7 +347,7 @@ public class DistributedDatabaseManager : IDisposable
         var symbolId = await GetOrCreateSymbolId(connection, symbol);
 
         using var transaction = connection.BeginTransaction();
-        
+
         var insertQuery = @"
             INSERT OR REPLACE INTO market_data 
             (timestamp, symbol_id, open_price, high_price, low_price, close_price, volume, vwap_price)
@@ -364,7 +364,7 @@ public class DistributedDatabaseManager : IDisposable
             command.Parameters.AddWithValue("@close", (int)(bar.Close * 10000));
             command.Parameters.AddWithValue("@volume", bar.Volume);
             command.Parameters.AddWithValue("@vwap", (int)(bar.VWAP * 10000));
-            
+
             await command.ExecuteNonQueryAsync();
         }
 
@@ -374,7 +374,7 @@ public class DistributedDatabaseManager : IDisposable
     private async Task StoreOptionsChainToFile(SqliteConnection connection, OptionsChain optionsChain)
     {
         using var transaction = connection.BeginTransaction();
-        
+
         var insertQuery = @"
             INSERT OR REPLACE INTO options_data 
             (timestamp, underlying_symbol, option_symbol, contract_type, strike_price, expiration_date, days_to_expiration,
@@ -407,7 +407,7 @@ public class DistributedDatabaseManager : IDisposable
             command.Parameters.AddWithValue("@theta", (int)(option.Theta * 10000));
             command.Parameters.AddWithValue("@vega", (int)(option.Vega * 10000));
             command.Parameters.AddWithValue("@underlyingPrice", (int)(option.UnderlyingPrice * 10000));
-            
+
             await command.ExecuteNonQueryAsync();
         }
 
@@ -419,7 +419,7 @@ public class DistributedDatabaseManager : IDisposable
         var selectQuery = "SELECT id FROM symbols WHERE symbol = @symbol";
         using var selectCommand = new SqliteCommand(selectQuery, connection);
         selectCommand.Parameters.AddWithValue("@symbol", symbol);
-        
+
         var result = await selectCommand.ExecuteScalarAsync();
         if (result != null)
         {
@@ -429,7 +429,7 @@ public class DistributedDatabaseManager : IDisposable
         var insertQuery = "INSERT INTO symbols (symbol) VALUES (@symbol); SELECT last_insert_rowid()";
         using var insertCommand = new SqliteCommand(insertQuery, connection);
         insertCommand.Parameters.AddWithValue("@symbol", symbol);
-        
+
         result = await insertCommand.ExecuteScalarAsync();
         return Convert.ToInt32(result!);
     }
@@ -466,12 +466,12 @@ public class DistributedDatabaseManager : IDisposable
     public void Dispose()
     {
         _cleanupTimer?.Dispose();
-        
+
         foreach (var connection in _connectionPool.Values)
         {
             connection.Dispose();
         }
-        
+
         _connectionPool.Clear();
         _lastAccessed.Clear();
     }

@@ -1,15 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
-using System.ComponentModel.DataAnnotations;
-using ODTE.Execution.Engine;
-using ODTE.Execution.Models;
-using ODTE.Execution.Interfaces;
 using ODTE.Execution.Configuration;
-using ODTE.Historical.DistributedStorage;
+using ODTE.Execution.Engine;
+using ODTE.Execution.Interfaces;
+using ODTE.Execution.Models;
 using ODTE.Historical;
+using ODTE.Historical.DistributedStorage;
 
 namespace ODTE.Optimization.AdvancedGeneticOptimizer
 {
@@ -21,24 +16,24 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         private readonly double _mutationRate = 0.15;
         private readonly double _crossoverRate = 0.85;
         private readonly int _maxGenerations = 50;
-        
+
         // CENTRALIZED EXECUTION ENGINE - No more custom execution logic!
         private readonly IFillEngine _fillEngine;
         private readonly ExecutionProfile _executionProfile;
-        
+
         // CENTRALIZED DATA MANAGER - Real distributed options data
         private readonly DistributedDatabaseManager _dataManager;
-        
+
         public PM414_GeneticEvolution_MultiAsset()
         {
             // Initialize ODTE.Execution engine with conservative profile
             _executionProfile = ExecutionConfigLoader.LoadConservativeProfile();
             _fillEngine = new RealisticFillEngine(_executionProfile, 42); // Deterministic seed
-            
+
             // Initialize distributed database manager for REAL options data
             _dataManager = new DistributedDatabaseManager();
         }
-        
+
         public async Task<List<GeneticStrategy>> RunEvolutionOptimization()
         {
             Console.WriteLine("🧬 PM414 Genetic Evolution - Multi-Asset 100 Mutation System");
@@ -49,40 +44,40 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
 
             var strategies = await InitializePopulation();
             var marketData = await LoadMultiAssetData();
-            
+
             List<GeneticStrategy> evolutionResults = new List<GeneticStrategy>();
-            
+
             for (int generation = 0; generation < _maxGenerations; generation++)
             {
                 Console.WriteLine($"Generation {generation + 1}/{_maxGenerations}");
-                
+
                 // Evaluate fitness for all strategies
                 await EvaluatePopulation(strategies, marketData);
-                
+
                 // Store best performers from this generation
                 var generationBest = strategies.OrderByDescending(s => s.FitnessScore).Take(10).ToList();
                 evolutionResults.AddRange(generationBest);
-                
+
                 // Report generation statistics
                 var bestStrategy = strategies.OrderByDescending(s => s.FitnessScore).First();
                 var avgFitness = strategies.Average(s => s.FitnessScore);
-                
+
                 Console.WriteLine($"  Best CAGR: {bestStrategy.CAGR:F2}% | Fitness: {bestStrategy.FitnessScore:F3}");
                 Console.WriteLine($"  Average Fitness: {avgFitness:F3} | Sharpe: {bestStrategy.SharpeRatio:F2}");
                 Console.WriteLine($"  Parameters: {bestStrategy.GetParameterSummary()}");
-                
+
                 // Create next generation
                 strategies = await CreateNextGeneration(strategies, marketData);
             }
-            
+
             // Return top 20 strategies across all generations
             return evolutionResults.OrderByDescending(s => s.FitnessScore).Take(20).ToList();
         }
-        
+
         private async Task<List<GeneticStrategy>> InitializePopulation()
         {
             var population = new List<GeneticStrategy>();
-            
+
             for (int i = 0; i < _populationSize; i++)
             {
                 var strategy = new GeneticStrategy
@@ -92,10 +87,10 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 };
                 population.Add(strategy);
             }
-            
+
             return population;
         }
-        
+
         private StrategyParameters GenerateRandomParameters()
         {
             return new StrategyParameters
@@ -112,7 +107,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 MaxDTE = RandomInt(0, 2),
                 EntryTimeWindow = RandomInt(930, 1600),
                 ExitTimeWindow = RandomInt(1500, 1600),
-                
+
                 // Market Regime Parameters (40 parameters)
                 BullMarketMultiplier = RandomDouble(1.2, 2.0),
                 VolatileMarketMultiplier = RandomDouble(0.6, 1.0),
@@ -124,7 +119,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 MomentumWeight = RandomDouble(0.1, 0.4),
                 MeanReversionWeight = RandomDouble(0.2, 0.6),
                 VolatilityWeight = RandomDouble(0.3, 0.7),
-                
+
                 // RevFibNotch Risk Management (30 parameters)
                 RevFibLevel0Limit = RandomDouble(1000, 1500),
                 RevFibLevel1Limit = RandomDouble(600, 1000),
@@ -140,7 +135,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 RecoveryDays = RandomInt(1, 5),
                 RiskScaleDownRate = RandomDouble(0.3, 0.7),
                 RiskScaleUpRate = RandomDouble(1.1, 1.5),
-                
+
                 // Probing vs Punching Lane Strategy (35 parameters)
                 ProbingModeThreshold = RandomDouble(0.6, 0.8),
                 PunchingModeThreshold = RandomDouble(0.8, 0.95),
@@ -152,7 +147,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 VolatilityAdaptationRate = RandomDouble(0.1, 0.3),
                 TrendFollowWeight = RandomDouble(0.2, 0.6),
                 ContraarianWeight = RandomDouble(0.1, 0.4),
-                
+
                 // Multi-Asset Correlation Signals (45 parameters)
                 FuturesCorrelationWeight = RandomDouble(0.1, 0.4),
                 GoldCorrelationWeight = RandomDouble(0.05, 0.25),
@@ -169,7 +164,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 CommodityInflationSignal = RandomDouble(0.1, 0.4),
                 YieldCurveWeight = RandomDouble(0.1, 0.3),
                 DollarStrengthWeight = RandomDouble(0.05, 0.25),
-                
+
                 // Advanced Greeks Management (25 parameters)
                 DeltaTargetBull = RandomDouble(0.08, 0.18),
                 DeltaTargetVolatile = RandomDouble(0.05, 0.12),
@@ -181,7 +176,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 IVPercentileThreshold = RandomDouble(0.2, 0.6),
                 SkewAdjustment = RandomDouble(-0.05, 0.05),
                 ImpliedVolAdjustment = RandomDouble(0.9, 1.1),
-                
+
                 // Time-Based Adjustments (25 parameters)
                 MorningBias = RandomDouble(0.8, 1.2),
                 LunchBias = RandomDouble(0.6, 1.0),
@@ -197,10 +192,10 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 HolidayWeekAdjustment = RandomDouble(0.7, 1.0)
             };
         }
-        
+
         private async Task EvaluatePopulation(List<GeneticStrategy> strategies, MultiAssetMarketData marketData)
         {
-            var tasks = strategies.Select(async strategy => 
+            var tasks = strategies.Select(async strategy =>
             {
                 var results = await BacktestStrategy(strategy, marketData);
                 strategy.CAGR = results.CAGR;
@@ -209,14 +204,14 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 strategy.WinRate = results.WinRate;
                 strategy.TotalTrades = results.TotalTrades;
                 strategy.NetPnL = results.NetPnL;
-                
+
                 // Multi-objective fitness function optimizing for high CAGR and risk control
                 strategy.FitnessScore = CalculateFitness(strategy);
             }).ToArray();
-            
+
             await Task.WhenAll(tasks);
         }
-        
+
         private double CalculateFitness(GeneticStrategy strategy)
         {
             // Multi-objective fitness targeting high returns with controlled risk
@@ -225,67 +220,67 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
             var drawdownScore = Math.Max(0, (10.0 - strategy.MaxDrawdown) / 10.0); // Penalize >10% drawdown
             var winRateScore = strategy.WinRate; // Already 0-1
             var tradeCountScore = Math.Min(strategy.TotalTrades / 1000.0, 1.0); // Reward active trading
-            
+
             // Weighted fitness favoring CAGR and risk control
-            return (cagrScore * 0.35) + (sharpeScore * 0.25) + (drawdownScore * 0.20) + 
+            return (cagrScore * 0.35) + (sharpeScore * 0.25) + (drawdownScore * 0.20) +
                    (winRateScore * 0.15) + (tradeCountScore * 0.05);
         }
-        
+
         private async Task<List<GeneticStrategy>> CreateNextGeneration(List<GeneticStrategy> currentGeneration, MultiAssetMarketData marketData)
         {
             var nextGeneration = new List<GeneticStrategy>();
-            
+
             // Keep top 10% as elites
             var elites = currentGeneration.OrderByDescending(s => s.FitnessScore).Take(_populationSize / 10).ToList();
             nextGeneration.AddRange(elites);
-            
+
             // Generate remaining population through crossover and mutation
             while (nextGeneration.Count < _populationSize)
             {
                 var parent1 = TournamentSelection(currentGeneration);
                 var parent2 = TournamentSelection(currentGeneration);
-                
+
                 var (child1, child2) = Crossover(parent1, parent2);
-                
+
                 if (_random.NextDouble() < _mutationRate)
                     child1.Parameters = Mutate(child1.Parameters);
-                    
+
                 if (_random.NextDouble() < _mutationRate)
                     child2.Parameters = Mutate(child2.Parameters);
-                
+
                 nextGeneration.Add(child1);
                 if (nextGeneration.Count < _populationSize)
                     nextGeneration.Add(child2);
             }
-            
+
             return nextGeneration;
         }
-        
+
         private GeneticStrategy TournamentSelection(List<GeneticStrategy> population)
         {
             var tournamentSize = 5;
             var tournament = new List<GeneticStrategy>();
-            
+
             for (int i = 0; i < tournamentSize; i++)
             {
                 tournament.Add(population[_random.Next(population.Count)]);
             }
-            
+
             return tournament.OrderByDescending(s => s.FitnessScore).First();
         }
-        
+
         private (GeneticStrategy, GeneticStrategy) Crossover(GeneticStrategy parent1, GeneticStrategy parent2)
         {
             var child1 = new GeneticStrategy { Id = Guid.NewGuid().ToString().Substring(0, 8) };
             var child2 = new GeneticStrategy { Id = Guid.NewGuid().ToString().Substring(0, 8) };
-            
+
             // Uniform crossover - randomly select parameters from each parent
             child1.Parameters = CrossoverParameters(parent1.Parameters, parent2.Parameters);
             child2.Parameters = CrossoverParameters(parent2.Parameters, parent1.Parameters);
-            
+
             return (child1, child2);
         }
-        
+
         private StrategyParameters CrossoverParameters(StrategyParameters p1, StrategyParameters p2)
         {
             return new StrategyParameters
@@ -302,69 +297,69 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 OilCorrelationWeight = _random.NextDouble() < 0.5 ? p1.OilCorrelationWeight : p2.OilCorrelationWeight
             };
         }
-        
+
         private StrategyParameters Mutate(StrategyParameters parameters)
         {
             // Mutate random subset of parameters with small adjustments
             var mutated = parameters.Clone();
-            
+
             if (_random.NextDouble() < 0.1) mutated.BaseDelta *= RandomDouble(0.9, 1.1);
             if (_random.NextDouble() < 0.1) mutated.WidthMultiplier *= RandomDouble(0.9, 1.1);
             if (_random.NextDouble() < 0.1) mutated.FuturesCorrelationWeight *= RandomDouble(0.9, 1.1);
             if (_random.NextDouble() < 0.1) mutated.GoldCorrelationWeight *= RandomDouble(0.9, 1.1);
-            
+
             // Ensure parameters stay within valid bounds
             mutated.ClampToValidRanges();
-            
+
             return mutated;
         }
-        
+
         private async Task<BacktestResults> BacktestStrategy(GeneticStrategy strategy, MultiAssetMarketData marketData)
         {
             // USING CENTRALIZED ODTE.EXECUTION + DISTRIBUTED DATA - NO CUSTOM LOGIC!
             var results = new BacktestResults();
             decimal currentCapital = 25000m;
             var trades = new List<TradeResult>();
-            
+
             var startDate = new DateTime(2005, 1, 3);
             var endDate = new DateTime(2025, 7, 31);
             var currentDate = startDate;
-            
+
             // Load SPY commodity data from distributed system
             var spyData = await _dataManager.GetCommodityDataAsync("SPY", startDate, endDate, CommodityCategory.Equity);
             Console.WriteLine($"✅ Loaded {spyData.Count} SPY data points from distributed system");
-            
+
             var revFibLevel = 0;
             var consecutiveLosses = 0;
             var consecutiveWins = 0;
-            
+
             foreach (var spyBar in spyData)
             {
                 currentDate = spyBar.Timestamp.Date;
-                
+
                 // Get REAL options chain from distributed system for Friday expiration
                 var fridayExpiration = GetNextFridayExpiration(currentDate);
                 var optionsChain = await _dataManager.GetOptionsChainAsync("SPY", fridayExpiration, CommodityCategory.Equity);
-                
+
                 if (optionsChain.Options.Any()) // We have REAL options data
                 {
                     // Calculate position size using RevFibNotch
                     var positionLimit = GetRevFibLimit(revFibLevel, strategy.Parameters);
                     var positionSize = CalculatePositionSize(currentCapital, positionLimit, spyBar.Close, strategy.Parameters);
-                    
+
                     // Select Iron Condor from REAL options chain
                     var ironCondorOrders = SelectIronCondorOrders(optionsChain, spyBar.Close, strategy.Parameters, positionSize);
-                    
+
                     if (ironCondorOrders.Any())
                     {
                         // Execute ALL orders through ODTE.Execution engine - NO custom execution!
                         var spreadResult = await ExecuteSpreadOrderThroughODTEExecution(ironCondorOrders, spyBar, currentDate);
-                        
+
                         if (spreadResult != null)
                         {
                             trades.Add(spreadResult);
                             currentCapital += spreadResult.NetPnL;
-                            
+
                             // Update RevFibNotch level based on real trade result
                             if (spreadResult.NetPnL > 0)
                             {
@@ -382,33 +377,33 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                     }
                 }
             }
-            
+
             // Calculate real performance metrics
             results.TotalTrades = trades.Count;
             results.NetPnL = currentCapital - 25000m;
             results.WinRate = trades.Count > 0 ? trades.Count(t => t.NetPnL > 0) / (double)trades.Count : 0;
-            
+
             var years = (endDate - startDate).TotalDays / 365.25;
             results.CAGR = years > 0 ? Math.Pow((double)(currentCapital / 25000m), 1.0 / years) - 1.0 : 0;
             results.CAGR *= 100; // Convert to percentage
-            
+
             // Calculate Sharpe ratio from real daily returns
             var dailyReturns = CalculateDailyReturns(trades);
             results.SharpeRatio = CalculateSharpeRatio(dailyReturns);
-            
+
             // Calculate maximum drawdown from real equity curve
             results.MaxDrawdown = CalculateMaxDrawdown(trades, 25000m);
-            
+
             return results;
         }
-        
+
         private async Task<TradeResult?> ExecuteSpreadOrderThroughODTEExecution(List<Order> orders, MarketDataBar spyBar, DateTime currentDate)
         {
             // Execute ALL orders through centralized ODTE.Execution engine
             var fillResults = new List<FillResult>();
             decimal totalNetPnL = 0m;
             decimal totalCommissions = 0m;
-            
+
             foreach (var order in orders)
             {
                 // Create realistic quote from options chain
@@ -420,7 +415,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                     TopOfBookSize = 100, // Standard options size
                     Timestamp = currentDate
                 };
-                
+
                 // Create market state based on volatility
                 var marketState = new MarketState
                 {
@@ -428,21 +423,21 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                     IsEventRisk = IsEventRisk(currentDate),
                     Timestamp = currentDate
                 };
-                
+
                 // Execute through ODTE.Execution - NO custom logic!
                 var fillResult = await _fillEngine.SimulateFillAsync(order, quote, _executionProfile, marketState);
-                
+
                 if (fillResult != null)
                 {
                     fillResults.Add(fillResult);
-                    
+
                     // Calculate P&L based on fill
                     var orderPnL = CalculateOrderPnL(order, fillResult);
                     totalNetPnL += orderPnL;
                     totalCommissions += fillResult.TotalExecutionCost;
                 }
             }
-            
+
             if (fillResults.Any())
             {
                 return new TradeResult
@@ -455,29 +450,29 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                     Strategy = "PM414_IronCondor"
                 };
             }
-            
+
             return null;
         }
-        
+
         private async Task<Dictionary<DateTime, List<RealOptionContract>>> LoadRealOptionsData(DateTime startDate, DateTime endDate)
         {
             var optionsData = new Dictionary<DateTime, List<RealOptionContract>>();
-            
+
             // Load from distributed database system - REAL options data
             using var connection = new SqliteConnection($"Data Source={_databasePath}");
             await connection.OpenAsync();
-            
+
             var query = @"SELECT trade_date, symbol, strike, option_type, bid, ask, volume, open_interest, 
                          delta, gamma, theta, vega, implied_volatility 
                          FROM options_chains 
                          WHERE trade_date BETWEEN @start AND @end 
                          AND symbol = 'SPY' 
                          ORDER BY trade_date, strike";
-            
+
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@start", startDate.ToString("yyyy-MM-dd"));
             command.Parameters.AddWithValue("@end", endDate.ToString("yyyy-MM-dd"));
-            
+
             using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -497,38 +492,38 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                     Vega = reader.GetDouble(11),
                     ImpliedVolatility = reader.GetDouble(12)
                 };
-                
+
                 if (!optionsData.ContainsKey(date))
                     optionsData[date] = new List<RealOptionContract>();
-                    
+
                 optionsData[date].Add(option);
             }
-            
+
             return optionsData;
         }
-        
+
         private RealIronCondor? SelectRealIronCondor(List<RealOptionContract> optionsChain, double spyPrice, double vixLevel, StrategyParameters parameters)
         {
             // Find REAL options for Iron Condor based on actual market data
             var calls = optionsChain.Where(o => o.OptionType == "C" && o.Strike > (decimal)spyPrice).OrderBy(o => o.Strike).ToList();
             var puts = optionsChain.Where(o => o.OptionType == "P" && o.Strike < (decimal)spyPrice).OrderByDescending(o => o.Strike).ToList();
-            
+
             if (calls.Count < 2 || puts.Count < 2) return null;
-            
+
             // Select strikes based on delta targeting (using REAL deltas from options data)
             var targetDelta = parameters.BaseDelta * (vixLevel < parameters.VIXThresholdLow ? parameters.BullMarketMultiplier : parameters.CrisisMarketMultiplier);
-            
+
             var shortCall = calls.FirstOrDefault(c => Math.Abs(c.Delta) <= targetDelta);
             var shortPut = puts.FirstOrDefault(p => Math.Abs(p.Delta) <= targetDelta);
-            
+
             if (shortCall == null || shortPut == null) return null;
-            
+
             // Find long strikes (protection)
             var longCall = calls.FirstOrDefault(c => c.Strike > shortCall.Strike);
             var longPut = puts.FirstOrDefault(p => p.Strike < shortPut.Strike);
-            
+
             if (longCall == null || longPut == null) return null;
-            
+
             return new RealIronCondor
             {
                 ShortCall = shortCall,
@@ -540,13 +535,13 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
                 MaxRisk = Math.Max((longCall.Strike - shortCall.Strike), (shortPut.Strike - longPut.Strike)) * 100
             };
         }
-        
+
         private async Task<MultiAssetMarketData> LoadMultiAssetData()
         {
             // Load real multi-asset data from database
             using var connection = new SqliteConnection($"Data Source={_databasePath}");
             await connection.OpenAsync();
-            
+
             // Placeholder - real implementation would load:
             // - ES futures data
             // - Gold (GLD) data  
@@ -554,14 +549,14 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
             // - Oil (USO) data
             // - VIX data
             // - Currency data
-            
+
             return new MultiAssetMarketData();
         }
-        
+
         private double RandomDouble(double min, double max) => min + (_random.NextDouble() * (max - min));
         private int RandomInt(int min, int max) => _random.Next(min, max + 1);
     }
-    
+
     public class GeneticStrategy
     {
         public string Id { get; set; } = "";
@@ -573,14 +568,14 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public int TotalTrades { get; set; }
         public double NetPnL { get; set; }
         public double FitnessScore { get; set; }
-        
+
         public string GetParameterSummary()
         {
             return $"Delta:{Parameters.BaseDelta:F3} Width:{Parameters.WidthMultiplier:F1} " +
                    $"Futures:{Parameters.FuturesCorrelationWeight:F2} Gold:{Parameters.GoldCorrelationWeight:F2}";
         }
     }
-    
+
     public class StrategyParameters
     {
         // Core Strategy Parameters (50 parameters)
@@ -595,7 +590,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public int MaxDTE { get; set; }
         public int EntryTimeWindow { get; set; }
         public int ExitTimeWindow { get; set; }
-        
+
         // Market Regime Parameters (40 parameters)
         public double BullMarketMultiplier { get; set; }
         public double VolatileMarketMultiplier { get; set; }
@@ -607,7 +602,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double MomentumWeight { get; set; }
         public double MeanReversionWeight { get; set; }
         public double VolatilityWeight { get; set; }
-        
+
         // RevFibNotch Risk Management (30 parameters)
         public double RevFibLevel0Limit { get; set; }
         public double RevFibLevel1Limit { get; set; }
@@ -623,7 +618,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public int RecoveryDays { get; set; }
         public double RiskScaleDownRate { get; set; }
         public double RiskScaleUpRate { get; set; }
-        
+
         // Probing vs Punching Lane Strategy (35 parameters)
         public double ProbingModeThreshold { get; set; }
         public double PunchingModeThreshold { get; set; }
@@ -635,7 +630,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double VolatilityAdaptationRate { get; set; }
         public double TrendFollowWeight { get; set; }
         public double ContraarianWeight { get; set; }
-        
+
         // Multi-Asset Correlation Signals (45 parameters)
         public double FuturesCorrelationWeight { get; set; }
         public double GoldCorrelationWeight { get; set; }
@@ -652,7 +647,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double CommodityInflationSignal { get; set; }
         public double YieldCurveWeight { get; set; }
         public double DollarStrengthWeight { get; set; }
-        
+
         // Advanced Greeks Management (25 parameters)
         public double DeltaTargetBull { get; set; }
         public double DeltaTargetVolatile { get; set; }
@@ -664,7 +659,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double IVPercentileThreshold { get; set; }
         public double SkewAdjustment { get; set; }
         public double ImpliedVolAdjustment { get; set; }
-        
+
         // Time-Based Adjustments (25 parameters)
         public double MorningBias { get; set; }
         public double LunchBias { get; set; }
@@ -678,12 +673,12 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double FOMCWeekAdjustment { get; set; }
         public double ExpirationWeekAdjustment { get; set; }
         public double HolidayWeekAdjustment { get; set; }
-        
+
         public StrategyParameters Clone()
         {
             return (StrategyParameters)this.MemberwiseClone();
         }
-        
+
         public void ClampToValidRanges()
         {
             BaseDelta = Math.Max(0.05, Math.Min(0.25, BaseDelta));
@@ -693,7 +688,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
             // ... (continue for all parameters)
         }
     }
-    
+
     public class BacktestResults
     {
         public double CAGR { get; set; }
@@ -703,7 +698,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public int TotalTrades { get; set; }
         public double NetPnL { get; set; }
     }
-    
+
     public class MultiAssetMarketData
     {
         public List<MarketDataPoint> SPY { get; set; } = new();
@@ -713,7 +708,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public List<MarketDataPoint> Treasury { get; set; } = new();
         public List<MarketDataPoint> Oil { get; set; } = new();
     }
-    
+
     public class MarketDataPoint
     {
         public DateTime Date { get; set; }
@@ -725,7 +720,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double Low { get; set; }
         public double Close { get; set; }
     }
-    
+
     public class RealOptionContract
     {
         public string Symbol { get; set; } = "";
@@ -741,7 +736,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double Vega { get; set; }
         public double ImpliedVolatility { get; set; }
     }
-    
+
     public class RealIronCondor
     {
         public RealOptionContract ShortCall { get; set; } = new();
@@ -752,7 +747,7 @@ namespace ODTE.Optimization.AdvancedGeneticOptimizer
         public double NetDelta { get; set; }
         public decimal MaxRisk { get; set; }
     }
-    
+
     public class TradeResult
     {
         public DateTime Date { get; set; }

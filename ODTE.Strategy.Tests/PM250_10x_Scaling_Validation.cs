@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using ODTE.Strategy;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -120,19 +114,19 @@ namespace ODTE.Strategy.Tests
                 var config = CreateConfigForPhase(phase);
                 var results = RunScalingTest(config, GetPhaseDuration(phase));
                 var validation = _validator.ValidatePhase(results, phase);
-                
+
                 phaseResults.Add(validation);
-                
+
                 Console.WriteLine($"Phase {(int)phase + 1} - Target: {GetPhaseTarget(phase):C}, Actual: {validation.MonthlyAverage:C}, Achievement: {validation.TargetAchievement:P1}");
             }
 
             // Validate scaling progression
             ValidateScalingProgression(phaseResults);
-            
+
             // Final validation
             var finalPhase = phaseResults.Last();
             Assert.True(finalPhase.MonthlyAverage >= 2500m, "Final scaling target not achieved");
-            
+
             Console.WriteLine($"\n🏆 SCALING VALIDATION COMPLETE");
             Console.WriteLine($"Journey: $284 → ${finalPhase.MonthlyAverage:F0} ({finalPhase.MonthlyAverage / 284.66m:F1}x scaling achieved)");
         }
@@ -145,7 +139,7 @@ namespace ODTE.Strategy.Tests
             _engine.Configure(config);
 
             var stressScenarios = CreateStressScenarios();
-            
+
             foreach (var scenario in stressScenarios)
             {
                 var results = RunStressTest(config, scenario);
@@ -155,7 +149,7 @@ namespace ODTE.Strategy.Tests
                 Assert.Equal(0, riskValidation.RFibBreaches);
                 Assert.True(riskValidation.CorrelationCompliance >= 0.95m, $"Correlation violations in {scenario.Name}");
                 Assert.True(riskValidation.PositionSizingAccuracy >= 0.90m, $"Position sizing errors in {scenario.Name}");
-                
+
                 Console.WriteLine($"Stress Test {scenario.Name}: RFib OK, Correlation OK, Sizing OK");
             }
         }
@@ -186,11 +180,11 @@ namespace ODTE.Strategy.Tests
             var config = CreatePhase3Config(); // When concurrency increases
             config.MaxConcurrentPositions = 3;
             config.CorrelationBudgetLimit = 1.0m;
-            
+
             _engine.Configure(config);
 
             var correlationScenarios = CreateCorrelationScenarios();
-            
+
             foreach (var scenario in correlationScenarios)
             {
                 var results = RunCorrelationTest(config, scenario);
@@ -198,7 +192,7 @@ namespace ODTE.Strategy.Tests
 
                 Assert.True(corrValidation.CorrelationBudgetCompliance >= 0.95m, $"Correlation budget violated in {scenario.Name}");
                 Assert.True(corrValidation.RhoWeightedExposureAccuracy >= 0.90m, $"Rho exposure calculation error in {scenario.Name}");
-                
+
                 Console.WriteLine($"Correlation Test {scenario.Name}: Budget Compliance {corrValidation.CorrelationBudgetCompliance:P1}");
             }
         }
@@ -306,14 +300,14 @@ namespace ODTE.Strategy.Tests
         private List<ScalingTestResult> RunScalingTest(ScalingConfig config, int monthCount)
         {
             var results = new List<ScalingTestResult>();
-            
+
             // Simulate trading with the given configuration
             for (int month = 0; month < monthCount; month++)
             {
                 var monthResult = SimulateMonth(config, month);
                 results.Add(monthResult);
             }
-            
+
             return results;
         }
 
@@ -321,7 +315,7 @@ namespace ODTE.Strategy.Tests
         {
             // Simulate a month of trading with the scaling configuration
             var random = new Random(monthIndex * 1000); // Deterministic for testing
-            
+
             var result = new ScalingTestResult
             {
                 Month = monthIndex + 1,
@@ -332,7 +326,7 @@ namespace ODTE.Strategy.Tests
                 RFibBreaches = 0, // Should always be 0
                 CorrelationViolations = random.Next(0, 2) // Rare violations
             };
-            
+
             return result;
         }
 
@@ -342,7 +336,7 @@ namespace ODTE.Strategy.Tests
             var baseTarget = config.MonthlyTarget;
             var variance = baseTarget * 0.25m; // ±25% variance
             var randomFactor = (decimal)(random.NextDouble() * 2 - 1); // -1 to +1
-            
+
             return baseTarget + (variance * randomFactor);
         }
 
@@ -353,14 +347,14 @@ namespace ODTE.Strategy.Tests
             {
                 var currentPhase = phases[i];
                 var previousPhase = phases[i - 1];
-                
+
                 Assert.True(currentPhase.MonthlyAverage > previousPhase.MonthlyAverage,
                     $"Phase {i + 1} did not exceed Phase {i} performance");
-                
+
                 // Risk should not increase disproportionately
                 var riskIncrease = currentPhase.MaxDrawdown / previousPhase.MaxDrawdown;
                 var returnIncrease = currentPhase.MonthlyAverage / previousPhase.MonthlyAverage;
-                
+
                 Assert.True(riskIncrease <= returnIncrease * 0.5m,
                     $"Risk increased too much relative to returns in Phase {i + 1}");
             }

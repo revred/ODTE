@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace ODTE.Historical.Providers
 {
     public sealed class SessionCalendarProvider
@@ -19,7 +13,7 @@ namespace ODTE.Historical.Providers
             _calendars = new Dictionary<string, ProductCalendar>();
             _sessionCache = new Dictionary<DateTime, MarketSession>();
             _holidayCache = new Dictionary<DateTime, bool>();
-            
+
             InitializeProductCalendars();
         }
 
@@ -56,12 +50,12 @@ namespace ODTE.Historical.Providers
         public bool IsMarketOpen(string product, DateTime timestamp)
         {
             var session = GetSession(product, timestamp.Date);
-            
+
             if (session.IsHoliday)
                 return false;
 
             var timeOfDay = timestamp.TimeOfDay;
-            return timeOfDay >= session.RegularOpen.TimeOfDay && 
+            return timeOfDay >= session.RegularOpen.TimeOfDay &&
                    timeOfDay <= session.RegularClose.TimeOfDay;
         }
 
@@ -80,7 +74,7 @@ namespace ODTE.Historical.Providers
         public DateTime GetNextTradingDay(string product, DateTime date)
         {
             var currentDate = date.Date.AddDays(1);
-            
+
             while (currentDate <= date.AddDays(10)) // Safety limit
             {
                 var session = GetSession(product, currentDate);
@@ -97,7 +91,7 @@ namespace ODTE.Historical.Providers
         public DateTime GetPreviousTradingDay(string product, DateTime date)
         {
             var currentDate = date.Date.AddDays(-1);
-            
+
             while (currentDate >= date.AddDays(-10)) // Safety limit
             {
                 var session = GetSession(product, currentDate);
@@ -120,7 +114,7 @@ namespace ODTE.Historical.Providers
             {
                 var day = monday.AddDays(i);
                 var session = GetSession(product, day);
-                
+
                 if (!session.IsHoliday)
                 {
                     tradingDays.Add(day);
@@ -140,7 +134,7 @@ namespace ODTE.Historical.Providers
         public TimeWindow GetDecisionWindow(string product, DateTime date, TimeOnly decisionTime, int bufferMinutes = 5)
         {
             var session = GetSession(product, date);
-            
+
             if (session.IsHoliday)
             {
                 throw new InvalidOperationException($"Cannot create decision window on holiday: {date:yyyy-MM-dd}");
@@ -285,7 +279,7 @@ namespace ODTE.Historical.Providers
         {
             var isHoliday = IsHoliday(date);
             var isEarlyClose = IsEarlyCloseDay(date);
-            
+
             var regularOpen = date.Date.Add(calendar.RegularOpen.ToTimeSpan());
             var regularClose = date.Date.Add(calendar.RegularClose.ToTimeSpan());
             var earlyClose = isEarlyClose ? date.Date.AddHours(13) : regularClose; // 1:00 PM early close
@@ -307,7 +301,7 @@ namespace ODTE.Historical.Providers
         private bool IsHoliday(DateTime date)
         {
             var dateKey = date.Date;
-            
+
             if (_holidayCache.TryGetValue(dateKey, out var cached))
             {
                 return cached;
@@ -315,7 +309,7 @@ namespace ODTE.Historical.Providers
 
             var isHoliday = CheckHoliday(date);
             _holidayCache[dateKey] = isHoliday;
-            
+
             return isHoliday;
         }
 
@@ -323,44 +317,44 @@ namespace ODTE.Historical.Providers
         {
             // Major US market holidays
             var year = date.Year;
-            
+
             // New Year's Day
             if (IsObservedHoliday(new DateTime(year, 1, 1), date))
                 return true;
-                
+
             // Martin Luther King Jr. Day (3rd Monday in January)
             if (date == GetNthWeekdayOfMonth(year, 1, DayOfWeek.Monday, 3))
                 return true;
-                
+
             // Presidents Day (3rd Monday in February)
             if (date == GetNthWeekdayOfMonth(year, 2, DayOfWeek.Monday, 3))
                 return true;
-                
+
             // Good Friday (Friday before Easter)
             var easter = GetEasterSunday(year);
             if (date == easter.AddDays(-2))
                 return true;
-                
+
             // Memorial Day (Last Monday in May)
             if (date == GetLastWeekdayOfMonth(year, 5, DayOfWeek.Monday))
                 return true;
-                
+
             // Juneteenth (June 19th, observed if on weekend)
             if (IsObservedHoliday(new DateTime(year, 6, 19), date))
                 return true;
-                
+
             // Independence Day (July 4th, observed if on weekend)
             if (IsObservedHoliday(new DateTime(year, 7, 4), date))
                 return true;
-                
+
             // Labor Day (1st Monday in September)
             if (date == GetNthWeekdayOfMonth(year, 9, DayOfWeek.Monday, 1))
                 return true;
-                
+
             // Thanksgiving (4th Thursday in November)
             if (date == GetNthWeekdayOfMonth(year, 11, DayOfWeek.Thursday, 4))
                 return true;
-                
+
             // Christmas (December 25th, observed if on weekend)
             if (IsObservedHoliday(new DateTime(year, 12, 25), date))
                 return true;
@@ -371,17 +365,17 @@ namespace ODTE.Historical.Providers
         private bool IsEarlyCloseDay(DateTime date)
         {
             var year = date.Year;
-            
+
             // Day after Thanksgiving
             var thanksgiving = GetNthWeekdayOfMonth(year, 11, DayOfWeek.Thursday, 4);
             if (date == thanksgiving.AddDays(1))
                 return true;
-                
+
             // Christmas Eve (if on weekday)
             var christmasEve = new DateTime(year, 12, 24);
             if (date == christmasEve && !IsWeekend(christmasEve))
                 return true;
-                
+
             // July 3rd (if July 4th is on Monday)
             var july4th = new DateTime(year, 7, 4);
             if (july4th.DayOfWeek == DayOfWeek.Monday && date == july4th.AddDays(-1))
@@ -390,7 +384,7 @@ namespace ODTE.Historical.Providers
             return false;
         }
 
-        private bool IsWeekend(DateTime date) => 
+        private bool IsWeekend(DateTime date) =>
             date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
         private bool IsWeeklyExpirationDay(DayOfWeek dayOfWeek) =>
@@ -421,15 +415,15 @@ namespace ODTE.Historical.Providers
         {
             if (actualHoliday.Date == testDate.Date)
                 return true;
-                
+
             // If holiday falls on Saturday, observed on Friday
             if (actualHoliday.DayOfWeek == DayOfWeek.Saturday && testDate == actualHoliday.AddDays(-1))
                 return true;
-                
+
             // If holiday falls on Sunday, observed on Monday
             if (actualHoliday.DayOfWeek == DayOfWeek.Sunday && testDate == actualHoliday.AddDays(1))
                 return true;
-                
+
             return false;
         }
 
@@ -464,7 +458,7 @@ namespace ODTE.Historical.Providers
             var m = (a + 11 * h + 22 * l) / 451;
             var month = (h + l - 7 * m + 114) / 31;
             var day = ((h + l - 7 * m + 114) % 31) + 1;
-            
+
             return new DateTime(year, month, day);
         }
     }

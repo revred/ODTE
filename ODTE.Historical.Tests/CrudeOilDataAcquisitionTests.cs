@@ -1,4 +1,3 @@
-using ODTE.Historical;
 using FluentAssertions;
 using Xunit;
 
@@ -42,7 +41,7 @@ public class CrudeOilDataAcquisitionTests
             try
             {
                 var data = await dataManager.GetMarketDataAsync(etf.Key, testStartDate, testEndDate);
-                
+
                 // Validate data structure (even if empty due to no provider config)
                 data.Should().NotBeNull($"Data request for {etf.Key} should return valid response");
                 Console.WriteLine($"✅ {etf.Key} ({etf.Value}): API call successful");
@@ -136,18 +135,18 @@ public class CrudeOilDataAcquisitionTests
             ["USL"] = "United States 12 Month Oil Fund ETF",
             ["DBO"] = "Invesco DB Oil Fund ETF",
             ["OIL"] = "iPath S&P GSCI Crude Oil ETN",
-            
+
             // Leveraged Energy ETFs
             ["GUSH"] = "Direxion Daily S&P Oil & Gas Bull 2X ETF",
             ["DRIP"] = "Direxion Daily S&P Oil & Gas Bear 2X ETF",
-            
+
             // Energy Sector ETFs
             ["XLE"] = "Energy Select Sector SPDR Fund",
             ["VDE"] = "Vanguard Energy ETF",
-            
+
             // Natural Gas
             ["UNG"] = "United States Natural Gas Fund ETF",
-            
+
             // Commodities Basket
             ["DBA"] = "Invesco DB Agriculture Fund ETF",
             ["DBC"] = "Invesco DB Commodity Index Tracking Fund"
@@ -158,12 +157,12 @@ public class CrudeOilDataAcquisitionTests
 
         // Act - Test API compatibility for all energy instruments
         var results = new Dictionary<string, bool>();
-        
+
         foreach (var instrument in energyInstruments)
         {
             try
             {
-                var testData = await dataManager.GetMarketDataAsync(instrument.Key, 
+                var testData = await dataManager.GetMarketDataAsync(instrument.Key,
                     DateTime.Today.AddDays(-7), DateTime.Today);
                 results[instrument.Key] = true;
                 Console.WriteLine($"✅ {instrument.Key}: {instrument.Value}");
@@ -197,7 +196,7 @@ public class CrudeOilDataAcquisitionTests
         Console.WriteLine($"   Compression Ratio: {stats.CompressionRatio:F1}x");
         Console.WriteLine($"   Records: {stats.TotalRecords:N0}");
         Console.WriteLine($"   Date Range: {stats.StartDate:yyyy-MM-dd} to {stats.EndDate:yyyy-MM-dd}");
-        
+
         // Validate oil data would benefit from same compression
         var projectedOilDataSize = 20 * 365 * 50; // 20 years * 365 days * ~50 bytes per record
         var compressedSize = projectedOilDataSize / (double)stats.CompressionRatio / 1024 / 1024;

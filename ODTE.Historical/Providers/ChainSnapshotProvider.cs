@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-
 namespace ODTE.Historical.Providers
 {
     public enum OptionRight
@@ -27,25 +21,25 @@ namespace ODTE.Historical.Providers
         }
 
         public async Task<ChainSnapshot> GetSnapshotAtDecisionTime(
-            string underlying, 
-            DateTime decisionTimeEt, 
+            string underlying,
+            DateTime decisionTimeEt,
             ProductCalendar calendar)
         {
             try
             {
                 var cacheKey = $"{underlying}_{decisionTimeEt:yyyyMMdd_HHmmss}";
-                
+
                 lock (_cacheLock)
                 {
                     if (_cache.TryGetValue(cacheKey, out var cachedSnapshot))
                     {
-                        _logger.LogDebug("Using cached chain snapshot for {Underlying} at {DecisionTime}", 
+                        _logger.LogDebug("Using cached chain snapshot for {Underlying} at {DecisionTime}",
                             underlying, decisionTimeEt);
                         return cachedSnapshot;
                     }
                 }
 
-                _logger.LogDebug("Fetching chain snapshot for {Underlying} at {DecisionTime}", 
+                _logger.LogDebug("Fetching chain snapshot for {Underlying} at {DecisionTime}",
                     underlying, decisionTimeEt);
 
                 var underlyingPrice = await GetUnderlyingPrice(underlying, decisionTimeEt);
@@ -76,7 +70,7 @@ namespace ODTE.Historical.Providers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get chain snapshot for {Underlying} at {DecisionTime}", 
+                _logger.LogError(ex, "Failed to get chain snapshot for {Underlying} at {DecisionTime}",
                     underlying, decisionTimeEt);
                 throw;
             }
@@ -108,7 +102,7 @@ namespace ODTE.Historical.Providers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to get {Label} snapshot for {Underlying} at {Timestamp}", 
+                    _logger.LogWarning(ex, "Failed to get {Label} snapshot for {Underlying} at {Timestamp}",
                         label, underlying, timestamp);
                 }
             }
@@ -120,7 +114,7 @@ namespace ODTE.Historical.Providers
         {
             var priceData = await _dataSource.GetUnderlyingPrices(underlying, timestamp, timestamp.AddMinutes(1));
             var pricePoint = priceData.FirstOrDefault(p => p.Timestamp <= timestamp);
-            
+
             if (pricePoint == null)
             {
                 throw new DataNotFoundException($"No underlying price found for {underlying} at {timestamp}");
@@ -132,7 +126,7 @@ namespace ODTE.Historical.Providers
         private async Task<IEnumerable<OptionQuote>> GetOptionsChain(string underlying, DateTime timestamp)
         {
             var chainData = await _dataSource.GetOptionsChain(underlying, timestamp);
-            
+
             return chainData
                 .Where(opt => opt.Timestamp <= timestamp)
                 .Where(opt => HasValidQuote(opt))
@@ -145,7 +139,7 @@ namespace ODTE.Historical.Providers
         private async Task<MarketDataSnapshot> GetMarketData(string underlying, DateTime timestamp)
         {
             var marketData = await _dataSource.GetMarketData(underlying, timestamp);
-            
+
             return new MarketDataSnapshot
             {
                 Timestamp = timestamp,
@@ -197,8 +191,8 @@ namespace ODTE.Historical.Providers
 
         private bool HasValidQuote(OptionQuote option)
         {
-            return option.Bid > 0 && 
-                   option.Ask > option.Bid && 
+            return option.Bid > 0 &&
+                   option.Ask > option.Bid &&
                    option.Ask < option.Bid * 5 && // Spread not too wide
                    option.ImpliedVolatility > 0 &&
                    option.ImpliedVolatility < 3.0; // IV under 300%
@@ -209,21 +203,21 @@ namespace ODTE.Historical.Providers
             // Filter out strikes that are too far OTM or have unrealistic prices
             var underlyingPrice = 75.0; // Will be replaced with actual price lookup
             var maxOtmPercent = underlying.StartsWith("CL") ? 0.50 : 0.30; // 50% for oil, 30% for ETFs
-            
+
             var otmPercent = Math.Abs(option.Strike - underlyingPrice) / underlyingPrice;
             return otmPercent <= maxOtmPercent;
         }
 
         public async Task<OptionQuote[]> GetNearestStrikes(
-            string underlying, 
-            double targetStrike, 
-            OptionRight right, 
+            string underlying,
+            double targetStrike,
+            OptionRight right,
             DateTime expiry,
             DateTime timestamp,
             int count = 5)
         {
             var chainData = await GetOptionsChain(underlying, timestamp);
-            
+
             return chainData
                 .Where(opt => opt.Right == right && opt.Expiry.Date == expiry.Date)
                 .OrderBy(opt => Math.Abs(opt.Strike - targetStrike))
@@ -232,12 +226,12 @@ namespace ODTE.Historical.Providers
         }
 
         public async Task<double[]> GetAvailableStrikes(
-            string underlying, 
-            DateTime expiry, 
+            string underlying,
+            DateTime expiry,
             DateTime timestamp)
         {
             var chainData = await GetOptionsChain(underlying, timestamp);
-            
+
             return chainData
                 .Where(opt => opt.Expiry.Date == expiry.Date)
                 .Select(opt => opt.Strike)
@@ -247,13 +241,13 @@ namespace ODTE.Historical.Providers
         }
 
         public async Task<ExpirationInfo[]> GetAvailableExpirations(
-            string underlying, 
+            string underlying,
             DateTime timestamp,
             int maxDte = 45)
         {
             var chainData = await GetOptionsChain(underlying, timestamp);
             var cutoffDate = timestamp.AddDays(maxDte);
-            
+
             return chainData
                 .Where(opt => opt.Expiry > timestamp && opt.Expiry <= cutoffDate)
                 .GroupBy(opt => opt.Expiry.Date)
@@ -300,7 +294,7 @@ namespace ODTE.Historical.Providers
         public void ClearCacheOlderThan(TimeSpan age)
         {
             var cutoffTime = DateTime.Now.Subtract(age);
-            
+
             lock (_cacheLock)
             {
                 var oldKeys = _cache
@@ -331,14 +325,14 @@ namespace ODTE.Historical.Providers
         public string Label { get; set; } = "";
 
         public double GetAtmImpliedVolatility() => AtmImpliedVolatility;
-        
-        public Func<double, double> GetNearestStrike => strike => 
+
+        public Func<double, double> GetNearestStrike => strike =>
         {
             var increment = Underlying.StartsWith("CL") ? 0.5 : 0.5;
             return Math.Round(strike / increment) * increment;
         };
-        
-        public bool HasZeroDteOptions() => 
+
+        public bool HasZeroDteOptions() =>
             OptionsChain.Any(opt => opt.Expiry.Date == Timestamp.Date);
 
         public OptionQuote[] GetOptionsForExpiry(DateTime expiry) =>

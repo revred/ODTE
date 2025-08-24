@@ -7,7 +7,7 @@ namespace ODTE.Historical.DistributedStorage;
 public class FileManager
 {
     private readonly string _baseDataPath;
-    
+
     public FileManager(string baseDataPath = @"C:\code\ODTE\data")
     {
         _baseDataPath = baseDataPath;
@@ -20,7 +20,7 @@ public class FileManager
     public string GetCommodityPath(string symbol, DateTime date, CommodityCategory category = CommodityCategory.Oil)
     {
         var categoryPath = GetCategoryPath(category);
-        return Path.Combine(_baseDataPath, "commodities", categoryPath, 
+        return Path.Combine(_baseDataPath, "commodities", categoryPath,
             $"{date:yyyy}", $"{date:MM}", $"{symbol}_{date:yyyyMM}.db");
     }
 
@@ -32,7 +32,7 @@ public class FileManager
     {
         var categoryPath = GetCategoryPath(category);
         return Path.Combine(_baseDataPath, "options", categoryPath, symbol.ToUpper(),
-            $"{expirationDate:yyyy}", $"{expirationDate:MM}", 
+            $"{expirationDate:yyyy}", $"{expirationDate:MM}",
             $"{symbol.ToUpper()}_OPT_{expirationDate:yyyyMMdd}.db");
     }
 
@@ -147,7 +147,7 @@ public class FileManager
     public FileStorageStats GetStorageStats(string symbol, CommodityCategory category = CommodityCategory.Oil)
     {
         var stats = new FileStorageStats { Symbol = symbol, Category = category };
-        
+
         // Get commodity files
         var commoditiesDir = Path.Combine(_baseDataPath, "commodities", GetCategoryPath(category));
         if (Directory.Exists(commoditiesDir))
@@ -174,7 +174,7 @@ public class FileManager
         return category switch
         {
             CommodityCategory.Oil => "oil",
-            CommodityCategory.Metals => "metals", 
+            CommodityCategory.Metals => "metals",
             CommodityCategory.Agriculture => "agriculture",
             CommodityCategory.Energy => "energy",
             _ => "other"
@@ -184,7 +184,7 @@ public class FileManager
     private bool IsFileInDateRange(string filePath, DateTime startDate, DateTime endDate)
     {
         var fileName = Path.GetFileNameWithoutExtension(filePath);
-        
+
         // Extract date from filename like USO_OPT_20240119
         if (fileName.Contains("_OPT_") && fileName.Length >= 16)
         {
@@ -221,7 +221,7 @@ public class FileStorageStats
     public int OptionsFiles { get; set; }
     public long CommodityStorageBytes { get; set; }
     public long OptionsStorageBytes { get; set; }
-    
+
     public long TotalStorageBytes => CommodityStorageBytes + OptionsStorageBytes;
     public double TotalStorageMB => TotalStorageBytes / 1024.0 / 1024.0;
     public int TotalFiles => CommodityFiles + OptionsFiles;

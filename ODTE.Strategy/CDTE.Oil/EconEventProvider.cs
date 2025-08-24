@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace ODTE.Strategy.CDTE.Oil
 {
     public sealed class EconEventProvider
@@ -12,7 +7,7 @@ namespace ODTE.Strategy.CDTE.Oil
         public async Task<EconEvent[]> GetEventsInWindow(DateTime start, DateTime end)
         {
             var events = new List<EconEvent>();
-            
+
             var current = start.Date;
             while (current <= end.Date)
             {
@@ -37,7 +32,7 @@ namespace ODTE.Strategy.CDTE.Oil
             var start = reference.AddDays(-days);
             var end = reference.AddDays(days);
             var events = await GetEventsInWindow(start, end);
-            
+
             return events.Any(e => e.Impact >= EventImpact.High);
         }
 
@@ -100,8 +95,8 @@ namespace ODTE.Strategy.CDTE.Oil
         {
             // Simplified: Fed meets roughly every 6 weeks
             var fedMeetingMonths = new[] { 1, 3, 5, 6, 7, 9, 11, 12 };
-            return fedMeetingMonths.Contains(date.Month) && 
-                   date.Day >= 15 && date.Day <= 21 && 
+            return fedMeetingMonths.Contains(date.Month) &&
+                   date.Day >= 15 && date.Day <= 21 &&
                    date.DayOfWeek == DayOfWeek.Wednesday;
         }
     }

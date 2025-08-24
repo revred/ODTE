@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using ODTE.Strategy;
-
 namespace ODTE.Strategy.Tests
 {
     /// <summary>
@@ -43,7 +37,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Level 0 should only allow Probe trades with standard allocation
             _engine.ConfigureForPhase(ScalingPhase.Foundation);
-            
+
             // Setup: No positive probe conditions met
             _probeDetector.SetPositiveProbeResult(false);
             _riskManager.SetDailyLimit(1000m);
@@ -56,7 +50,7 @@ namespace ODTE.Strategy.Tests
             Assert.Equal(TradeAction.Execute, decision.Action);
             Assert.Equal(TradeLane.Probe, decision.Lane);
             Assert.Equal(EscalationLevel.Level0, decision.EscalationLevel);
-            
+
             // Position size should be based on 40% probe fraction
             var expectedSize = Math.Floor((0.40m * 1000m) / ((1.0m - 0.25m) * 100m));
             Assert.Equal(expectedSize, decision.PositionSize);
@@ -69,7 +63,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Level 1 escalation enables Quality lane with higher allocation
             _engine.ConfigureForPhase(ScalingPhase.Escalation);
-            
+
             // Setup: Positive probe conditions met + sufficient P&L cushion
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
@@ -86,14 +80,14 @@ namespace ODTE.Strategy.Tests
 
             var qualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Validate: Should execute as Quality with Level 1 escalation
             Assert.Equal(TradeAction.Execute, decision.Action);
             Assert.Equal(TradeLane.Quality, decision.Lane);
             Assert.Equal(EscalationLevel.Level1, decision.EscalationLevel);
-            
+
             // Position size should use 55% fraction and be constrained by 50% of realized P&L
             var sizingBudget = Math.Min(0.55m * 1050m, 0.50m * 450m); // Min(577.5, 225) = 225
             var expectedSize = Math.Floor(sizingBudget / ((2.0m - 0.50m) * 100m)); // 225 / 150 = 1
@@ -107,7 +101,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Level 2 escalation with maximum capital allocation
             _engine.ConfigureForPhase(ScalingPhase.Quality);
-            
+
             // Setup: High P&L cushion + successful Quality trades
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
@@ -125,14 +119,14 @@ namespace ODTE.Strategy.Tests
 
             var qualitySetup = CreateQualityTradeSetup(width: 2.5m, credit: 0.60m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Validate: Should execute with Level 2 escalation
             Assert.Equal(TradeAction.Execute, decision.Action);
             Assert.Equal(TradeLane.Quality, decision.Lane);
             Assert.Equal(EscalationLevel.Level2, decision.EscalationLevel);
-            
+
             // Position size should use 65% fraction
             var sizingBudget = Math.Min(0.65m * 800m, 0.50m * 1200m); // Min(520, 600) = 520
             var expectedSize = Math.Floor(sizingBudget / ((2.5m - 0.60m) * 100m)); // 520 / 190 = 2
@@ -146,7 +140,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Auto de-escalation when P&L cushion is lost
             _engine.ConfigureForPhase(ScalingPhase.Escalation);
-            
+
             // Setup: Start at Level 1, then P&L drops below half of trigger
             _probeDetector.SetPositiveProbeResult(true);
             var sessionStats = new SessionStats
@@ -173,7 +167,7 @@ namespace ODTE.Strategy.Tests
             _riskManager.SetRemainingBudget(1300m);
 
             var decision2 = _engine.ProcessTradeOpportunity(qualitySetup);
-            
+
             // Should automatically de-escalate to Level 0
             Assert.Equal(EscalationLevel.Level0, decision2.EscalationLevel);
             Assert.Equal(TradeLane.Probe, decision2.Lane); // Falls back to Probe
@@ -186,7 +180,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Auto de-escalation and cooldown after consecutive Quality losses
             _engine.ConfigureForPhase(ScalingPhase.Escalation);
-            
+
             // Setup: Level 1 conditions met but consecutive Quality losses
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
@@ -204,7 +198,7 @@ namespace ODTE.Strategy.Tests
 
             var qualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Should force Level 0 despite positive probe conditions
@@ -219,7 +213,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Correlation budget prevents excessive concurrent exposure
             _engine.ConfigureForPhase(ScalingPhase.Quality);
-            
+
             // Setup: Conditions for Quality trades but high correlation exposure
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
@@ -232,18 +226,18 @@ namespace ODTE.Strategy.Tests
             });
             _riskManager.SetDailyLimit(2000m);
             _riskManager.SetRemainingBudget(1400m);
-            
+
             // Mock correlation manager to indicate budget would be exceeded
             _correlationManager.SetRhoWeightedExposureAfter(1.1m); // Exceeds 1.0 limit
-            
+
             var qualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             // Should reject due to correlation budget violation
             Assert.Equal(TradeAction.Reject, decision.Action);
-            Assert.True(decision.ReasonCode.Contains("RHO_BUDGET_EXCEEDED") || 
+            Assert.True(decision.ReasonCode.Contains("RHO_BUDGET_EXCEEDED") ||
                          decision.ReasonCode.Contains("correlation"));
 
             Console.WriteLine($"Correlation Budget Block: {decision.ReasonCode}");
@@ -254,17 +248,17 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Probe trades get 1 contract if they fit within absolute budget
             _engine.ConfigureForPhase(ScalingPhase.Foundation);
-            
+
             _probeDetector.SetPositiveProbeResult(false); // No escalation
             _riskManager.SetDailyLimit(500m);
             _riskManager.SetRemainingBudget(100m); // Low remaining budget
-            
+
             // Setup a probe trade that would normally size to 0 but fits in absolute budget
             var probeSetup = CreateProbeTradeSetup(width: 1.0m, credit: 0.20m);
             // Max loss per contract = (1.0 - 0.20) * 100 = 80
             // Normal sizing: floor(40% * 100 / 80) = floor(40/80) = 0
             // But 80 < 100 remaining budget, so probe 1-lot rule applies
-            
+
             var decision = _engine.ProcessTradeOpportunity(probeSetup);
 
             Assert.Equal(TradeAction.Execute, decision.Action);
@@ -279,7 +273,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: All trades rejected during event blackout periods
             _engine.ConfigureForPhase(ScalingPhase.Escalation);
-            
+
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
             {
@@ -295,7 +289,7 @@ namespace ODTE.Strategy.Tests
 
             var qualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var decision = _engine.ProcessTradeOpportunity(qualitySetup);
 
             Assert.Equal(TradeAction.Reject, decision.Action);
@@ -309,7 +303,7 @@ namespace ODTE.Strategy.Tests
         {
             // Test: Quality lane requires high-quality setups
             _engine.ConfigureForPhase(ScalingPhase.Quality);
-            
+
             _probeDetector.SetPositiveProbeResult(true);
             _probeDetector.SetSessionStats(new SessionStats
             {
@@ -324,11 +318,11 @@ namespace ODTE.Strategy.Tests
 
             var lowQualitySetup = CreateQualityTradeSetup(width: 2.0m, credit: 0.30m); // Low credit
             _qualityFilter.SetHighQualityResult(false); // Fails quality filter
-            
+
             var decision = _engine.ProcessTradeOpportunity(lowQualitySetup);
 
             Assert.Equal(TradeAction.Reject, decision.Action);
-            Assert.True(decision.ReasonCode.Contains("QUALITY_FAIL") || 
+            Assert.True(decision.ReasonCode.Contains("QUALITY_FAIL") ||
                          decision.ReasonCode.Contains("quality"));
 
             Console.WriteLine($"Quality Filter Rejection: {decision.ReasonCode}");
@@ -345,7 +339,7 @@ namespace ODTE.Strategy.Tests
             _probeDetector.SetPositiveProbeResult(false);
             _riskManager.SetDailyLimit(2000m);
             _riskManager.SetRemainingBudget(2000m);
-            
+
             var probe1 = CreateProbeTradeSetup(width: 1.0m, credit: 0.25m);
             decisions.Add(_engine.ProcessTradeOpportunity(probe1));
             Assert.Equal(EscalationLevel.Level0, decisions.Last().EscalationLevel);
@@ -362,7 +356,7 @@ namespace ODTE.Strategy.Tests
             });
             _riskManager.SetRemainingBudget(1400m);
             _qualityFilter.SetHighQualityResult(true);
-            
+
             var quality1 = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality1));
             Assert.Equal(EscalationLevel.Level1, decisions.Last().EscalationLevel);
@@ -378,7 +372,7 @@ namespace ODTE.Strategy.Tests
                 Last3PunchPnL = 200m // Positive Quality results
             });
             _riskManager.SetRemainingBudget(800m);
-            
+
             var quality2 = CreateQualityTradeSetup(width: 2.5m, credit: 0.65m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality2));
             Assert.Equal(EscalationLevel.Level2, decisions.Last().EscalationLevel);
@@ -393,7 +387,7 @@ namespace ODTE.Strategy.Tests
                 LiquidityScore = 0.85m
             });
             _riskManager.SetRemainingBudget(1600m);
-            
+
             var quality3 = CreateQualityTradeSetup(width: 2.0m, credit: 0.50m);
             decisions.Add(_engine.ProcessTradeOpportunity(quality3));
             // Should de-escalate due to P&L loss

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.CDTE.Oil.Mutations
 {
     /// <summary>
@@ -17,7 +13,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
             public string Category { get; set; }
             public Dictionary<string, object> Parameters { get; set; }
             public string Description { get; set; }
-            
+
             // Performance metrics after backtest
             public double? AnnualReturn { get; set; }
             public double? SharpeRatio { get; set; }
@@ -29,26 +25,26 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
         public static List<OilStrategyVariant> GenerateAll64Variants()
         {
             var variants = new List<OilStrategyVariant>();
-            
+
             // OIL01-OIL16: Entry Timing Mutations
             variants.AddRange(GenerateEntryTimingMutations());
-            
+
             // OIL17-OIL32: Strike Selection Mutations  
             variants.AddRange(GenerateStrikeSelectionMutations());
-            
+
             // OIL33-OIL48: Risk Management Mutations
             variants.AddRange(GenerateRiskManagementMutations());
-            
+
             // OIL49-OIL64: Exit Strategy Mutations
             variants.AddRange(GenerateExitStrategyMutations());
-            
+
             return variants;
         }
 
         private static List<OilStrategyVariant> GenerateEntryTimingMutations()
         {
             var variants = new List<OilStrategyVariant>();
-            
+
             // OIL01-OIL04: Monday Morning Entry Variants
             variants.Add(new OilStrategyVariant
             {
@@ -66,7 +62,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL02",
@@ -83,7 +79,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL03",
@@ -100,7 +96,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Wed"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL04",
@@ -117,7 +113,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             // OIL05-OIL08: Tuesday Entry Variants
             variants.Add(new OilStrategyVariant
             {
@@ -136,7 +132,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL06",
@@ -154,7 +150,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL07",
@@ -171,7 +167,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL08",
@@ -188,7 +184,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             // OIL09-OIL12: Wednesday Entry Variants (EIA Day)
             variants.Add(new OilStrategyVariant
             {
@@ -207,7 +203,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL10",
@@ -225,7 +221,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL11",
@@ -243,7 +239,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL12",
@@ -260,7 +256,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Thu"
                 }
             });
-            
+
             // OIL13-OIL16: Multi-Day Entry Variants
             variants.Add(new OilStrategyVariant
             {
@@ -279,7 +275,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL14",
@@ -297,7 +293,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Thu,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL15",
@@ -316,7 +312,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL16",
@@ -334,14 +330,14 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Thu,Fri"
                 }
             });
-            
+
             return variants;
         }
 
         private static List<OilStrategyVariant> GenerateStrikeSelectionMutations()
         {
             var variants = new List<OilStrategyVariant>();
-            
+
             // OIL17-OIL20: Delta-Based Strike Selection
             variants.Add(new OilStrategyVariant
             {
@@ -359,7 +355,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL18",
@@ -376,7 +372,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL19",
@@ -393,7 +389,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL20",
@@ -410,7 +406,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             // OIL21-OIL24: Width-Based Strike Selection
             variants.Add(new OilStrategyVariant
             {
@@ -427,7 +423,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Wed"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL22",
@@ -443,7 +439,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL23",
@@ -459,7 +455,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL24",
@@ -475,7 +471,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Thu"
                 }
             });
-            
+
             // OIL25-OIL28: Volatility-Based Strike Selection
             variants.Add(new OilStrategyVariant
             {
@@ -493,7 +489,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL26",
@@ -510,7 +506,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL27",
@@ -527,7 +523,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL28",
@@ -544,7 +540,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             // OIL29-OIL32: Advanced Strike Selection
             variants.Add(new OilStrategyVariant
             {
@@ -563,7 +559,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL30",
@@ -580,7 +576,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL31",
@@ -597,7 +593,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL32",
@@ -615,14 +611,14 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             return variants;
         }
 
         private static List<OilStrategyVariant> GenerateRiskManagementMutations()
         {
             var variants = new List<OilStrategyVariant>();
-            
+
             // OIL33-OIL36: Stop Loss Variants
             variants.Add(new OilStrategyVariant
             {
@@ -640,7 +636,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL34",
@@ -658,7 +654,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL35",
@@ -676,7 +672,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL36",
@@ -693,7 +689,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             // OIL37-OIL40: Delta Management Variants
             variants.Add(new OilStrategyVariant
             {
@@ -711,7 +707,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Daily"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL38",
@@ -728,7 +724,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL39",
@@ -744,7 +740,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL40",
@@ -760,7 +756,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             // OIL41-OIL44: Profit Management Variants
             variants.Add(new OilStrategyVariant
             {
@@ -777,7 +773,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL42",
@@ -794,7 +790,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL43",
@@ -810,7 +806,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL44",
@@ -826,7 +822,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed"
                 }
             });
-            
+
             // OIL45-OIL48: Advanced Risk Variants
             variants.Add(new OilStrategyVariant
             {
@@ -843,7 +839,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL46",
@@ -859,7 +855,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL47",
@@ -876,7 +872,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL48",
@@ -893,14 +889,14 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             return variants;
         }
 
         private static List<OilStrategyVariant> GenerateExitStrategyMutations()
         {
             var variants = new List<OilStrategyVariant>();
-            
+
             // OIL49-OIL52: Thursday Exit Variants
             variants.Add(new OilStrategyVariant
             {
@@ -918,7 +914,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL50",
@@ -935,7 +931,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL51",
@@ -951,7 +947,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL52",
@@ -969,7 +965,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Thu"
                 }
             });
-            
+
             // OIL53-OIL56: Friday Exit Variants
             variants.Add(new OilStrategyVariant
             {
@@ -987,7 +983,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL54",
@@ -1003,7 +999,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL55",
@@ -1020,7 +1016,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL56",
@@ -1037,7 +1033,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed"
                 }
             });
-            
+
             // OIL57-OIL60: Dynamic Exit Variants
             variants.Add(new OilStrategyVariant
             {
@@ -1055,7 +1051,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Daily"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL58",
@@ -1072,7 +1068,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Event-based"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL59",
@@ -1089,7 +1085,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL60",
@@ -1106,7 +1102,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             // OIL61-OIL64: Hybrid Exit Variants
             variants.Add(new OilStrategyVariant
             {
@@ -1124,7 +1120,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Mon,Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL62",
@@ -1142,7 +1138,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Wed,Fri"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL63",
@@ -1160,7 +1156,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Tue,Thu"
                 }
             });
-            
+
             variants.Add(new OilStrategyVariant
             {
                 VariantId = "OIL64",
@@ -1178,7 +1174,7 @@ namespace ODTE.Strategy.CDTE.Oil.Mutations
                     ["DecisionDays"] = "Model-driven"
                 }
             });
-            
+
             return variants;
         }
     }

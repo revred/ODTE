@@ -77,14 +77,14 @@ public sealed class Backtester
                     pos.ExitReason = reason;
 
                     double fees = 2 * (_cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract);
-                    double pnl = (pos.EntryPrice - price) * 100 - fees;
+                    double grossPnl = (pos.EntryPrice - price) * 100;
 
                     report.Trades.Add(new TradeResult(
-                        pos, pnl, fees,
+                        pos, grossPnl, fees,
                         spreadVal - pos.EntryPrice,
                         pos.EntryPrice - spreadVal));
 
-                    _risk.RegisterClose(pos.Order.Type, pnl);
+                    _risk.RegisterClose(pos.Order.Type, grossPnl - fees);
                     active.RemoveAt(i);
                 }
             }
@@ -102,12 +102,12 @@ public sealed class Backtester
                     pos.ExitReason = "PM cash settlement";
 
                     double fees = _cfg.Fees.CommissionPerContract + _cfg.Fees.ExchangeFeesPerContract;
-                    double pnl = (pos.EntryPrice - price) * 100 - fees;
+                    double grossPnl = (pos.EntryPrice - price) * 100;
 
                     report.Trades.Add(new TradeResult(
-                        pos, pnl, fees, 0, pos.EntryPrice));
+                        pos, grossPnl, fees, 0, pos.EntryPrice));
 
-                    _risk.RegisterClose(pos.Order.Type, pnl);
+                    _risk.RegisterClose(pos.Order.Type, grossPnl - fees);
                     active.RemoveAt(i);
                 }
             }
@@ -193,18 +193,18 @@ public sealed class Backtester
                 pos.ExitReason = "Expiry - 0DTE options expire worthless";
 
                 double fees = 2.0 * ((double)_cfg.Fees.CommissionPerContract + (double)_cfg.Fees.ExchangeFeesPerContract);
-                double pnl = (pos.EntryPrice - pos.ExitPrice.Value) * 100 - fees;
+                double grossPnl = (pos.EntryPrice - pos.ExitPrice.Value) * 100;
 
                 report.Trades.Add(new TradeResult(
-                    pos, pnl, fees,
+                    pos, grossPnl, fees,
                     0.01 - pos.EntryPrice,  // MAE - assume minimum adverse movement
                     pos.EntryPrice - 0.01   // MFE - maximum favorable was entry price
                 ));
 
                 // Register position closure with risk manager to free up position slots
-                _risk.RegisterClose(pos.Order.Type, pnl);
+                _risk.RegisterClose(pos.Order.Type, grossPnl - fees);
 
-                Console.WriteLine($"   📅 Position force-closed at expiry: P&L ${pnl:F2}");
+                Console.WriteLine($"   📅 Position force-closed at expiry: P&L ${grossPnl - fees:F2}");
             }
         }
 

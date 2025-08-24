@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using ODTE.Backtest.Engine;
-using ODTE.Execution.Synchronization;
 using ODTE.Historical.DistributedStorage;
-using ODTE.Optimization.Core;
 using ODTE.Strategy.Hedging;
 using ODTE.Strategy.SPX30DTE.Core;
 using ODTE.Strategy.SPX30DTE.Probes;
@@ -24,7 +18,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private readonly OptimizationConfig _config;
         private readonly List<SPX30DTEChromosome> _population;
         private readonly Random _random;
-        
+
         // Enhanced optimization constraints - focus on capital efficiency and higher returns
         private const decimal MAX_ACCEPTABLE_DRAWDOWN = 5000m; // $5k max drawdown at -5% SPX
         private const decimal TARGET_MONTHLY_INCOME = 3000m; // $3k monthly target (36k annual)
@@ -33,7 +27,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private const decimal MIN_WIN_RATE = 0.65m; // 65% minimum win rate (higher for efficiency)
         private const decimal TARGET_SHARPE = 2.5m; // Higher target Sharpe ratio
         private const decimal MIN_CAPITAL_EFFICIENCY = 0.30m; // Min 30% return on deployed capital
-        
+
         public SPX30DTEGeneticOptimizer(
             DistributedDatabaseManager dataManager,
             Backtester backtester,
@@ -63,7 +57,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
 
             // Initialize population
             await InitializePopulation();
-            
+
             // Track best performers across generations
             var bestChromosomes = new List<SPX30DTEChromosome>();
             var generationMetrics = new List<GenerationMetrics>();
@@ -71,28 +65,28 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             for (int generation = 0; generation < generations; generation++)
             {
                 Console.WriteLine($"Generation {generation + 1}/{generations}");
-                
+
                 // Evaluate fitness for all chromosomes
                 await EvaluatePopulationFitness();
-                
+
                 // Track generation metrics
                 var genMetrics = CalculateGenerationMetrics(generation);
                 generationMetrics.Add(genMetrics);
-                
+
                 // Select best performers
                 var elite = SelectElite();
                 bestChromosomes.AddRange(elite);
-                
+
                 // Check for convergence or early stopping
                 if (ShouldStopEarly(generationMetrics))
                 {
                     Console.WriteLine($"Early stopping at generation {generation + 1}");
                     break;
                 }
-                
+
                 // Create next generation
                 await CreateNextGeneration();
-                
+
                 // Progress reporting
                 ReportProgress(generation, genMetrics);
             }
@@ -100,13 +94,13 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             // Final evaluation and selection
             await EvaluatePopulationFitness();
             var finalBest = SelectFinalBest();
-            
+
             result.EndTime = DateTime.Now;
             result.GenerationsCompleted = generationMetrics.Count;
             result.BestChromosome = finalBest;
             result.GenerationHistory = generationMetrics;
             result.TopPerformers = bestChromosomes.OrderByDescending(c => c.Fitness.OverallScore).Take(10).ToList();
-            
+
             // Validate final result meets constraints
             result.MeetsConstraints = ValidateConstraints(finalBest);
             result.ConstraintViolations = GetConstraintViolations(finalBest);
@@ -117,14 +111,14 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private async Task InitializePopulation()
         {
             _population.Clear();
-            
+
             // Create diverse initial population
             for (int i = 0; i < _config.PopulationSize; i++)
             {
                 var chromosome = GenerateRandomChromosome();
                 _population.Add(chromosome);
             }
-            
+
             // Add some known good configurations to seed the population
             AddSeedChromosomes();
         }
@@ -135,7 +129,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             {
                 Id = Guid.NewGuid().ToString(),
                 Generation = 0,
-                
+
                 // BWB Core Parameters - Conservative ranges for drawdown control
                 BWBWingWidth = RandomBetween(40, 60),           // Narrower wings for less risk
                 BWBDeltaTarget = RandomBetween(0.12m, 0.20m),   // Higher delta for better protection
@@ -143,7 +137,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 BWBStopLoss = RandomBetween(1.5m, 2.5m),        // Tighter stop loss
                 BWBMaxPositions = RandomBetween(2, 4),          // Conservative position count
                 BWBForcedExitDTE = RandomBetween(8, 12),        // Earlier forced exits
-                
+
                 // XSP Probe Parameters - Market sensing
                 ProbeSpreadWidth = RandomBetween(3, 6),         // Tighter spreads for better fills
                 ProbesDailyMon = RandomBetween(1, 3),           // Conservative probe count
@@ -154,7 +148,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 ProbeDTE = RandomBetween(10, 18),               // Shorter DTE for faster feedback
                 ProbeWinRateThreshold = RandomBetween(0.55m, 0.70m), // Quality threshold
                 ProbeProfitTarget = RandomBetween(0.60m, 0.75m), // Conservative profit target
-                
+
                 // VIX Hedge Parameters - Drawdown protection focus
                 HedgeRatio = RandomBetween(0.15m, 0.30m),       // Higher hedge ratio for protection
                 VIXLongStrikeOffset = RandomBetween(0, 5),      // Closer to ATM for better protection
@@ -164,27 +158,27 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 HedgeDTE = RandomBetween(45, 60),               // Longer DTE for stable protection
                 VIXSpikeThreshold = RandomBetween(2, 5),        // VIX spike for partial close
                 PartialClosePercent = RandomBetween(0.25m, 0.60m), // Profit taking amount
-                
+
                 // Synchronization Rules - Risk control
                 MaxCorrelatedRisk = RandomBetween(0.20m, 0.30m), // Diversification requirement
                 MinProbeWinRate = RandomBetween(0.50m, 0.65m),  // Entry gate for core
                 SPXEntryDelayDays = RandomBetween(0, 2),         // Delay after probe success
                 DrawdownFreezeThreshold = RandomBetween(0.02m, 0.05m), // -2% to -5% freeze
                 VolatilityScaleFactor = RandomBetween(0.30m, 0.70m), // Scale down in high vol
-                
+
                 // Capital Allocation - Enhanced RevFib scale
                 StartingCapital = RandomBetween(80000m, 120000m), // Starting capital range
                 MaxPortfolioRisk = RandomBetween(0.20m, 0.30m),  // Conservative risk limit
                 RevFibUpgradeDays = RandomBetween(8, 15),        // Days for position size upgrade
                 RevFibDowngradeThreshold = RandomBetween(0.10m, 0.20m), // Loss % for downgrade
                 EmergencyStopPercent = RandomBetween(0.20m, 0.30m), // Emergency stop level
-                
+
                 // Market Regime Adaptation
                 HighVIXThreshold = RandomBetween(22, 28),        // High VIX level
                 LowVIXThreshold = RandomBetween(12, 18),         // Low VIX level
                 TrendStrengthThreshold = RandomBetween(0.60m, 0.80m), // Trend strength
                 RegimeSwitchSensitivity = RandomBetween(0.70m, 1.20m), // Adaptation speed
-                
+
                 // Greek Limits - Portfolio risk control
                 MaxDeltaExposure = RandomBetween(0.08m, 0.18m),  // Delta neutrality
                 MaxVegaExposure = RandomBetween(0.03m, 0.08m),   // Volatility risk limit
@@ -207,7 +201,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 MaxPortfolioRisk = 0.25m,
                 DrawdownFreezeThreshold = 0.03m
             };
-            
+
             var balancedSeed = new SPX30DTEChromosome
             {
                 Id = "BALANCED_SEED",
@@ -219,7 +213,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 MaxPortfolioRisk = 0.25m,
                 DrawdownFreezeThreshold = 0.025m
             };
-            
+
             // Replace worst performers with seeds
             if (_population.Count >= 2)
             {
@@ -237,7 +231,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                     chromosome.Fitness = await EvaluateChromosome(chromosome);
                 }
             });
-            
+
             await Task.WhenAll(tasks);
         }
 
@@ -248,9 +242,9 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 // Run comprehensive backtest on 20 years of real data
                 var config = ConvertChromosomeToConfig(chromosome);
                 var backtestResult = await RunHistoricalBacktest(config, 2005, 2025);
-                
+
                 var fitness = new FitnessScore();
-                
+
                 // Enhanced multi-objective optimization
                 fitness.DrawdownScore = CalculateDrawdownScore(backtestResult.MaxDrawdown);
                 fitness.ReturnsScore = CalculateReturnsScore(backtestResult.AnnualizedReturn);
@@ -258,17 +252,17 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 fitness.WinRateScore = CalculateWinRateScore(backtestResult.WinRate);
                 fitness.ConsistencyScore = CalculateConsistencyScore(backtestResult.MonthlyReturns);
                 fitness.StressTestScore = CalculateStressTestScore(backtestResult.CrisisPerformance);
-                
+
                 // NEW: Capital efficiency metrics
                 fitness.CapitalEfficiencyScore = CalculateCapitalEfficiencyScore(backtestResult);
                 fitness.LeverageOptimizationScore = CalculateLeverageOptimizationScore(backtestResult);
                 fitness.TurnoverEfficiencyScore = CalculateTurnoverEfficiencyScore(backtestResult);
-                
+
                 // Penalty scores for constraint violations
                 fitness.ConstraintPenalty = CalculateConstraintPenalty(backtestResult);
-                
+
                 // Enhanced weighted overall score - balanced between returns and risk
-                fitness.OverallScore = 
+                fitness.OverallScore =
                     0.25m * fitness.ReturnsScore +           // Primary: High returns (25%)
                     0.20m * fitness.CapitalEfficiencyScore + // Capital efficiency (20%)
                     0.20m * fitness.DrawdownScore +          // Drawdown control (20%)
@@ -277,10 +271,10 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                     0.05m * fitness.WinRateScore +           // Win rate (5%)
                     0.05m * fitness.TurnoverEfficiencyScore - // Turnover efficiency (5%)
                     fitness.ConstraintPenalty;               // Violations penalty
-                
+
                 fitness.BacktestResult = backtestResult;
                 fitness.EvaluationDate = DateTime.Now;
-                
+
                 return fitness;
             }
             catch (Exception ex)
@@ -344,16 +338,16 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private decimal CalculateConsistencyScore(List<decimal> monthlyReturns)
         {
             if (monthlyReturns == null || !monthlyReturns.Any()) return 0m;
-            
+
             // Calculate coefficient of variation (lower is better)
             var mean = monthlyReturns.Average();
             var variance = monthlyReturns.Select(r => Math.Pow((double)(r - mean), 2)).Average();
             var stdDev = (decimal)Math.Sqrt(variance);
-            
+
             if (mean <= 0) return 0m;
-            
+
             var coeffVar = stdDev / Math.Abs(mean);
-            
+
             if (coeffVar <= 0.5m) return 100m;               // Very consistent
             if (coeffVar <= 0.8m) return 80m;                // Good consistency
             if (coeffVar <= 1.2m) return 60m;                // Acceptable
@@ -366,7 +360,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             // Calculate return per dollar of capital deployed (not just total capital)
             var avgCapitalDeployed = result.TotalCapital * 0.4m; // Assume 40% average deployment
             var capitalEfficiency = result.AnnualizedReturn / (avgCapitalDeployed / result.TotalCapital);
-            
+
             // Score capital efficiency (return per deployed dollar)
             if (capitalEfficiency >= 0.80m) return 100m;        // Exceptional: 80%+ return on deployed capital
             if (capitalEfficiency >= 0.60m) return 90m;         // Excellent: 60%+
@@ -382,7 +376,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             // Score optimal use of available capital for maximum returns
             var leverageRatio = result.MaxCapitalUsed / result.TotalCapital;
             var leverageEfficiency = result.AnnualizedReturn / leverageRatio;
-            
+
             // Optimal leverage usage (high returns with reasonable capital usage)
             if (leverageEfficiency >= 0.60m && leverageRatio >= 0.70m) return 100m; // Perfect balance
             if (leverageEfficiency >= 0.50m && leverageRatio >= 0.60m) return 90m;  // Excellent
@@ -398,7 +392,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             // Score profit per trade (avoid over-trading)
             var profitPerTrade = result.TotalPnL / Math.Max(1, result.TotalTrades);
             var tradingEfficiency = profitPerTrade / (result.TotalCapital / 100); // Profit per trade as % of capital
-            
+
             // Higher profit per trade = better efficiency
             if (tradingEfficiency >= 2.0m) return 100m;         // Excellent: 2%+ per trade
             if (tradingEfficiency >= 1.5m) return 90m;          // Very good: 1.5%+
@@ -412,10 +406,10 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private decimal CalculateStressTestScore(Dictionary<string, decimal> crisisPerformance)
         {
             if (crisisPerformance == null || !crisisPerformance.Any()) return 50m;
-            
+
             var score = 0m;
             var count = 0;
-            
+
             // Score performance during major crisis periods
             if (crisisPerformance.ContainsKey("2008_Crisis"))
             {
@@ -427,7 +421,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 else score += 0m;                             // Devastating loss
                 count++;
             }
-            
+
             if (crisisPerformance.ContainsKey("2020_COVID"))
             {
                 var performance = crisisPerformance["2020_COVID"];
@@ -438,44 +432,44 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 else score += 0m;
                 count++;
             }
-            
+
             return count > 0 ? score / count : 50m;
         }
 
         private decimal CalculateConstraintPenalty(BacktestResult result)
         {
             decimal penalty = 0m;
-            
+
             // Heavy penalty for excessive drawdown
             if (result.MaxDrawdown > MAX_ACCEPTABLE_DRAWDOWN)
             {
                 penalty += (result.MaxDrawdown - MAX_ACCEPTABLE_DRAWDOWN) / 50m; // 1 point per $50 over limit
             }
-            
+
             // Heavy penalty for below minimum CAGR (critical requirement)
             if (result.AnnualizedReturn < MIN_CAGR)
             {
                 penalty += (MIN_CAGR - result.AnnualizedReturn) * 300m; // 3 points per 1% below 25%
             }
-            
+
             // Penalty for low win rate
             if (result.WinRate < MIN_WIN_RATE)
             {
                 penalty += (MIN_WIN_RATE - result.WinRate) * 150m; // 1.5 points per 1% below minimum
             }
-            
+
             // Heavy penalty for negative returns
             if (result.AnnualizedReturn < 0)
             {
                 penalty += Math.Abs(result.AnnualizedReturn) * 500m; // Severe penalty for losses
             }
-            
+
             // Penalty for poor Sharpe ratio
             if (result.SharpeRatio < 1.5m)
             {
                 penalty += (1.5m - result.SharpeRatio) * 75m;
             }
-            
+
             // NEW: Penalty for poor capital efficiency
             var avgCapitalDeployed = result.TotalCapital * 0.4m;
             var capitalEfficiency = result.AnnualizedReturn / (avgCapitalDeployed / result.TotalCapital);
@@ -483,14 +477,14 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             {
                 penalty += (MIN_CAPITAL_EFFICIENCY - capitalEfficiency) * 200m; // 2 points per 1% below 30%
             }
-            
+
             // NEW: Penalty for under-utilizing capital (encourage higher leverage)
             var leverageRatio = result.MaxCapitalUsed / result.TotalCapital;
             if (leverageRatio < 0.40m) // Below 40% capital utilization
             {
                 penalty += (0.40m - leverageRatio) * 100m; // Encourage capital deployment
             }
-            
+
             return penalty;
         }
 
@@ -500,34 +494,34 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             var probeScout = new XSPProbeScout(_dataManager, null, config.XSPProbe);
             var bwbEngine = new SPXBWBEngine(_dataManager, null, config.SPXCore);
             var hedgeManager = new VIXHedgeManager(_dataManager);
-            
+
             var syncConfig = new SynchronizationConfig
             {
                 TotalCapital = (decimal)config.RiskScale.NotchLimits[config.RiskScale.CurrentNotchIndex],
                 MaxTotalExposure = config.MaxPortfolioRisk * config.StartingCapital,
                 DrawdownLimit = config.MaxDrawdownLimit
             };
-            
+
             var executor = new SynchronizedStrategyExecutor(null, _dataManager, hedgeManager, syncConfig);
-            
+
             // Run backtest across multiple crisis periods
             var result = new BacktestResult();
             var crisisPerformance = new Dictionary<string, decimal>();
-            
+
             // 2008 Financial Crisis
-            var crisis2008 = await RunPeriodBacktest(executor, 
+            var crisis2008 = await RunPeriodBacktest(executor,
                 new DateTime(2008, 1, 1), new DateTime(2009, 3, 31));
             crisisPerformance["2008_Crisis"] = crisis2008.TotalReturn;
-            
+
             // 2020 COVID Crisis
             var covidCrisis = await RunPeriodBacktest(executor,
                 new DateTime(2020, 2, 1), new DateTime(2020, 4, 30));
             crisisPerformance["2020_COVID"] = covidCrisis.TotalReturn;
-            
+
             // Full 20-year period
             var fullPeriod = await RunPeriodBacktest(executor,
                 new DateTime(startYear, 1, 1), new DateTime(endYear, 12, 31));
-            
+
             result.TotalReturn = fullPeriod.TotalReturn;
             result.AnnualizedReturn = fullPeriod.AnnualizedReturn;
             result.MaxDrawdown = fullPeriod.MaxDrawdown;
@@ -537,7 +531,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             result.CrisisPerformance = crisisPerformance;
             result.TotalTrades = fullPeriod.TotalTrades;
             result.ProfitFactor = fullPeriod.ProfitFactor;
-            
+
             return result;
         }
 
@@ -553,37 +547,37 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             var portfolioValue = 100000m; // Starting value
             var maxValue = portfolioValue;
             var maxDrawdown = 0m;
-            
+
             // Simulate trading day by day
             var currentDate = startDate;
             while (currentDate <= endDate)
             {
                 // Skip weekends
-                if (currentDate.DayOfWeek != DayOfWeek.Saturday && 
+                if (currentDate.DayOfWeek != DayOfWeek.Saturday &&
                     currentDate.DayOfWeek != DayOfWeek.Sunday)
                 {
                     try
                     {
                         // Get portfolio state
                         var portfolioState = await executor.GetCurrentPortfolioState();
-                        
+
                         // Calculate daily P&L
                         var dayPnL = portfolioState.UnrealizedPnL + portfolioState.RealizedPnL;
                         dailyPnL.Add(dayPnL);
                         portfolioValue += dayPnL;
-                        
+
                         // Track maximum drawdown
                         if (portfolioValue > maxValue)
                         {
                             maxValue = portfolioValue;
                         }
-                        
+
                         var currentDrawdown = maxValue - portfolioValue;
                         if (currentDrawdown > maxDrawdown)
                         {
                             maxDrawdown = currentDrawdown;
                         }
-                        
+
                         // Track monthly returns
                         if (currentDate.Day == 1 && monthlyReturns.Count < 12 * 5) // Limit data
                         {
@@ -597,25 +591,25 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                         Console.WriteLine($"Error on {currentDate}: {ex.Message}");
                     }
                 }
-                
+
                 currentDate = currentDate.AddDays(1);
             }
-            
+
             // Calculate result metrics
             var totalDays = dailyPnL.Count;
             var totalReturn = (portfolioValue - 100000m) / 100000m;
             var yearFraction = (endDate - startDate).TotalDays / 365.25;
             var annualizedReturn = totalReturn / (decimal)yearFraction;
-            
+
             var winningDays = dailyPnL.Count(p => p > 0);
             var winRate = totalDays > 0 ? (decimal)winningDays / totalDays : 0;
-            
+
             // Calculate Sharpe ratio (simplified)
             var avgDailyReturn = dailyPnL.Average();
             var dailyStdDev = CalculateStandardDeviation(dailyPnL);
-            var sharpeRatio = dailyStdDev > 0 ? 
+            var sharpeRatio = dailyStdDev > 0 ?
                 (avgDailyReturn * 252m) / (dailyStdDev * (decimal)Math.Sqrt(252)) : 0;
-            
+
             result.TotalReturn = totalReturn;
             result.AnnualizedReturn = annualizedReturn;
             result.MaxDrawdown = maxDrawdown;
@@ -624,14 +618,14 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             result.MonthlyReturns = monthlyReturns;
             result.TotalTrades = trades.Count;
             result.ProfitFactor = CalculateProfitFactor(dailyPnL);
-            
+
             return result;
         }
 
         private decimal CalculateStandardDeviation(List<decimal> values)
         {
             if (values == null || values.Count < 2) return 0m;
-            
+
             var mean = values.Average();
             var variance = values.Select(v => Math.Pow((double)(v - mean), 2)).Average();
             return (decimal)Math.Sqrt(variance);
@@ -688,12 +682,12 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private bool ShouldStopEarly(List<GenerationMetrics> metrics)
         {
             if (metrics.Count < 10) return false;
-            
+
             // Stop if no improvement in last 20 generations
             var recent = metrics.TakeLast(20).ToList();
             var bestRecent = recent.Max(m => m.BestFitness);
             var first = recent.First().BestFitness;
-            
+
             var improvement = (bestRecent - first) / Math.Max(1, Math.Abs(first));
             return improvement < 0.01m; // Less than 1% improvement
         }
@@ -701,23 +695,23 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private async Task CreateNextGeneration()
         {
             var newPopulation = new List<SPX30DTEChromosome>();
-            
+
             // Keep elite
             var elite = SelectElite();
             newPopulation.AddRange(elite);
-            
+
             // Generate offspring
             while (newPopulation.Count < _config.PopulationSize)
             {
                 var parent1 = TournamentSelection();
                 var parent2 = TournamentSelection();
-                
+
                 var offspring = Crossover(parent1, parent2);
                 offspring = Mutate(offspring);
-                
+
                 newPopulation.Add(offspring);
             }
-            
+
             _population.Clear();
             _population.AddRange(newPopulation);
         }
@@ -730,7 +724,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 var candidate = _population[_random.Next(_population.Count)];
                 tournament.Add(candidate);
             }
-            
+
             return tournament.OrderByDescending(c => c.Fitness.OverallScore).First();
         }
 
@@ -741,7 +735,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                 Id = Guid.NewGuid().ToString(),
                 Generation = parent1.Generation + 1
             };
-            
+
             // Uniform crossover - randomly select genes from parents
             offspring.BWBWingWidth = _random.NextDouble() < 0.5 ? parent1.BWBWingWidth : parent2.BWBWingWidth;
             offspring.BWBDeltaTarget = _random.NextDouble() < 0.5 ? parent1.BWBDeltaTarget : parent2.BWBDeltaTarget;
@@ -750,9 +744,9 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
             offspring.HedgeRatio = _random.NextDouble() < 0.5 ? parent1.HedgeRatio : parent2.HedgeRatio;
             offspring.MaxPortfolioRisk = _random.NextDouble() < 0.5 ? parent1.MaxPortfolioRisk : parent2.MaxPortfolioRisk;
             offspring.DrawdownFreezeThreshold = _random.NextDouble() < 0.5 ? parent1.DrawdownFreezeThreshold : parent2.DrawdownFreezeThreshold;
-            
+
             // Continue for all genes...
-            
+
             return offspring;
         }
 
@@ -760,7 +754,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         {
             // Apply mutations with decreasing probability based on generation
             var mutationRate = Math.Max(0.01, _config.MutationRate * Math.Pow(0.99, chromosome.Generation));
-            
+
             if (_random.NextDouble() < mutationRate)
             {
                 // Mutate random gene with small perturbation
@@ -772,13 +766,13 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
                     case 3: chromosome.BWBStopLoss += RandomBetween(-0.3m, 0.3m); break;
                     case 4: chromosome.HedgeRatio += RandomBetween(-0.05m, 0.05m); break;
                     case 5: chromosome.MaxPortfolioRisk += RandomBetween(-0.03m, 0.03m); break;
-                    // Continue for other parameters...
+                        // Continue for other parameters...
                 }
             }
-            
+
             // Ensure constraints
             ApplyConstraints(chromosome);
-            
+
             return chromosome;
         }
 
@@ -797,7 +791,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private GenerationMetrics CalculateGenerationMetrics(int generation)
         {
             var fitness = _population.Select(c => c.Fitness.OverallScore).ToList();
-            
+
             return new GenerationMetrics
             {
                 Generation = generation,
@@ -812,44 +806,44 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         private bool ValidateConstraints(SPX30DTEChromosome chromosome)
         {
             if (chromosome.Fitness?.BacktestResult == null) return false;
-            
+
             var result = chromosome.Fitness.BacktestResult;
-            
+
             // Primary constraint: Maximum drawdown
             if (result.MaxDrawdown > MAX_ACCEPTABLE_DRAWDOWN) return false;
-            
+
             // Secondary constraints
             if (result.AnnualizedReturn < 0.10m) return false; // Min 10% annual return
             if (result.WinRate < MIN_WIN_RATE) return false;   // Min 60% win rate
             if (result.SharpeRatio < 0.8m) return false;      // Min Sharpe ratio
-            
+
             return true;
         }
 
         private List<string> GetConstraintViolations(SPX30DTEChromosome chromosome)
         {
             var violations = new List<string>();
-            
-            if (chromosome.Fitness?.BacktestResult == null) 
+
+            if (chromosome.Fitness?.BacktestResult == null)
             {
                 violations.Add("No backtest result available");
                 return violations;
             }
-            
+
             var result = chromosome.Fitness.BacktestResult;
-            
+
             if (result.MaxDrawdown > MAX_ACCEPTABLE_DRAWDOWN)
                 violations.Add($"Max drawdown {result.MaxDrawdown:C} exceeds limit {MAX_ACCEPTABLE_DRAWDOWN:C}");
-                
+
             if (result.AnnualizedReturn < 0.10m)
                 violations.Add($"Annual return {result.AnnualizedReturn:P2} below minimum 10%");
-                
+
             if (result.WinRate < MIN_WIN_RATE)
                 violations.Add($"Win rate {result.WinRate:P2} below minimum {MIN_WIN_RATE:P2}");
-                
+
             if (result.SharpeRatio < 0.8m)
                 violations.Add($"Sharpe ratio {result.SharpeRatio:F2} below minimum 0.8");
-            
+
             return violations;
         }
 
@@ -857,12 +851,12 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         {
             // Select chromosome that best meets constraints and objectives
             var validChromosomes = _population.Where(ValidateConstraints).ToList();
-            
+
             if (validChromosomes.Any())
             {
                 return validChromosomes.OrderByDescending(c => c.Fitness.OverallScore).First();
             }
-            
+
             // If no valid chromosomes, return best overall
             return _population.OrderByDescending(c => c.Fitness.OverallScore).First();
         }
@@ -903,7 +897,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public string Id { get; set; }
         public int Generation { get; set; }
         public FitnessScore Fitness { get; set; }
-        
+
         // BWB Parameters
         public decimal BWBWingWidth { get; set; }
         public decimal BWBDeltaTarget { get; set; }
@@ -911,7 +905,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public decimal BWBStopLoss { get; set; }
         public int BWBMaxPositions { get; set; }
         public int BWBForcedExitDTE { get; set; }
-        
+
         // Probe Parameters
         public decimal ProbeSpreadWidth { get; set; }
         public int ProbesDailyMon { get; set; }
@@ -922,7 +916,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public int ProbeDTE { get; set; }
         public decimal ProbeWinRateThreshold { get; set; }
         public decimal ProbeProfitTarget { get; set; }
-        
+
         // VIX Hedge Parameters
         public decimal HedgeRatio { get; set; }
         public decimal VIXLongStrikeOffset { get; set; }
@@ -932,27 +926,27 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public int HedgeDTE { get; set; }
         public decimal VIXSpikeThreshold { get; set; }
         public decimal PartialClosePercent { get; set; }
-        
+
         // Synchronization Parameters
         public decimal MaxCorrelatedRisk { get; set; }
         public decimal MinProbeWinRate { get; set; }
         public int SPXEntryDelayDays { get; set; }
         public decimal DrawdownFreezeThreshold { get; set; }
         public decimal VolatilityScaleFactor { get; set; }
-        
+
         // Capital Management
         public decimal StartingCapital { get; set; }
         public decimal MaxPortfolioRisk { get; set; }
         public int RevFibUpgradeDays { get; set; }
         public decimal RevFibDowngradeThreshold { get; set; }
         public decimal EmergencyStopPercent { get; set; }
-        
+
         // Market Regime
         public decimal HighVIXThreshold { get; set; }
         public decimal LowVIXThreshold { get; set; }
         public decimal TrendStrengthThreshold { get; set; }
         public decimal RegimeSwitchSensitivity { get; set; }
-        
+
         // Greek Limits
         public decimal MaxDeltaExposure { get; set; }
         public decimal MaxVegaExposure { get; set; }
@@ -970,12 +964,12 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public decimal ConsistencyScore { get; set; }
         public decimal StressTestScore { get; set; }
         public decimal ConstraintPenalty { get; set; }
-        
+
         // Enhanced capital efficiency scoring
         public decimal CapitalEfficiencyScore { get; set; }
         public decimal LeverageOptimizationScore { get; set; }
         public decimal TurnoverEfficiencyScore { get; set; }
-        
+
         public BacktestResult BacktestResult { get; set; }
         public DateTime EvaluationDate { get; set; }
         public string Error { get; set; }
@@ -992,7 +986,7 @@ namespace ODTE.Strategy.SPX30DTE.Optimization
         public Dictionary<string, decimal> CrisisPerformance { get; set; }
         public int TotalTrades { get; set; }
         public decimal ProfitFactor { get; set; }
-        
+
         // Enhanced properties for capital efficiency optimization
         public decimal TotalCapital { get; set; } = 100000m;
         public decimal MaxCapitalUsed { get; set; }

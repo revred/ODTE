@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace ODTE.Strategy.SPX30DTE.Mutations
 {
     // Simplified demonstration of the 16-mutation tournament concept
@@ -18,7 +14,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
 
             Console.WriteLine("🧬 GENERATED 16 STRATEGIC MUTATIONS");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             for (int i = 0; i < mutations.Count; i++)
             {
                 var mutation = mutations[i];
@@ -44,7 +40,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             Console.WriteLine();
             Console.WriteLine("📊 THEORETICAL SQLITE LEDGER GENERATION");
             Console.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            
+
             foreach (var result in tournamentResults.Take(4))
             {
                 Console.WriteLine($"🗄️  {result.MutationName}_Ledger_20050101_20250101.db");
@@ -134,7 +130,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 var preservationScore = (finalValue - 100000m) / 400000m * 25; // 25% weight, capital growth
                 var winRateScore = winRate * 20; // 20% weight
 
-                var overallScore = (decimal)(cagrScore + riskScore + preservationScore + (double)winRateScore);
+                var overallScore = cagrScore + riskScore + preservationScore + winRateScore;
 
                 results.Add(new TournamentResult
                 {
@@ -147,7 +143,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                     TotalTrades = totalTrades,
                     FinalValue = finalValue,
                     ProfitFactor = 1.4m + (decimal)(random.NextDouble() * 1.1), // 1.4-2.5
-                    SharpeRatio = 1.2m + (decimal)(random.NextDouble() * 0.8m), // 1.2-2.0
+                    SharpeRatio = 1.2m + (decimal)(random.NextDouble() * 0.8), // 1.2-2.0
                     OverallScore = overallScore
                 });
             }
@@ -166,7 +162,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
                 var trophy = i switch
                 {
                     0 => "🥇",
-                    1 => "🥈", 
+                    1 => "🥈",
                     2 => "🥉",
                     _ when i < 8 => "🏅",
                     _ => "  "
@@ -184,7 +180,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             {
                 var rank = topResults.IndexOf(result) + 1;
                 var medal = rank switch { 1 => "🥇", 2 => "🥈", 3 => "🥉", _ => "🏅" };
-                
+
                 Console.WriteLine($"{medal} #{rank}: {result.MutationName}");
                 Console.WriteLine($"   💰 20-Year Growth: ${result.FinalValue:N0} (CAGR: {result.CAGR:P1})");
                 Console.WriteLine($"   📉 Max Drawdown: {result.MaxDrawdown:P1} | 🎯 Win Rate: {result.WinRate:P1}");
@@ -201,7 +197,7 @@ namespace ODTE.Strategy.SPX30DTE.Mutations
             var tradeDataSize = totalTrades * 0.5m; // 500 bytes per trade in KB
             var legDataSize = totalTrades * 3 * 0.2m; // Average 3 legs per trade, 200 bytes each
             var dailyPnLSize = 20 * 365 * 0.1m; // 20 years of daily P&L, 100 bytes per day
-            
+
             return (tradeDataSize + legDataSize + dailyPnLSize) / 1024; // Convert KB to MB
         }
 

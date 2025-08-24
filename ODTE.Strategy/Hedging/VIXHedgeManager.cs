@@ -1,12 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ODTE.Backtest.Core;
-using ODTE.Execution.Models;
-using ODTE.Historical.DistributedStorage;
 using ODTE.Contracts.Data;
-using ContractsData = ODTE.Contracts.Data;
+using ODTE.Historical.DistributedStorage;
 
 namespace ODTE.Strategy.Hedging
 {
@@ -38,8 +31,8 @@ namespace ODTE.Strategy.Hedging
         }
 
         public async Task<HedgeRequirement> CalculateHedgeRequirement(
-            decimal portfolioExposure, 
-            decimal currentVIX, 
+            decimal portfolioExposure,
+            decimal currentVIX,
             MarketConditions conditions)
         {
             var requirement = new HedgeRequirement
@@ -51,45 +44,45 @@ namespace ODTE.Strategy.Hedging
 
             // Enhanced base hedge count calculation with 5%+ pullback protection
             requirement.BaseHedgeCount = CalculateEnhancedHedgeCount(portfolioExposure, currentVIX);
-            
+
             // Adjust for market conditions (more responsive to moderate stress)
             requirement.ConditionMultiplier = GetEnhancedConditionMultiplier(conditions, currentVIX);
-            
+
             // Enhanced VIX level adjustment (more sensitive to moderate increases)
             requirement.VIXMultiplier = GetEnhancedVIXLevelMultiplier(currentVIX);
-            
+
             // Calculate final hedge count with pullback protection bias
             requirement.RecommendedHedgeCount = (int)Math.Ceiling(
-                requirement.BaseHedgeCount * 
-                requirement.ConditionMultiplier * 
+                requirement.BaseHedgeCount *
+                requirement.ConditionMultiplier *
                 requirement.VIXMultiplier);
-            
+
             // Enhanced limits for better protection
             var minHedges = Math.Max(_defaultConfig.MinHedgeCount, CalculateMinHedgesForProtection(portfolioExposure));
             requirement.RecommendedHedgeCount = Math.Min(
                 _defaultConfig.MaxHedgeCount + 2, // Allow 2 extra hedges for protection
                 Math.Max(minHedges, requirement.RecommendedHedgeCount));
-            
+
             // Enhanced cost budget (allow more for better protection)
             requirement.MaxCostBudget = portfolioExposure * GetDynamicHedgeCostRatio(currentVIX, conditions);
-            
+
             // Determine urgency (more responsive to moderate moves)
             requirement.Urgency = DetermineEnhancedHedgeUrgency(currentVIX, conditions);
-            
+
             // Enhanced protection level targeting 5%+ moves
             requirement.TargetProtectionLevel = CalculateEnhancedProtectionLevel(portfolioExposure, currentVIX);
-            
+
             // NEW: Add specific pullback protection metrics
             requirement.PullbackProtectionLevel = CalculatePullbackProtection(currentVIX);
             requirement.ModerateStressMultiplier = GetModerateStressMultiplier(currentVIX);
-            
+
             return requirement;
         }
 
         public async Task<List<VIXHedge>> GenerateHedges(HedgeRequirement requirement, DateTime date)
         {
             var hedges = new List<VIXHedge>();
-            
+
             // Get VIX options chain
             var vixChain = await _dataManager.GetOptionsChain("VIX", date);
             if (vixChain == null || !vixChain.Any())
@@ -119,9 +112,9 @@ namespace ODTE.Strategy.Hedging
             if (hedges.Count < requirement.RecommendedHedgeCount)
             {
                 hedges.AddRange(await BuildAlternativeHedges(
-                    vixChain, 
-                    requirement, 
-                    date, 
+                    vixChain,
+                    requirement,
+                    date,
                     requirement.RecommendedHedgeCount - hedges.Count));
             }
 
@@ -145,8 +138,8 @@ namespace ODTE.Strategy.Hedging
 
             performance.TotalCost = hedges.Sum(h => h.Cost);
             performance.NetResult = performance.TotalPayoff - performance.TotalCost;
-            performance.ReturnOnHedge = performance.TotalCost > 0 
-                ? performance.NetResult / performance.TotalCost 
+            performance.ReturnOnHedge = performance.TotalCost > 0
+                ? performance.NetResult / performance.TotalCost
                 : 0;
 
             // Calculate effectiveness metrics
@@ -259,14 +252,14 @@ namespace ODTE.Strategy.Hedging
         }
 
         private async Task<VIXHedge> BuildOptimalHedge(
-            List<OptionsQuote> chain, 
-            DateTime expiration, 
+            List<OptionsQuote> chain,
+            DateTime expiration,
             decimal currentVIX,
             DateTime date)
         {
             var dte = (expiration - date).Days;
             var expiryChain = chain.Where(o => o.Expiration == expiration && o.OptionType == "CALL").ToList();
-            
+
             if (!expiryChain.Any()) return null;
 
             // Enhanced strike selection for 5%+ pullback protection
@@ -292,7 +285,7 @@ namespace ODTE.Strategy.Hedging
             // Calculate cost (debit spread) with enhanced pricing
             hedge.Cost = CalculateEnhancedHedgeCost(longCall, shortCall);
             hedge.MaxPayoff = (hedge.ShortStrike - hedge.LongStrike) * VIX_MULTIPLIER;
-            
+
             // Calculate Greeks
             hedge.Vega = (longCall.Vega - shortCall.Vega) * VIX_MULTIPLIER;
             hedge.Theta = (longCall.Theta - shortCall.Theta) * VIX_MULTIPLIER;
@@ -302,7 +295,7 @@ namespace ODTE.Strategy.Hedging
             hedge.BreakevenVIX = hedge.LongStrike + (hedge.Cost / VIX_MULTIPLIER);
             hedge.ProtectionStart = hedge.LongStrike;
             hedge.MaxProtectionVIX = hedge.ShortStrike;
-            
+
             // NEW: 5% pullback specific metrics
             hedge.PullbackActivationVIX = Math.Max(hedge.LongStrike, currentVIX * 1.15m); // 15% VIX increase
             hedge.ModerateStressPayoff = CalculateModerateStressPayoff(hedge, currentVIX * 1.25m); // 25% VIX increase
@@ -315,7 +308,7 @@ namespace ODTE.Strategy.Hedging
             // Enhanced strike selection optimized for 5%+ pullback protection
             decimal longStrikeOffset;
             decimal spreadWidth;
-            
+
             // Adjust strikes based on current VIX and DTE for optimal 5% pullback protection
             if (currentVIX < 18)
             {
@@ -335,7 +328,7 @@ namespace ODTE.Strategy.Hedging
                 longStrikeOffset = 3m; // Further OTM
                 spreadWidth = 12m;     // Wider spread for more protection
             }
-            
+
             // Adjust for DTE
             if (dte < 30)
             {
@@ -347,10 +340,10 @@ namespace ODTE.Strategy.Hedging
                 longStrikeOffset += 1m; // Further strikes for longer time
                 spreadWidth += 2m;      // Wider spreads
             }
-            
+
             var longStrike = Math.Round(currentVIX + longStrikeOffset);
             var shortStrike = longStrike + spreadWidth;
-            
+
             return (longStrike, shortStrike);
         }
 
@@ -362,13 +355,13 @@ namespace ODTE.Strategy.Hedging
                 .OrderBy(o => Math.Abs(o.Strike - targetStrike))
                 .Take(3) // Consider top 3 closest strikes
                 .ToList();
-            
+
             if (!candidates.Any())
             {
                 // Fallback to closest strike regardless of liquidity
                 return chain.OrderBy(o => Math.Abs(o.Strike - targetStrike)).FirstOrDefault();
             }
-            
+
             // Prefer strikes with better liquidity
             return candidates.OrderByDescending(o => o.Volume + o.OpenInterest).First();
         }
@@ -378,21 +371,21 @@ namespace ODTE.Strategy.Hedging
             // Enhanced cost calculation with bid-ask spread consideration
             var longCost = longCall.Ask;
             var shortCredit = shortCall.Bid;
-            
+
             // Adjust for wider spreads in less liquid options
             var longSpread = longCall.Ask - longCall.Bid;
             var shortSpread = shortCall.Ask - shortCall.Bid;
-            
+
             if (longSpread > longCall.Mid * 0.10m) // Wide spread (>10% of mid)
             {
                 longCost = longCall.Mid + longSpread * 0.25m; // Use mid + 25% of spread
             }
-            
+
             if (shortSpread > shortCall.Mid * 0.10m)
             {
                 shortCredit = shortCall.Mid - shortSpread * 0.25m; // Use mid - 25% of spread
             }
-            
+
             return (longCost - shortCredit) * VIX_MULTIPLIER;
         }
 
@@ -401,10 +394,10 @@ namespace ODTE.Strategy.Hedging
             // Calculate expected payoff during moderate stress (5% pullback scenario)
             if (stressVIX <= hedge.LongStrike)
                 return -hedge.Cost; // Hedge expires worthless
-            
+
             if (stressVIX >= hedge.ShortStrike)
                 return hedge.MaxPayoff - hedge.Cost; // Maximum profit
-            
+
             // Linear interpolation for partial profit
             var intrinsicValue = (stressVIX - hedge.LongStrike) * VIX_MULTIPLIER;
             return intrinsicValue - hedge.Cost;
@@ -417,7 +410,7 @@ namespace ODTE.Strategy.Hedging
             int count)
         {
             var alternativeHedges = new List<VIXHedge>();
-            
+
             // Try different strike combinations
             var strikeOffsets = new[] { 0, 2, 5, 7 }; // ATM to OTM
             var widths = new[] { 10, 8, 12, 15 }; // Different spread widths
@@ -463,7 +456,7 @@ namespace ODTE.Strategy.Hedging
             if (validExpirations == default) return null;
 
             var expiryChain = chain.Where(o => o.Expiration == validExpirations && o.OptionType == "CALL").ToList();
-            
+
             var longStrike = Math.Round(currentVIX + config.LongStrikeOffset);
             var shortStrike = longStrike + config.SpreadWidth;
 
@@ -490,12 +483,12 @@ namespace ODTE.Strategy.Hedging
         {
             // Enhanced calculation targeting 5%+ pullback protection
             var baseCount = Math.Max(2, (int)(exposure / 4000m)); // More hedges per dollar (was 5000)
-            
+
             // Add extra hedges based on VIX level for early protection
             if (currentVIX >= 20) baseCount += 1; // Add hedge when VIX above 20
             if (currentVIX >= 25) baseCount += 1; // Add another when above 25
             if (exposure > 15000m) baseCount += 1; // Extra hedge for larger portfolios
-            
+
             return baseCount;
         }
 
@@ -515,13 +508,13 @@ namespace ODTE.Strategy.Hedging
                 MarketConditions.Crisis => 2.5m,    // Increased from 2.0m
                 _ => 1.2m
             };
-            
+
             // Additional multiplier for VIX in "worry zone" (18-25 range)
             if (currentVIX >= 18 && currentVIX <= 25)
             {
                 baseMultiplier += 0.3m; // Extra protection in moderate stress
             }
-            
+
             return baseMultiplier;
         }
 
@@ -581,13 +574,13 @@ namespace ODTE.Strategy.Hedging
         {
             // Allow higher hedge budget for better protection
             var baseCostRatio = 0.025m; // Increased from 0.02m
-            
+
             // Increase budget when we need more protection
             if (vix >= 20) baseCostRatio += 0.01m;
             if (vix >= 25) baseCostRatio += 0.01m;
             if (conditions == MarketConditions.Volatile) baseCostRatio += 0.005m;
             if (conditions == MarketConditions.Crisis) baseCostRatio += 0.015m;
-            
+
             return Math.Min(0.05m, baseCostRatio); // Cap at 5% of exposure
         }
 
@@ -611,7 +604,7 @@ namespace ODTE.Strategy.Hedging
             var exposureFactor = Math.Min(1.0m, exposure / 30000m); // More responsive to smaller exposures
             var vixFactor = Math.Min(1.0m, vix / 30m); // More responsive to moderate VIX
             var pullbackFactor = GetPullbackProtectionFactor(vix);
-            
+
             return (exposureFactor + vixFactor + pullbackFactor) / 3;
         }
 
@@ -655,10 +648,10 @@ namespace ODTE.Strategy.Hedging
         {
             if (finalVIX <= hedge.LongStrike)
                 return -hedge.Cost; // Hedge expires worthless
-            
+
             if (finalVIX >= hedge.ShortStrike)
                 return hedge.MaxPayoff - hedge.Cost; // Maximum profit
-            
+
             // Partial profit
             var intrinsicValue = (finalVIX - hedge.LongStrike) * VIX_MULTIPLIER;
             return intrinsicValue - hedge.Cost;
@@ -667,7 +660,7 @@ namespace ODTE.Strategy.Hedging
         private decimal CalculateEffectivenessRatio(HedgePerformance performance, decimal vixMove)
         {
             if (vixMove <= 0) return 0;
-            
+
             // Ratio of hedge payoff to VIX move
             var expectedPayoff = vixMove * 100 * performance.HedgeCount; // Simplified expectation
             return performance.TotalPayoff / Math.Max(1, expectedPayoff);
@@ -677,13 +670,13 @@ namespace ODTE.Strategy.Hedging
         {
             decimal totalProfit = 0;
             var hedgesToClose = hedges.OrderByDescending(h => h.EntryVIX).Take(quantity);
-            
+
             foreach (var hedge in hedgesToClose)
             {
                 var payoff = CalculateHedgePayoff(hedge, currentVIX);
                 totalProfit += Math.Max(0, payoff);
             }
-            
+
             return totalProfit;
         }
 
@@ -736,7 +729,7 @@ namespace ODTE.Strategy.Hedging
         public decimal MaxCostBudget { get; set; }
         public HedgeUrgency Urgency { get; set; }
         public decimal TargetProtectionLevel { get; set; }
-        
+
         // Enhanced properties for 5%+ pullback protection
         public decimal PullbackProtectionLevel { get; set; }
         public decimal ModerateStressMultiplier { get; set; }
@@ -761,7 +754,7 @@ namespace ODTE.Strategy.Hedging
         public decimal BreakevenVIX { get; set; }
         public decimal ProtectionStart { get; set; }
         public decimal MaxProtectionVIX { get; set; }
-        
+
         // Enhanced properties for 5%+ pullback protection
         public decimal PullbackActivationVIX { get; set; }
         public decimal ModerateStressPayoff { get; set; }
